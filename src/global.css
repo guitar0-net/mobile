@@ -1,3 +1,7 @@
+/* SPDX-FileCopyrightText: 2026 Andrey Kotlyar <guitar0.app@gmail.com> */
+/*                                                                        */
+/* SPDX-License-Identifier: AGPL-3.0-or-later                            */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,10 +11,9 @@
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji,
     Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
   --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono,
-    Courier New, monospace;
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New,
+    monospace;
   --font-rounded:
-    "SF Pro Rounded", "Hiragino Maru Gothic ProN", Meiryo, "MS PGothic",
-    sans-serif;
+    "SF Pro Rounded", "Hiragino Maru Gothic ProN", Meiryo, "MS PGothic", sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
 }

@@ -1,0 +1,28 @@
+version = 1
+
+[[annotations]]
+path = [
+  "package.json",
+  "package-lock.json",
+  "tsconfig.json",
+  "app.json",
+  ".gitignore",
+  ".prettierrc",
+  ".prettierignore",
+  ".husky/**",
+  "assets/**",
+  "babel.config.js",
+  "metro.config.js",
+  "tailwind.config.js",
+  "eslint.config.mjs",
+  "Makefile",
+  "REUSE.toml",
+  "README.md",
+  ".claude/**",
+  ".vscode/**",
+  "nativewind-env.d.ts",
+  ".github/renovate.json",
+]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Andrey Kotlyar <guitar0.app@gmail.com>"
+SPDX-License-Identifier = "AGPL-3.0-or-later"

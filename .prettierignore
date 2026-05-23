@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Expo build output
+.expo/
+dist/
+
+# Native project dirs (generated)
+ios/
+android/
+
+# Auto-generated
+expo-env.d.ts
+nativewind-env.d.ts
+
+# Config & lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
