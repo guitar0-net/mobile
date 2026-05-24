@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 codecov:
-  require_ci_to_pass: yes
+  require_ci_to_pass: true
   notify:
-    wait_for_ci: yes
+    wait_for_ci: true
     after_n_builds: 1
 
 # Expo Router routing infrastructure — no business logic to cover
@@ -31,4 +31,4 @@ coverage:
         threshold: 5%
     changes: off
 
-comment: off
+comment: false
