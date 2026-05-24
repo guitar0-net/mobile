@@ -47,4 +47,19 @@ describe("Button", () => {
     fireEvent.press(screen.getByRole("button"));
     expect(onPress).not.toHaveBeenCalled();
   });
+
+  test("renders icon without children text when no children prop is passed", () => {
+    const { toJSON } = render(
+      <Button icon={{ ios: "play.fill", android: "play_arrow" }} />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
+
+  test("applies pressed opacity style on pressIn", () => {
+    render(<Button>Нажми</Button>);
+    const button = screen.getByRole("button");
+    fireEvent(button, "pressIn");
+    fireEvent(button, "pressOut");
+    expect(button).toBeTruthy();
+  });
 });

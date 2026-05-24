@@ -4,8 +4,9 @@
 
 import { act, renderHook } from "@testing-library/react-native";
 import type { ReactNode } from "react";
+import * as ReactNative from "react-native";
 
-import { ThemeProvider, useTheme, type ThemeName } from "./index";
+import { resolveIconColor, ThemeProvider, useTheme, type ThemeName } from "./index";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>;
@@ -44,5 +45,32 @@ describe("ThemeProvider", () => {
 
     const { result } = renderHook(() => useTheme(), { wrapper: customWrapper });
     expect(result.current.theme).toBe<ThemeName>("contrast-dark");
+  });
+
+  test("falls back to dark theme when system color scheme is dark and no defaultTheme", () => {
+    const spy = jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("dark");
+
+    function darkSystemWrapper({ children }: { children: ReactNode }) {
+      return <ThemeProvider>{children}</ThemeProvider>;
+    }
+
+    const { result } = renderHook(() => useTheme(), { wrapper: darkSystemWrapper });
+    expect(result.current.theme).toBe<ThemeName>("dark");
+
+    spy.mockRestore();
+  });
+});
+
+describe("resolveIconColor", () => {
+  test('returns #FFFFFF for "white"', () => {
+    expect(resolveIconColor("white", "light")).toBe("#FFFFFF");
+    expect(resolveIconColor("white", "dark")).toBe("#FFFFFF");
+  });
+
+  test('returns theme foreground hex for "foreground"', () => {
+    const lightFg = resolveIconColor("foreground", "light");
+    const darkFg = resolveIconColor("foreground", "dark");
+    expect(lightFg).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(darkFg).toMatch(/^#[0-9A-Fa-f]{6}$/);
   });
 });

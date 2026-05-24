@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Andrey Kotlyar <guitar0.app@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+codecov:
+  require_ci_to_pass: yes
+  notify:
+    wait_for_ci: yes
+    after_n_builds: 1
+
+# Expo Router routing infrastructure — no business logic to cover
+ignore:
+  - "src/app/**"
+  - "src/components/app-tabs.tsx"
+
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+        base: auto
+        branches:
+          - main
+        if_ci_failed: error
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+    changes: off
+
+comment: off
