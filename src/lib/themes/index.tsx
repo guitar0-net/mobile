@@ -3,14 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { vars } from "nativewind";
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, type ReactElement, type ReactNode } from "react";
 import { useColorScheme, View } from "react-native";
+
+import { useThemePreference } from "@/lib/settings";
 
 import { THEME_DEFINITIONS, type ThemeName } from "./definitions";
 
@@ -46,18 +42,13 @@ export function useTheme() {
 
 type ThemeProviderProps = {
   children: ReactNode;
-  defaultTheme?: ThemeName;
 };
 
-export function ThemeProvider({
-  children,
-  defaultTheme,
-}: ThemeProviderProps): ReactElement {
+export function ThemeProvider({ children }: ThemeProviderProps): ReactElement {
+  const { theme: storedTheme, setTheme } = useThemePreference();
   const systemScheme = useColorScheme();
 
-  const [theme, setTheme] = useState<ThemeName>(
-    defaultTheme ?? (systemScheme === "dark" ? "dark" : "light"),
-  );
+  const theme: ThemeName = storedTheme ?? (systemScheme === "dark" ? "dark" : "light");
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

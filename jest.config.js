@@ -6,6 +6,11 @@
 const config = {
   preset: "jest-expo",
   testMatch: ["<rootDir>/src/**/*.test.{ts,tsx}"],
+  moduleNameMapper: {
+    // Replace react-native-mmkv with a pure in-memory mock so tests never
+    // touch native Nitro/TurboModule code.
+    "^react-native-mmkv$": "<rootDir>/__mocks__/react-native-mmkv.js",
+  },
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!src/**/*.d.ts",
