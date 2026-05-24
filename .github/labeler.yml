@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Andrey Kotlyar <guitar0.app@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+feature:
+  - head-branch: ["^(feat|feature)/"]
+
+bug:
+  - head-branch: ["^(fix|bugfix|hotfix)/"]
+
+security:
+  - head-branch: ["^security/"]
+
+infrastructure:
+  - head-branch: ["^(infra|ci|eas|native)/"]
+
+chore:
+  - head-branch: ["^(chore|refactor|docs)/"]
+
+dependencies:
+  - head-branch: ["^(deps|dependabot)/"]
