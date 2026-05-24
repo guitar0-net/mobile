@@ -4,16 +4,45 @@
 
 import "@/global.css";
 
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+
+import { ThemeProvider, useTheme } from "@/lib/themes";
+
+SplashScreen.preventAutoHideAsync();
+
+function StatusBarAdapter() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark" || theme === "contrast-dark";
+  return <StatusBar style={isDark ? "light" : "dark"} />;
+}
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    "Geist-Regular": require("../../assets/fonts/Geist-Regular.ttf"),
+    "Geist-SemiBold": require("../../assets/fonts/Geist-SemiBold.ttf"),
+    Debby: require("../../assets/fonts/Debby.ttf"),
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
-    <>
+    <ThemeProvider>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
-      <StatusBar style="auto" />
-    </>
+      <StatusBarAdapter />
+    </ThemeProvider>
   );
 }

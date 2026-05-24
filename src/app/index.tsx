@@ -13,5 +13,5 @@ export default function Index() {
     router.replace("/(tabs)/home");
   }, [router]);
 
-  return <View className="flex-1 bg-white dark:bg-black" />;
+  return <View className="flex-1 bg-background" />;
 }

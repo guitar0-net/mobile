@@ -16,6 +16,20 @@ import { THEME_DEFINITIONS, type ThemeName } from "./definitions";
 
 export type { ThemeName };
 
+/**
+ * Resolves an icon color token to a real hex string for use with SymbolView's
+ * tintColor prop (which cannot accept CSS variables or Tailwind classes).
+ *
+ * Use "white" for icons on solid colored backgrounds (e.g. primary, destructive),
+ * and "foreground" for icons on transparent or neutral backgrounds.
+ */
+export function resolveIconColor(
+  color: "white" | "foreground",
+  theme: ThemeName,
+): string {
+  return color === "white" ? "#FFFFFF" : THEME_DEFINITIONS[theme]["--color-foreground"];
+}
+
 type ThemeContextValue = {
   theme: ThemeName;
   setTheme: (theme: ThemeName) => void;
