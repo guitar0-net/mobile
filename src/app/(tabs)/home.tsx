@@ -2,16 +2,23 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { Text } from "@/components/ui/text";
 
 export default function HomeScreen() {
   return (
-    <View className="flex-1 bg-white dark:bg-black">
-      <SafeAreaView edges={["top"]} className="px-6 pb-2">
-        <Text className="text-[32px] font-semibold leading-[44px] text-black dark:text-white">
-          Home
-        </Text>
+    <View className="flex-1 bg-background">
+      <SafeAreaView edges={["top"]} className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-4"
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text>Text</Text>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
