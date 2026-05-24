@@ -16,7 +16,8 @@
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --passWithNoTests",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.15.5",
@@ -54,6 +55,7 @@
     "@types/jest": "^29.0.0",
     "@types/react": "~19.2.2",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "babel-preset-expo": "~55.0.8",
     "eslint": "^9",
     "eslint-config-expo": "~55.0.0",
     "eslint-config-prettier": "^10.0.0",
@@ -62,6 +64,7 @@
     "husky": "^9.0.0",
     "jest-expo": "~55.0.18",
     "lint-staged": "^16.0.0",
+    "patch-package": "^8.0.1",
     "prettier": "^3.0.0",
     "prettier-plugin-tailwindcss": "^0.6.0",
     "react-test-renderer": "^19.2.0",
