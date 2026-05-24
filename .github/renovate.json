@@ -1,0 +1,71 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+
+  "minimumReleaseAge": "3 days",
+
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "minimumReleaseAge": "0 days"
+  },
+
+  "schedule": ["before 6am on Saturday"],
+
+  "labels": ["dependencies"],
+  "commitMessagePrefix": "chore(deps):",
+  "rebaseWhen": "conflicted",
+  "separateMajorMinor": true,
+  "major": {
+    "labels": ["dependencies", "breaking-change"]
+  },
+
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev-dependencies",
+      "labels": ["dependencies", "npm"]
+    },
+    {
+      "matchPackageNames": ["expo", "expo-*"],
+      "groupName": "expo-sdk",
+      "minimumReleaseAge": "5 days"
+    },
+    {
+      "matchPackageNames": ["react-native", "react-native-*", "@react-navigation/**"],
+      "groupName": "react-native"
+    },
+    {
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "react-test-renderer",
+        "@types/react"
+      ],
+      "groupName": "react"
+    },
+    {
+      "matchPackageNames": [
+        "eslint",
+        "eslint-*",
+        "@typescript-eslint/**",
+        "prettier",
+        "prettier-plugin-*"
+      ],
+      "groupName": "linting"
+    },
+    {
+      "matchPackageNames": ["jest-expo", "@testing-library/**", "@types/jest"],
+      "groupName": "testing"
+    },
+    {
+      "matchPackageNames": ["typescript", "tslib"],
+      "groupName": "build-tooling"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "labels": ["dependencies", "ci"]
+    }
+  ]
+}
