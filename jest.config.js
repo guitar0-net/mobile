@@ -6,10 +6,22 @@
 const config = {
   preset: "jest-expo",
   testMatch: ["<rootDir>/src/**/*.test.{ts,tsx}"],
+  transform: {
+    // Transform .sql files as string exports (same as Metro does in production)
+    "\\.sql$": "<rootDir>/jest.transform.sql.js",
+  },
+  transformIgnorePatterns: [
+    // jest-expo sets a broad transformIgnorePatterns; override it to also
+    // transform drizzle's ESM migration bundle (drizzle/migrations.js).
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/(?!vector-icons)|@expo-google-fonts|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|drizzle-orm)",
+  ],
   moduleNameMapper: {
     // Replace react-native-mmkv with a pure in-memory mock so tests never
     // touch native Nitro/TurboModule code.
     "^react-native-mmkv$": "<rootDir>/__mocks__/react-native-mmkv.js",
+    // Replace expo-sqlite with a better-sqlite3-backed in-memory mock so
+    // tests never touch native TurboModule code.
+    "^expo-sqlite$": "<rootDir>/__mocks__/expo-sqlite.js",
   },
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
