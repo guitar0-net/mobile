@@ -96,11 +96,11 @@ function createMMKV(config = { id: "mmkv.default" }) {
 module.exports = {
   createMMKV,
   useMMKV: jest.fn(),
-  useMMKVString: jest.fn((key) => [undefined, jest.fn()]),
-  useMMKVNumber: jest.fn((key) => [undefined, jest.fn()]),
-  useMMKVBoolean: jest.fn((key) => [undefined, jest.fn()]),
-  useMMKVObject: jest.fn((key) => [undefined, jest.fn()]),
-  useMMKVBuffer: jest.fn((key) => [undefined, jest.fn()]),
+  useMMKVString: jest.fn((_key) => [undefined, jest.fn()]),
+  useMMKVNumber: jest.fn((_key) => [undefined, jest.fn()]),
+  useMMKVBoolean: jest.fn((_key) => [undefined, jest.fn()]),
+  useMMKVObject: jest.fn((_key) => [undefined, jest.fn()]),
+  useMMKVBuffer: jest.fn((_key) => [undefined, jest.fn()]),
   useMMKVListener: jest.fn(),
   useMMKVKeys: jest.fn(() => [[]]),
 };
