@@ -37,6 +37,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  queryClient.clear();
   jest.restoreAllMocks();
 });
 
