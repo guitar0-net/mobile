@@ -23,7 +23,8 @@ path = [
   "nativewind-env.d.ts",
   ".github/renovate.json",
   "patches/react-native-css-interop+0.2.4.patch",
-  "src/lib/network/api.types.ts"
+  "src/lib/network/api.types.ts",
+  "drizzle/**"
 ]
 precedence = "closest"
 SPDX-FileCopyrightText = "2026 Andrey Kotlyar <guitar0.app@gmail.com>"
