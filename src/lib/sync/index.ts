@@ -8,6 +8,8 @@ import { useSyncStore } from "./store";
 
 export { useSyncStore } from "./store";
 export type { SyncStoreState } from "./store";
+export { useAppSync } from "./use-app-sync";
+export type { AppSyncDeps, AppSyncState, SyncStatus } from "./use-app-sync";
 
 export function useSyncState() {
   return useSyncStore(

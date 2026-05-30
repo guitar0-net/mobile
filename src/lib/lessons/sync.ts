@@ -34,10 +34,14 @@ export type SyncDeps = {
 
 async function defaultDownloadImage(schemeId: number, url: string): Promise<string> {
   const { Paths, Directory, File: FSFile } = await import("expo-file-system");
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
+  const absoluteUrl = url.startsWith("http") ? url : `${baseUrl}${url}`;
   const imagesDir = new Directory(Paths.document, "images");
   imagesDir.create({ intermediates: true, idempotent: true });
   const dest = new FSFile(imagesDir, `${schemeId}.png`);
-  const downloaded = await FSFile.downloadFileAsync(url, dest, { idempotent: true });
+  const downloaded = await FSFile.downloadFileAsync(absoluteUrl, dest, {
+    idempotent: true,
+  });
   return downloaded.uri;
 }
 
@@ -129,6 +133,9 @@ export async function syncAll(
       });
   }
 
+  const total = schemes.length + lessons.length;
+  let completed = 0;
+
   // Phase 2: Download and upsert schemes — no FK dependencies on songs.
   for (const scheme of schemes) {
     const localImagePath = await downloadImage(scheme.id, scheme.image);
@@ -152,6 +159,7 @@ export async function syncAll(
           localImagePath,
         },
       });
+    onProgress?.({ total, completed: ++completed });
   }
 
   // Build lookup: lesson_uuid → songs[] for per-lesson processing.
@@ -163,8 +171,6 @@ export async function syncAll(
   }
 
   // Phase 3: Per-lesson — upsert, delete stale songs, insert fresh songs/junctions.
-  const total = lessons.length;
-  let completed = 0;
   const now = new Date().toISOString();
 
   for (const lesson of lessons) {
