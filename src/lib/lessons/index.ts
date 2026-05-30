@@ -3,12 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 export { initDb, getDb } from "./db";
+export { syncAll } from "./sync";
+export type { SyncProgress, SyncDeps } from "./sync";
 
 export type {
   Course,
   NewCourse,
   Lesson,
   NewLesson,
+  CourseLesson,
+  NewCourseLesson,
   Song,
   NewSong,
   Chord,

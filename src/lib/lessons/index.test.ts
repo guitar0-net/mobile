@@ -6,7 +6,16 @@ import { sql } from "drizzle-orm";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { initDb } from "./index";
-import { chords, courses, lessons, schemes, songChords, songs } from "./schema";
+import {
+  chords,
+  courseLessons,
+  courses,
+  lessonSongs,
+  lessons,
+  schemes,
+  songChords,
+  songs,
+} from "./schema";
 
 beforeEach(() => {
   resetDbForTesting();
@@ -61,6 +70,7 @@ describe("lessons table", () => {
     await db.insert(lessons).values({
       uuid: "lesson-1",
       title: "Open chords",
+      videoUrl: "https://example.com/v.mp4",
       updatedAt: "2026-01-01T00:00:00Z",
     });
 
@@ -72,21 +82,79 @@ describe("lessons table", () => {
 });
 
 // ---------------------------------------------------------------------------
+// course_lessons table
+// ---------------------------------------------------------------------------
+
+describe("course_lessons table", () => {
+  test("accepts an insert and returns the row on query", async () => {
+    const db = await initDb();
+
+    await db.insert(courses).values({
+      uuid: "course-1",
+      title: "Beginner",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(lessons).values({
+      uuid: "lesson-1",
+      title: "Open chords",
+      videoUrl: "https://example.com/v.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(courseLessons).values({
+      courseUuid: "course-1",
+      lessonUuid: "lesson-1",
+      order: 1,
+    });
+
+    const rows = await db.select().from(courseLessons);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].courseUuid).toBe("course-1");
+    expect(rows[0].lessonUuid).toBe("lesson-1");
+    expect(rows[0].order).toBe(1);
+  });
+
+  test("composite PK rejects duplicate (courseUuid, lessonUuid) pair", async () => {
+    const db = await initDb();
+
+    await db.insert(courses).values({
+      uuid: "course-1",
+      title: "Beginner",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(lessons).values({
+      uuid: "lesson-1",
+      title: "Open chords",
+      videoUrl: "https://example.com/v.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(courseLessons).values({
+      courseUuid: "course-1",
+      lessonUuid: "lesson-1",
+      order: 1,
+    });
+
+    await expect(
+      db.insert(courseLessons).values({
+        courseUuid: "course-1",
+        lessonUuid: "lesson-1",
+        order: 2,
+      }),
+    ).rejects.toThrow(/UNIQUE constraint failed/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // songs table
 // ---------------------------------------------------------------------------
 
 describe("songs table", () => {
-  test("accepts an insert linked to a lesson", async () => {
+  test("accepts an insert", async () => {
     const db = await initDb();
 
-    await db.insert(lessons).values({
-      uuid: "lesson-1",
-      title: "Open chords",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
     await db.insert(songs).values({
       uuid: "song-1",
-      lessonUuid: "lesson-1",
       title: "Knockin' on Heaven's Door",
       text: "Mama, take this badge off of me",
     });
@@ -94,7 +162,6 @@ describe("songs table", () => {
     const rows = await db.select().from(songs);
     expect(rows).toHaveLength(1);
     expect(rows[0].uuid).toBe("song-1");
-    expect(rows[0].lessonUuid).toBe("lesson-1");
   });
 });
 
@@ -109,6 +176,7 @@ describe("chords table", () => {
     await db.insert(chords).values({
       id: 1,
       title: "Am",
+      musicalTitle: "Am",
       hasBarre: false,
     });
 
@@ -127,18 +195,10 @@ describe("song_chords table", () => {
   test("links a song to a chord", async () => {
     const db = await initDb();
 
-    await db.insert(lessons).values({
-      uuid: "lesson-1",
-      title: "Open chords",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
-    await db.insert(songs).values({
-      uuid: "song-1",
-      lessonUuid: "lesson-1",
-      title: "Song A",
-      text: "...",
-    });
-    await db.insert(chords).values({ id: 42, title: "G", hasBarre: false });
+    await db.insert(songs).values({ uuid: "song-1", title: "Song A", text: "..." });
+    await db
+      .insert(chords)
+      .values({ id: 42, title: "G", musicalTitle: "G", hasBarre: false });
     await db.insert(songChords).values({ songUuid: "song-1", chordId: 42 });
 
     const rows = await db.select().from(songChords);
@@ -152,24 +212,12 @@ describe("song_chords table", () => {
 // ---------------------------------------------------------------------------
 
 describe("schemes table", () => {
-  test("accepts an insert linked to a song", async () => {
+  test("accepts an insert", async () => {
     const db = await initDb();
 
-    await db.insert(lessons).values({
-      uuid: "lesson-1",
-      title: "Open chords",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
-    await db.insert(songs).values({
-      uuid: "song-1",
-      lessonUuid: "lesson-1",
-      title: "Song A",
-      text: "...",
-    });
     await db.insert(schemes).values({
       id: 1,
-      songUuid: "song-1",
-      url: "https://example.com/scheme.png",
+      image: "https://example.com/scheme.png",
     });
 
     const rows = await db.select().from(schemes);
@@ -213,18 +261,10 @@ describe("song_chords composite primary key", () => {
   test("rejects a duplicate (song_uuid, chord_id) pair", async () => {
     const db = await initDb();
 
-    await db.insert(lessons).values({
-      uuid: "lesson-1",
-      title: "Open chords",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
-    await db.insert(songs).values({
-      uuid: "song-1",
-      lessonUuid: "lesson-1",
-      title: "Song",
-      text: "...",
-    });
-    await db.insert(chords).values({ id: 1, title: "G", hasBarre: false });
+    await db.insert(songs).values({ uuid: "song-1", title: "Song", text: "..." });
+    await db
+      .insert(chords)
+      .values({ id: 1, title: "G", musicalTitle: "G", hasBarre: false });
     await db.insert(songChords).values({ songUuid: "song-1", chordId: 1 });
 
     await expect(
@@ -238,28 +278,54 @@ describe("song_chords composite primary key", () => {
 // ---------------------------------------------------------------------------
 
 describe("foreign key enforcement", () => {
-  test("rejects a song referencing a non-existent lesson", async () => {
+  test("rejects a lesson_song referencing a non-existent lesson", async () => {
     const db = await initDb();
 
+    await db
+      .insert(songs)
+      .values({ uuid: "song-orphan", title: "Orphan Song", text: "..." });
+
     await expect(
-      db.insert(songs).values({
-        uuid: "song-orphan",
-        lessonUuid: "does-not-exist",
-        title: "Orphan Song",
-        text: "...",
+      db
+        .insert(lessonSongs)
+        .values({ lessonUuid: "does-not-exist", songUuid: "song-orphan" }),
+    ).rejects.toThrow(/FOREIGN KEY constraint failed/i);
+  });
+
+  test("rejects a course_lesson referencing a non-existent course", async () => {
+    const db = await initDb();
+
+    await db.insert(lessons).values({
+      uuid: "lesson-fk",
+      title: "FK Test Lesson",
+      videoUrl: "https://example.com/v.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+
+    await expect(
+      db.insert(courseLessons).values({
+        courseUuid: "does-not-exist",
+        lessonUuid: "lesson-fk",
+        order: 1,
       }),
     ).rejects.toThrow(/FOREIGN KEY constraint failed/i);
   });
 
-  test("rejects a lesson referencing a non-existent course", async () => {
+  test("rejects a course_lesson referencing a non-existent lesson", async () => {
     const db = await initDb();
 
+    await db.insert(courses).values({
+      uuid: "course-fk",
+      title: "FK Test Course",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+
     await expect(
-      db.insert(lessons).values({
-        uuid: "lesson-orphan",
-        title: "Orphan Lesson",
-        updatedAt: "2026-01-01T00:00:00Z",
-        courseUuid: "does-not-exist",
+      db.insert(courseLessons).values({
+        courseUuid: "course-fk",
+        lessonUuid: "does-not-exist",
+        order: 1,
       }),
     ).rejects.toThrow(/FOREIGN KEY constraint failed/i);
   });
@@ -271,10 +337,10 @@ describe("foreign key enforcement", () => {
 
 describe("FK indexes", () => {
   const expectedIndexes = [
-    "lessons_course_uuid_idx",
-    "songs_lesson_uuid_idx",
-    "schemes_song_uuid_idx",
+    "course_lessons_lesson_uuid_idx",
+    "lesson_songs_song_uuid_idx",
     "song_chords_chord_id_idx",
+    "song_schemes_scheme_id_idx",
   ];
 
   test.each(expectedIndexes)("index %s exists", async (indexName) => {
