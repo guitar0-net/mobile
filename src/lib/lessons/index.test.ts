@@ -5,7 +5,8 @@
 import { sql } from "drizzle-orm";
 
 import { resetDbForTesting } from "./__tests__/testing";
-import { initDb } from "./index";
+import { _resetDbForTesting } from "./db";
+import { initDb, getDb } from "./index";
 import {
   chords,
   courseLessons,
@@ -33,6 +34,23 @@ describe("initDb", () => {
   test("is idempotent — calling it twice does not throw", async () => {
     await initDb();
     await expect(initDb()).resolves.not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getDb
+// ---------------------------------------------------------------------------
+
+describe("getDb", () => {
+  test("throws when initDb has not been called yet", () => {
+    expect(() => getDb()).toThrow(
+      "Database not initialised — call initDb() before getDb()",
+    );
+  });
+
+  test("returns the db instance after initDb", async () => {
+    await initDb();
+    expect(() => getDb()).not.toThrow();
   });
 });
 

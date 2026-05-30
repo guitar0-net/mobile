@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { eq, notInArray } from "drizzle-orm";
+import { Directory, File as FSFile, Paths } from "expo-file-system";
 
 import { getSyncData as defaultGetSyncData } from "@/lib/network";
 import type { components } from "@/lib/network/api.types";
@@ -33,7 +34,6 @@ export type SyncDeps = {
 };
 
 async function defaultDownloadImage(schemeId: number, url: string): Promise<string> {
-  const { Paths, Directory, File: FSFile } = await import("expo-file-system");
   const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
   const absoluteUrl = url.startsWith("http") ? url : `${baseUrl}${url}`;
   const imagesDir = new Directory(Paths.document, "images");

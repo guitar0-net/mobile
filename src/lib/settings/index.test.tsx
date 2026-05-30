@@ -12,6 +12,8 @@ import {
   useProgress,
   useThemePreference,
 } from "./index";
+import { storage } from "./storage";
+import { readDefaults } from "./store";
 
 beforeEach(() => {
   resetSettingsForTesting();
@@ -285,5 +287,74 @@ describe("useProgress", () => {
     expect(result.current.progress["uuid-a"]?.videoViewed).toBe(true);
     expect(result.current.progress["uuid-a"]?.completedSongIds).toEqual([]);
     expect(result.current.progress["uuid-b"]?.completedSongIds).toEqual(["song-1"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readDefaults — tryParse fallback on invalid JSON
+// ---------------------------------------------------------------------------
+
+describe("readDefaults — invalid JSON in storage", () => {
+  test("returns empty favorites array when stored value is not valid JSON", () => {
+    storage.set("settings.favorites", "NOT_VALID_JSON");
+    const defaults = readDefaults();
+    expect(defaults.favorites).toEqual([]);
+  });
+
+  test("returns empty progress object when stored value is not valid JSON", () => {
+    storage.set("settings.progress", "{broken}");
+    const defaults = readDefaults();
+    expect(defaults.progress).toEqual({});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readDefaults — valid stored values exercise the true branches of parse fns
+// ---------------------------------------------------------------------------
+
+describe("readDefaults — valid stored values", () => {
+  test("returns stored theme when a valid theme name is stored", () => {
+    storage.set("settings.theme", "dark");
+    expect(readDefaults().theme).toBe("dark");
+  });
+
+  test("returns undefined when stored theme is unrecognized", () => {
+    storage.set("settings.theme", "not-a-theme");
+    expect(readDefaults().theme).toBeUndefined();
+  });
+
+  test("returns stored fontSize when a valid size is stored", () => {
+    storage.set("settings.fontSize", "lg");
+    expect(readDefaults().fontSize).toBe("lg");
+  });
+
+  test("returns default fontSize when an invalid size is stored", () => {
+    storage.set("settings.fontSize", "xxl");
+    expect(readDefaults().fontSize).toBe("md");
+  });
+
+  test("returns stored chordSize when a valid size is stored", () => {
+    storage.set("settings.chordSize", "sm");
+    expect(readDefaults().chordSize).toBe("sm");
+  });
+
+  test("returns default chordSize when an invalid value is stored", () => {
+    storage.set("settings.chordSize", "xxl");
+    expect(readDefaults().chordSize).toBe("md");
+  });
+
+  test("returns stored chordOrientation when horizontal is stored", () => {
+    storage.set("settings.chordOrientation", "horizontal");
+    expect(readDefaults().chordOrientation).toBe("horizontal");
+  });
+
+  test("returns default orientation when an invalid value is stored", () => {
+    storage.set("settings.chordOrientation", "diagonal");
+    expect(readDefaults().chordOrientation).toBe("vertical");
+  });
+
+  test("returns stored imageSchemeSize when a valid size is stored", () => {
+    storage.set("settings.imageSchemeSize", "lg");
+    expect(readDefaults().imageSchemeSize).toBe("lg");
   });
 });

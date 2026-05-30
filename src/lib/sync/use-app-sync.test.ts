@@ -103,6 +103,41 @@ describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
     const { result } = renderHook(() => useAppSync(deps));
     await waitFor(() => expect(result.current.status).toBe("error"));
   });
+
+  test("does not update contentVersion when syncAll returns null", async () => {
+    const deps = makeDeps({
+      syncAll: jest.fn().mockResolvedValue(null),
+    });
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.status).toBe("success"));
+    expect(useSyncStore.getState().contentVersion).toBe("");
+  });
+
+  test("uses default deps when none are provided", async () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://test.example.com";
+    jest.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          version: null,
+          lesson_uuids: [],
+          lessons: [],
+          songs: [],
+          chords: [],
+          schemes: [],
+          course_uuids: [],
+          courses: [],
+          course_lessons: [],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const { result } = renderHook(() => useAppSync());
+    await waitFor(() => expect(result.current.status).toBe("success"));
+
+    jest.restoreAllMocks();
+    delete process.env.EXPO_PUBLIC_API_URL;
+  });
 });
 
 describe("useAppSync — returning user (isInitialSyncDone=true)", () => {

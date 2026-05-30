@@ -19,6 +19,17 @@ import {
 } from "./schema";
 import { syncAll } from "./sync";
 
+jest.mock("expo-file-system", () => {
+  const mockDir = { create: jest.fn() };
+  const MockDir = jest.fn(() => mockDir);
+  const MockFSFile = Object.assign(jest.fn(), { downloadFileAsync: jest.fn() });
+  return {
+    Paths: { document: "/mock/documents" },
+    Directory: MockDir,
+    File: MockFSFile,
+  };
+});
+
 type SyncLessonsResponse = components["schemas"]["SyncLessonsResponse"];
 type LessonSync = components["schemas"]["LessonFlat"];
 type SongSync = components["schemas"]["SongFlat"];
@@ -835,4 +846,53 @@ test("course absent from course_uuids is deleted from SQLite", async () => {
   const rows = await db.select({ uuid: courses.uuid }).from(courses);
   expect(rows).toHaveLength(1);
   expect(rows[0].uuid).toBe("c1");
+});
+
+// ---------------------------------------------------------------------------
+// defaultDownloadImage — uses real implementation (expo-file-system mocked)
+// ---------------------------------------------------------------------------
+
+describe("defaultDownloadImage via syncAll (no downloadImage dep)", () => {
+  const fsModule = jest.requireMock("expo-file-system") as any;
+
+  beforeEach(() => {
+    const mockDir = { create: jest.fn() };
+    fsModule.Directory.mockReturnValue(mockDir);
+    fsModule.File.mockImplementation(() => ({}));
+    fsModule.File.downloadFileAsync.mockResolvedValue({ uri: "/local/scheme.png" });
+  });
+
+  test("downloads scheme with absolute URL unchanged", async () => {
+    const db = await initDb();
+    const scheme = makeScheme(1, { image: "https://cdn.example.com/scheme.png" });
+
+    await syncAll(db, null, undefined, {
+      getSyncData: () => Promise.resolve(makeSyncResponse({ schemes: [scheme] })),
+    });
+
+    expect(fsModule.File.downloadFileAsync).toHaveBeenCalledWith(
+      "https://cdn.example.com/scheme.png",
+      expect.anything(),
+      { idempotent: true },
+    );
+    const [row] = await db.select().from(schemes);
+    expect(row.localImagePath).toBe("/local/scheme.png");
+  });
+
+  test("prepends base URL for relative scheme image path", async () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://api.test.com";
+    const db = await initDb();
+    const scheme = makeScheme(2, { image: "/media/scheme-2.png" });
+
+    await syncAll(db, null, undefined, {
+      getSyncData: () => Promise.resolve(makeSyncResponse({ schemes: [scheme] })),
+    });
+
+    expect(fsModule.File.downloadFileAsync).toHaveBeenCalledWith(
+      "https://api.test.com/media/scheme-2.png",
+      expect.anything(),
+      { idempotent: true },
+    );
+    delete process.env.EXPO_PUBLIC_API_URL;
+  });
 });
