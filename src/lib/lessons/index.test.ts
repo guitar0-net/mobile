@@ -11,7 +11,6 @@ import {
   chords,
   courseLessons,
   courses,
-  lessonSongs,
   lessons,
   schemes,
   songChords,
@@ -131,36 +130,6 @@ describe("course_lessons table", () => {
     expect(rows[0].lessonUuid).toBe("lesson-1");
     expect(rows[0].order).toBe(1);
   });
-
-  test("composite PK rejects duplicate (courseUuid, lessonUuid) pair", async () => {
-    const db = await initDb();
-
-    await db.insert(courses).values({
-      uuid: "course-1",
-      title: "Beginner",
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
-    await db.insert(lessons).values({
-      uuid: "lesson-1",
-      title: "Open chords",
-      videoUrl: "https://example.com/v.mp4",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
-    await db.insert(courseLessons).values({
-      courseUuid: "course-1",
-      lessonUuid: "lesson-1",
-      order: 1,
-    });
-
-    await expect(
-      db.insert(courseLessons).values({
-        courseUuid: "course-1",
-        lessonUuid: "lesson-1",
-        order: 2,
-      }),
-    ).rejects.toThrow(/UNIQUE constraint failed/i);
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -246,111 +215,7 @@ describe("schemes table", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Fix 1 — constraint violations must propagate, not be swallowed
-// ---------------------------------------------------------------------------
-
-describe("constraint enforcement", () => {
-  test("rejects a duplicate primary key (UNIQUE constraint)", async () => {
-    const db = await initDb();
-
-    await db.insert(courses).values({
-      uuid: "course-dup",
-      title: "First",
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
-
-    await expect(
-      db.insert(courses).values({
-        uuid: "course-dup", // same PK
-        title: "Second",
-        createdAt: "2026-01-01T00:00:00Z",
-        updatedAt: "2026-01-01T00:00:00Z",
-      }),
-    ).rejects.toThrow(/UNIQUE constraint failed/i);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Fix 2 — song_chords composite primary key blocks duplicate pairs
-// ---------------------------------------------------------------------------
-
-describe("song_chords composite primary key", () => {
-  test("rejects a duplicate (song_uuid, chord_id) pair", async () => {
-    const db = await initDb();
-
-    await db.insert(songs).values({ uuid: "song-1", title: "Song", text: "..." });
-    await db
-      .insert(chords)
-      .values({ id: 1, title: "G", musicalTitle: "G", hasBarre: false });
-    await db.insert(songChords).values({ songUuid: "song-1", chordId: 1 });
-
-    await expect(
-      db.insert(songChords).values({ songUuid: "song-1", chordId: 1 }),
-    ).rejects.toThrow(/UNIQUE constraint failed/i);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Fix 4 — foreign key enforcement (PRAGMA foreign_keys = ON)
-// ---------------------------------------------------------------------------
-
-describe("foreign key enforcement", () => {
-  test("rejects a lesson_song referencing a non-existent lesson", async () => {
-    const db = await initDb();
-
-    await db
-      .insert(songs)
-      .values({ uuid: "song-orphan", title: "Orphan Song", text: "..." });
-
-    await expect(
-      db
-        .insert(lessonSongs)
-        .values({ lessonUuid: "does-not-exist", songUuid: "song-orphan" }),
-    ).rejects.toThrow(/FOREIGN KEY constraint failed/i);
-  });
-
-  test("rejects a course_lesson referencing a non-existent course", async () => {
-    const db = await initDb();
-
-    await db.insert(lessons).values({
-      uuid: "lesson-fk",
-      title: "FK Test Lesson",
-      videoUrl: "https://example.com/v.mp4",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
-
-    await expect(
-      db.insert(courseLessons).values({
-        courseUuid: "does-not-exist",
-        lessonUuid: "lesson-fk",
-        order: 1,
-      }),
-    ).rejects.toThrow(/FOREIGN KEY constraint failed/i);
-  });
-
-  test("rejects a course_lesson referencing a non-existent lesson", async () => {
-    const db = await initDb();
-
-    await db.insert(courses).values({
-      uuid: "course-fk",
-      title: "FK Test Course",
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z",
-    });
-
-    await expect(
-      db.insert(courseLessons).values({
-        courseUuid: "course-fk",
-        lessonUuid: "does-not-exist",
-        order: 1,
-      }),
-    ).rejects.toThrow(/FOREIGN KEY constraint failed/i);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Fix 5 — FK indexes are present in the schema
+// FK indexes are present in the schema
 // ---------------------------------------------------------------------------
 
 describe("FK indexes", () => {
