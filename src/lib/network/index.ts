@@ -2,4 +2,4 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-export { getLessons, getLesson } from "./fetcher";
+export { getLessons, getLesson, getSyncData } from "./fetcher";
