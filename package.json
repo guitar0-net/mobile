@@ -100,5 +100,8 @@
       "@commitlint/config-conventional"
     ]
   },
+  "overrides": {
+    "tmp": "^0.2.6"
+  },
   "private": true
 }
