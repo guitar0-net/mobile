@@ -68,14 +68,3 @@ export function useProgress() {
     })),
   );
 }
-
-export function useSyncState() {
-  return useSettingsStore(
-    useShallow((s) => ({
-      isInitialSyncDone: s.isInitialSyncDone,
-      contentVersion: s.contentVersion,
-      setIsInitialSyncDone: s.setIsInitialSyncDone,
-      setContentVersion: s.setContentVersion,
-    })),
-  );
-}

@@ -10,7 +10,6 @@ import {
   useFavorites,
   useFontSize,
   useProgress,
-  useSyncState,
   useThemePreference,
 } from "./index";
 
@@ -286,39 +285,5 @@ describe("useProgress", () => {
     expect(result.current.progress["uuid-a"]?.videoViewed).toBe(true);
     expect(result.current.progress["uuid-a"]?.completedSongIds).toEqual([]);
     expect(result.current.progress["uuid-b"]?.completedSongIds).toEqual(["song-1"]);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// useSyncState
-// ---------------------------------------------------------------------------
-
-describe("useSyncState", () => {
-  test("isInitialSyncDone defaults to false", () => {
-    const { result } = renderHook(() => useSyncState());
-    expect(result.current.isInitialSyncDone).toBe(false);
-  });
-
-  test("contentVersion defaults to empty string", () => {
-    const { result } = renderHook(() => useSyncState());
-    expect(result.current.contentVersion).toBe("");
-  });
-
-  test("setIsInitialSyncDone(true) persists the value", () => {
-    const { result } = renderHook(() => useSyncState());
-
-    act(() => {
-      result.current.setIsInitialSyncDone(true);
-    });
-    expect(result.current.isInitialSyncDone).toBe(true);
-  });
-
-  test("setContentVersion write-read roundtrip", () => {
-    const { result } = renderHook(() => useSyncState());
-
-    act(() => {
-      result.current.setContentVersion("v2.1");
-    });
-    expect(result.current.contentVersion).toBe("v2.1");
   });
 });
