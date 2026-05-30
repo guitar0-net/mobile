@@ -140,6 +140,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/sync/lessons/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Return flat sync payload. */
+    get: operations["sync_lessons_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sync/version/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Return current content version. */
+    get: operations["sync_version_retrieve"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -220,6 +254,24 @@ export interface components {
       /** Каким пальцем зажата */
       finger: number;
     };
+    /** @description Chord for offline sync. */
+    ChordSync: {
+      readonly id: number;
+      /** Название */
+      title: string;
+      /** Музыкальное название */
+      musical_title: string;
+      /** Порядок отображения */
+      order_in_note?: number;
+      /** С какого лада начинается */
+      start_fret?: number;
+      /** Есть барре? */
+      has_barre?: boolean;
+      /** SVG горизонтальный */
+      svg_horizontal?: string;
+      /** SVG вертикальный */
+      svg_vertical?: string;
+    };
     /** @description Serializer for chords list. */
     ChordsList: {
       readonly id: number;
@@ -232,6 +284,10 @@ export interface components {
       svg_horizontal?: string;
       /** SVG вертикальный */
       svg_vertical?: string;
+    };
+    /** @description Shape of the /api/v1/sync/version/ response. */
+    ContentVersionResponse: {
+      version: string | null;
     };
     /** @description Serializer for course detail. */
     CourseDetail: {
@@ -253,10 +309,38 @@ export interface components {
       readonly updated_at: string;
       lessons: components["schemas"]["CourseLessonDetail"][];
     };
+    /** @description Course fields only — memberships are in the top-level course_lessons array. */
+    CourseFlat: {
+      /** Format: uuid */
+      readonly uuid: string;
+      /** Название */
+      title: string;
+      /** Описание */
+      description?: string;
+      /**
+       * Дата создания
+       * Format: date-time
+       */
+      readonly created_at: string;
+      /**
+       * Дата обновления
+       * Format: date-time
+       */
+      readonly updated_at: string;
+    };
     /** @description Serializer for lesson within course detail. */
     CourseLessonDetail: {
       order: number;
       lesson: components["schemas"]["LessonsList"];
+    };
+    /** @description Course-lesson membership with both UUIDs explicit. */
+    CourseLessonFlat: {
+      /** Format: uuid */
+      course_uuid: string;
+      /** Format: uuid */
+      lesson_uuid: string;
+      /** Порядок урока в курсе */
+      order: number;
     };
     /** @description Serializer for courses list. */
     CoursesList: {
@@ -312,6 +396,34 @@ export interface components {
         uuid: string;
         title: string;
       } | null;
+    };
+    /** @description Lesson fields only — songs are in the top-level songs array. */
+    LessonFlat: {
+      /** Format: uuid */
+      readonly uuid: string;
+      /**
+       * Обновлено
+       * Format: date-time
+       */
+      readonly updated_at: string;
+      /** Название */
+      title: string;
+      /**
+       * Описание
+       * @description Краткое описание содержания урока
+       */
+      description?: string;
+      /**
+       * Видео
+       * Format: uri
+       * @description Ссылка на видео урока
+       */
+      video_url: string;
+      /**
+       * Длительность (сек)
+       * @description Общая длительность урока в секундах
+       */
+      duration?: number;
     };
     /** @description Serializer for lessons list. */
     LessonsList: {
@@ -397,6 +509,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["LessonsList"][];
     };
+    /** @description Scheme for offline sync. */
+    SchemeSync: {
+      readonly id: number;
+      /**
+       * Изображение
+       * Format: uri
+       */
+      image: string;
+      /** Надпись */
+      inscription?: string;
+      /** Высота */
+      height?: number | null;
+      /** Ширина */
+      width?: number | null;
+    };
     /** @description Song detail serializer. */
     SongDetail: {
       /** Format: uuid */
@@ -413,12 +540,36 @@ export interface components {
       readonly schemes: components["schemas"]["ImageScheme"][];
       readonly chords: components["schemas"]["ChordDetail"][];
     };
+    /** @description Song with chord_ids/scheme_ids instead of nested objects. */
+    SongFlat: {
+      /** Format: uuid */
+      uuid: string;
+      /** Format: uuid */
+      lesson_uuid: string;
+      title: string;
+      text: string;
+      metronome: number;
+      chord_ids: number[];
+      scheme_ids: number[];
+    };
     /** @description Serializer for list of songs. */
     SongList: {
       /** Format: uuid */
       readonly uuid: string;
       /** Название */
       title: string;
+    };
+    /** @description Shape of the /api/v1/sync/lessons/ response. */
+    SyncLessonsResponse: {
+      version: string | null;
+      lesson_uuids: string[];
+      lessons: components["schemas"]["LessonFlat"][];
+      songs: components["schemas"]["SongFlat"][];
+      chords: components["schemas"]["ChordSync"][];
+      schemes: components["schemas"]["SchemeSync"][];
+      course_uuids: string[];
+      courses: components["schemas"]["CourseFlat"][];
+      course_lessons: components["schemas"]["CourseLessonFlat"][];
     };
   };
   responses: never;
@@ -608,6 +759,47 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AnnouncementDetail"];
+        };
+      };
+    };
+  };
+  sync_lessons_retrieve: {
+    parameters: {
+      query?: {
+        /** @description ISO-8601 timestamp. When provided, only lessons updated after this point are included in `lessons`, `songs`, `chords`, and `schemes`. `lesson_uuids` always contains the full set of published UUIDs regardless of this parameter. */
+        since?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SyncLessonsResponse"];
+        };
+      };
+    };
+  };
+  sync_version_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ContentVersionResponse"];
         };
       };
     };
