@@ -38,13 +38,6 @@ type SettingsData = {
   // Content Interaction
   favorites: string[];
   progress: Record<string, LessonProgress>;
-
-  // Sync State
-  // TODO: consider moving sync state into a separate store (useSyncStore) backed
-  // by its own MMKV instance ("sync") to decouple ephemeral sync lifecycle from
-  // persistent user preferences.
-  isInitialSyncDone: boolean;
-  contentVersion: string;
 };
 
 type SettingsActions = {
@@ -62,10 +55,6 @@ type SettingsActions = {
   removeFavorite: (uuid: string) => void;
   setVideoViewed: (lessonId: string, viewed: boolean) => void;
   setSongCompleted: (lessonId: string, songId: string, completed: boolean) => void;
-
-  // Sync State
-  setIsInitialSyncDone: (done: boolean) => void;
-  setContentVersion: (version: string) => void;
 };
 
 export type SettingsState = SettingsData & SettingsActions;
@@ -84,8 +73,6 @@ const KEYS = {
   IMAGE_SCHEME_VISIBLE: "settings.imageSchemeVisible",
   FAVORITES: "settings.favorites",
   PROGRESS: "settings.progress",
-  IS_INITIAL_SYNC_DONE: "settings.isInitialSyncDone",
-  CONTENT_VERSION: "settings.contentVersion",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -150,8 +137,6 @@ export function readDefaults(): SettingsData {
       storage.getString(KEYS.PROGRESS),
       {},
     ),
-    isInitialSyncDone: storage.getBoolean(KEYS.IS_INITIAL_SYNC_DONE) ?? false,
-    contentVersion: storage.getString(KEYS.CONTENT_VERSION) ?? "",
   };
 }
 
@@ -242,17 +227,5 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     };
     storage.set(KEYS.PROGRESS, JSON.stringify(progress));
     set({ progress });
-  },
-
-  // Sync State
-
-  setIsInitialSyncDone: (isInitialSyncDone) => {
-    storage.set(KEYS.IS_INITIAL_SYNC_DONE, isInitialSyncDone);
-    set({ isInitialSyncDone });
-  },
-
-  setContentVersion: (contentVersion) => {
-    storage.set(KEYS.CONTENT_VERSION, contentVersion);
-    set({ contentVersion });
   },
 }));

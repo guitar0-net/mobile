@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type { components } from "./api.types";
-import { getLessons, getLesson } from "./index";
+import { getLessons, getLesson, getSyncData } from "./index";
 import { queryClient, QUERY_DEFAULTS } from "./query-client";
 
 type LessonsList = components["schemas"]["LessonsList"];
@@ -192,5 +192,51 @@ describe("getLesson", () => {
     jest.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("network failure"));
 
     await expect(getLesson("abc-123")).rejects.toThrow("network failure");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getSyncData
+// ---------------------------------------------------------------------------
+
+describe("getSyncData", () => {
+  const mockSyncResponse: components["schemas"]["SyncLessonsResponse"] = {
+    version: null,
+    lesson_uuids: [],
+    lessons: [],
+    songs: [],
+    chords: [],
+    schemes: [],
+    course_uuids: [],
+    courses: [],
+    course_lessons: [],
+  };
+
+  test("calls /api/v1/sync/lessons/ when since is null", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockSyncResponse), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await getSyncData(null);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(`${BASE_URL}/api/v1/sync/lessons/`);
+  });
+
+  test("appends encoded since parameter when provided", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockSyncResponse), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await getSyncData("2026-01-01T00:00:00Z");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${BASE_URL}/api/v1/sync/lessons/?since=2026-01-01T00%3A00%3A00Z`,
+    );
   });
 });

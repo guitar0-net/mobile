@@ -10,9 +10,10 @@ import {
   useFavorites,
   useFontSize,
   useProgress,
-  useSyncState,
   useThemePreference,
 } from "./index";
+import { storage } from "./storage";
+import { readDefaults } from "./store";
 
 beforeEach(() => {
   resetSettingsForTesting();
@@ -290,35 +291,70 @@ describe("useProgress", () => {
 });
 
 // ---------------------------------------------------------------------------
-// useSyncState
+// readDefaults — tryParse fallback on invalid JSON
 // ---------------------------------------------------------------------------
 
-describe("useSyncState", () => {
-  test("isInitialSyncDone defaults to false", () => {
-    const { result } = renderHook(() => useSyncState());
-    expect(result.current.isInitialSyncDone).toBe(false);
+describe("readDefaults — invalid JSON in storage", () => {
+  test("returns empty favorites array when stored value is not valid JSON", () => {
+    storage.set("settings.favorites", "NOT_VALID_JSON");
+    const defaults = readDefaults();
+    expect(defaults.favorites).toEqual([]);
   });
 
-  test("contentVersion defaults to empty string", () => {
-    const { result } = renderHook(() => useSyncState());
-    expect(result.current.contentVersion).toBe("");
+  test("returns empty progress object when stored value is not valid JSON", () => {
+    storage.set("settings.progress", "{broken}");
+    const defaults = readDefaults();
+    expect(defaults.progress).toEqual({});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readDefaults — valid stored values exercise the true branches of parse fns
+// ---------------------------------------------------------------------------
+
+describe("readDefaults — valid stored values", () => {
+  test("returns stored theme when a valid theme name is stored", () => {
+    storage.set("settings.theme", "dark");
+    expect(readDefaults().theme).toBe("dark");
   });
 
-  test("setIsInitialSyncDone(true) persists the value", () => {
-    const { result } = renderHook(() => useSyncState());
-
-    act(() => {
-      result.current.setIsInitialSyncDone(true);
-    });
-    expect(result.current.isInitialSyncDone).toBe(true);
+  test("returns undefined when stored theme is unrecognized", () => {
+    storage.set("settings.theme", "not-a-theme");
+    expect(readDefaults().theme).toBeUndefined();
   });
 
-  test("setContentVersion write-read roundtrip", () => {
-    const { result } = renderHook(() => useSyncState());
+  test("returns stored fontSize when a valid size is stored", () => {
+    storage.set("settings.fontSize", "lg");
+    expect(readDefaults().fontSize).toBe("lg");
+  });
 
-    act(() => {
-      result.current.setContentVersion("v2.1");
-    });
-    expect(result.current.contentVersion).toBe("v2.1");
+  test("returns default fontSize when an invalid size is stored", () => {
+    storage.set("settings.fontSize", "xxl");
+    expect(readDefaults().fontSize).toBe("md");
+  });
+
+  test("returns stored chordSize when a valid size is stored", () => {
+    storage.set("settings.chordSize", "sm");
+    expect(readDefaults().chordSize).toBe("sm");
+  });
+
+  test("returns default chordSize when an invalid value is stored", () => {
+    storage.set("settings.chordSize", "xxl");
+    expect(readDefaults().chordSize).toBe("md");
+  });
+
+  test("returns stored chordOrientation when horizontal is stored", () => {
+    storage.set("settings.chordOrientation", "horizontal");
+    expect(readDefaults().chordOrientation).toBe("horizontal");
+  });
+
+  test("returns default orientation when an invalid value is stored", () => {
+    storage.set("settings.chordOrientation", "diagonal");
+    expect(readDefaults().chordOrientation).toBe("vertical");
+  });
+
+  test("returns stored imageSchemeSize when a valid size is stored", () => {
+    storage.set("settings.imageSchemeSize", "lg");
+    expect(readDefaults().imageSchemeSize).toBe("lg");
   });
 });

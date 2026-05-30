@@ -32,6 +32,7 @@
     "expo-constants": "~55.0.16",
     "expo-dev-client": "~55.0.35",
     "expo-device": "~55.0.17",
+    "expo-file-system": "~55.0.22",
     "expo-font": "~55.0.8",
     "expo-glass-effect": "~55.0.11",
     "expo-image": "~55.0.11",
@@ -65,6 +66,7 @@
     "@types/jest": "^29.0.0",
     "@types/react": "~19.2.2",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "babel-plugin-inline-import": "^3.0.0",
     "babel-preset-expo": "~55.0.8",
     "better-sqlite3": "^12.10.0",
     "drizzle-kit": "^0.31.10",
@@ -97,6 +99,9 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
+  },
+  "overrides": {
+    "tmp": "^0.2.6"
   },
   "private": true
 }

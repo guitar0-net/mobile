@@ -10,7 +10,7 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/(tabs)/home");
+    router.replace("/loading");
   }, [router]);
 
   return <View className="flex-1 bg-background" />;

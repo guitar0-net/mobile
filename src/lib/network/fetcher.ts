@@ -8,6 +8,7 @@ import { queryClient } from "./query-client";
 type LessonsList = components["schemas"]["LessonsList"];
 type LessonDetail = components["schemas"]["LessonDetail"];
 type PaginatedLessonsListList = components["schemas"]["PaginatedLessonsListList"];
+type SyncLessonsResponse = components["schemas"]["SyncLessonsResponse"];
 
 function getBaseUrl(): string {
   const url = process.env.EXPO_PUBLIC_API_URL;
@@ -38,4 +39,12 @@ export async function getLesson(uuid: string): Promise<LessonDetail> {
     queryKey: ["lesson", uuid],
     queryFn: () => apiFetch<LessonDetail>(`/api/v1/lessons/${uuid}/`),
   });
+}
+
+export async function getSyncData(since: string | null): Promise<SyncLessonsResponse> {
+  const path =
+    since !== null
+      ? `/api/v1/sync/lessons/?since=${encodeURIComponent(since)}`
+      : "/api/v1/sync/lessons/";
+  return apiFetch<SyncLessonsResponse>(path);
 }

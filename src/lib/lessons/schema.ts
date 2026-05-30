@@ -25,46 +25,86 @@ export const courses = sqliteTable("courses", {
   updatedAt: text("updated_at").notNull(),
 });
 
-export const lessons = sqliteTable(
-  "lessons",
-  {
-    uuid: text("uuid").primaryKey(),
-    title: text("title").notNull(),
-    description: text("description"),
-    videoUrl: text("video_url"),
-    duration: integer("duration"),
-    courseUuid: text("course_uuid").references(() => courses.uuid),
-    updatedAt: text("updated_at").notNull(),
-    syncedAt: text("synced_at"),
-    localVideoPath: text("local_video_path"),
-    // Typed enum: only valid statuses compile; inferred Lesson type is narrowed.
-    videoDownloadStatus: text("video_download_status", {
-      enum: VIDEO_DOWNLOAD_STATUSES,
-    })
-      .notNull()
-      .default("idle"),
-  },
-  (t) => [index("lessons_course_uuid_idx").on(t.courseUuid)],
-);
+export const lessons = sqliteTable("lessons", {
+  uuid: text("uuid").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  videoUrl: text("video_url").notNull(),
+  duration: integer("duration"),
+  updatedAt: text("updated_at").notNull(),
+  syncedAt: text("synced_at"),
+  localVideoPath: text("local_video_path"),
+  // Typed enum: only valid statuses compile; inferred Lesson type is narrowed.
+  videoDownloadStatus: text("video_download_status", {
+    enum: VIDEO_DOWNLOAD_STATUSES,
+  })
+    .notNull()
+    .default("idle"),
+});
 
-export const songs = sqliteTable(
-  "songs",
+// Junction table — mirrors server CourseLesson through model.
+export const courseLessons = sqliteTable(
+  "course_lessons",
   {
-    uuid: text("uuid").primaryKey(),
+    courseUuid: text("course_uuid")
+      .notNull()
+      .references(() => courses.uuid),
     lessonUuid: text("lesson_uuid")
       .notNull()
       .references(() => lessons.uuid),
-    title: text("title").notNull(),
-    text: text("text").notNull(),
-    metronome: integer("metronome"),
+    order: integer("order").notNull(),
   },
-  (t) => [index("songs_lesson_uuid_idx").on(t.lessonUuid)],
+  (t) => [
+    primaryKey({ columns: [t.courseUuid, t.lessonUuid] }),
+    index("course_lessons_lesson_uuid_idx").on(t.lessonUuid),
+  ],
+);
+
+// Junction table — mirrors M2M addition_lessons on LessonDetail.
+export const lessonAdditionLessons = sqliteTable(
+  "lesson_addition_lessons",
+  {
+    lessonUuid: text("lesson_uuid")
+      .notNull()
+      .references(() => lessons.uuid),
+    additionLessonUuid: text("addition_lesson_uuid")
+      .notNull()
+      .references(() => lessons.uuid),
+  },
+  (t) => [
+    primaryKey({ columns: [t.lessonUuid, t.additionLessonUuid] }),
+    index("lesson_addition_lessons_addition_lesson_uuid_idx").on(t.additionLessonUuid),
+  ],
+);
+
+export const songs = sqliteTable("songs", {
+  uuid: text("uuid").primaryKey(),
+  title: text("title").notNull(),
+  text: text("text").notNull(),
+  metronome: integer("metronome").notNull().default(0),
+});
+
+// Junction table — mirrors M2M between lessons and songs.
+export const lessonSongs = sqliteTable(
+  "lesson_songs",
+  {
+    lessonUuid: text("lesson_uuid")
+      .notNull()
+      .references(() => lessons.uuid),
+    songUuid: text("song_uuid")
+      .notNull()
+      .references(() => songs.uuid),
+  },
+  (t) => [
+    primaryKey({ columns: [t.lessonUuid, t.songUuid] }),
+    index("lesson_songs_song_uuid_idx").on(t.songUuid),
+  ],
 );
 
 export const chords = sqliteTable("chords", {
   id: integer("id").primaryKey(),
   title: text("title").notNull(),
-  musicalTitle: text("musical_title"),
+  musicalTitle: text("musical_title").notNull(),
   svgHorizontal: text("svg_horizontal"),
   svgVertical: text("svg_vertical"),
   startFret: integer("start_fret"),
@@ -88,17 +128,29 @@ export const songChords = sqliteTable(
   ],
 );
 
-export const schemes = sqliteTable(
-  "schemes",
+export const schemes = sqliteTable("schemes", {
+  id: integer("id").primaryKey(),
+  image: text("image").notNull(),
+  inscription: text("inscription"),
+  height: integer("height"),
+  width: integer("width"),
+  localImagePath: text("local_image_path"),
+});
+
+export const songSchemes = sqliteTable(
+  "song_schemes",
   {
-    id: integer("id").primaryKey(),
     songUuid: text("song_uuid")
       .notNull()
       .references(() => songs.uuid),
-    url: text("url").notNull(),
-    localImagePath: text("local_image_path"),
+    schemeId: integer("scheme_id")
+      .notNull()
+      .references(() => schemes.id),
   },
-  (t) => [index("schemes_song_uuid_idx").on(t.songUuid)],
+  (t) => [
+    primaryKey({ columns: [t.songUuid, t.schemeId] }),
+    index("song_schemes_scheme_id_idx").on(t.schemeId),
+  ],
 );
 
 // ---------------------------------------------------------------------------
@@ -111,8 +163,17 @@ export type NewCourse = InferInsertModel<typeof courses>;
 export type Lesson = InferSelectModel<typeof lessons>;
 export type NewLesson = InferInsertModel<typeof lessons>;
 
+export type CourseLesson = InferSelectModel<typeof courseLessons>;
+export type NewCourseLesson = InferInsertModel<typeof courseLessons>;
+
+export type LessonAdditionLesson = InferSelectModel<typeof lessonAdditionLessons>;
+export type NewLessonAdditionLesson = InferInsertModel<typeof lessonAdditionLessons>;
+
 export type Song = InferSelectModel<typeof songs>;
 export type NewSong = InferInsertModel<typeof songs>;
+
+export type LessonSong = InferSelectModel<typeof lessonSongs>;
+export type NewLessonSong = InferInsertModel<typeof lessonSongs>;
 
 export type Chord = InferSelectModel<typeof chords>;
 export type NewChord = InferInsertModel<typeof chords>;
@@ -122,3 +183,6 @@ export type NewSongChord = InferInsertModel<typeof songChords>;
 
 export type Scheme = InferSelectModel<typeof schemes>;
 export type NewScheme = InferInsertModel<typeof schemes>;
+
+export type SongScheme = InferSelectModel<typeof songSchemes>;
+export type NewSongScheme = InferInsertModel<typeof songSchemes>;

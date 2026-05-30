@@ -5,6 +5,7 @@
 /** @type {import('jest').Config} */
 const config = {
   preset: "jest-expo",
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testMatch: ["<rootDir>/src/**/*.test.{ts,tsx}"],
   transform: {
     // Transform .sql files as string exports (same as Metro does in production)

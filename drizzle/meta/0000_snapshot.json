@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9f82ff3e-d8e8-464b-be00-e1957005d4ea",
+  "id": "255465f3-c0f1-44d3-a03c-d71ac7cabb61",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "chords": {
@@ -25,7 +25,7 @@
           "name": "musical_title",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "svg_horizontal": {
@@ -68,6 +68,67 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "course_lessons": {
+      "name": "course_lessons",
+      "columns": {
+        "course_uuid": {
+          "name": "course_uuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lesson_uuid": {
+          "name": "lesson_uuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "course_lessons_lesson_uuid_idx": {
+          "name": "course_lessons_lesson_uuid_idx",
+          "columns": ["lesson_uuid"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "course_lessons_course_uuid_courses_uuid_fk": {
+          "name": "course_lessons_course_uuid_courses_uuid_fk",
+          "tableFrom": "course_lessons",
+          "tableTo": "courses",
+          "columnsFrom": ["course_uuid"],
+          "columnsTo": ["uuid"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "course_lessons_lesson_uuid_lessons_uuid_fk": {
+          "name": "course_lessons_lesson_uuid_lessons_uuid_fk",
+          "tableFrom": "course_lessons",
+          "tableTo": "lessons",
+          "columnsFrom": ["lesson_uuid"],
+          "columnsTo": ["uuid"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "course_lessons_course_uuid_lesson_uuid_pk": {
+          "columns": ["course_uuid", "lesson_uuid"],
+          "name": "course_lessons_course_uuid_lesson_uuid_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -116,6 +177,114 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "lesson_addition_lessons": {
+      "name": "lesson_addition_lessons",
+      "columns": {
+        "lesson_uuid": {
+          "name": "lesson_uuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "addition_lesson_uuid": {
+          "name": "addition_lesson_uuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "lesson_addition_lessons_addition_lesson_uuid_idx": {
+          "name": "lesson_addition_lessons_addition_lesson_uuid_idx",
+          "columns": ["addition_lesson_uuid"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "lesson_addition_lessons_lesson_uuid_lessons_uuid_fk": {
+          "name": "lesson_addition_lessons_lesson_uuid_lessons_uuid_fk",
+          "tableFrom": "lesson_addition_lessons",
+          "tableTo": "lessons",
+          "columnsFrom": ["lesson_uuid"],
+          "columnsTo": ["uuid"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lesson_addition_lessons_addition_lesson_uuid_lessons_uuid_fk": {
+          "name": "lesson_addition_lessons_addition_lesson_uuid_lessons_uuid_fk",
+          "tableFrom": "lesson_addition_lessons",
+          "tableTo": "lessons",
+          "columnsFrom": ["addition_lesson_uuid"],
+          "columnsTo": ["uuid"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "lesson_addition_lessons_lesson_uuid_addition_lesson_uuid_pk": {
+          "columns": ["lesson_uuid", "addition_lesson_uuid"],
+          "name": "lesson_addition_lessons_lesson_uuid_addition_lesson_uuid_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "lesson_songs": {
+      "name": "lesson_songs",
+      "columns": {
+        "lesson_uuid": {
+          "name": "lesson_uuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "song_uuid": {
+          "name": "song_uuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "lesson_songs_song_uuid_idx": {
+          "name": "lesson_songs_song_uuid_idx",
+          "columns": ["song_uuid"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "lesson_songs_lesson_uuid_lessons_uuid_fk": {
+          "name": "lesson_songs_lesson_uuid_lessons_uuid_fk",
+          "tableFrom": "lesson_songs",
+          "tableTo": "lessons",
+          "columnsFrom": ["lesson_uuid"],
+          "columnsTo": ["uuid"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lesson_songs_song_uuid_songs_uuid_fk": {
+          "name": "lesson_songs_song_uuid_songs_uuid_fk",
+          "tableFrom": "lesson_songs",
+          "tableTo": "songs",
+          "columnsFrom": ["song_uuid"],
+          "columnsTo": ["uuid"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "lesson_songs_lesson_uuid_song_uuid_pk": {
+          "columns": ["lesson_uuid", "song_uuid"],
+          "name": "lesson_songs_lesson_uuid_song_uuid_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "lessons": {
       "name": "lessons",
       "columns": {
@@ -144,19 +313,12 @@
           "name": "video_url",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "duration": {
           "name": "duration",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "course_uuid": {
-          "name": "course_uuid",
-          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -191,24 +353,8 @@
           "default": "'idle'"
         }
       },
-      "indexes": {
-        "lessons_course_uuid_idx": {
-          "name": "lessons_course_uuid_idx",
-          "columns": ["course_uuid"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "lessons_course_uuid_courses_uuid_fk": {
-          "name": "lessons_course_uuid_courses_uuid_fk",
-          "tableFrom": "lessons",
-          "tableTo": "courses",
-          "columnsFrom": ["course_uuid"],
-          "columnsTo": ["uuid"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -223,18 +369,32 @@
           "notNull": true,
           "autoincrement": false
         },
-        "song_uuid": {
-          "name": "song_uuid",
+        "image": {
+          "name": "image",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "url": {
-          "name": "url",
+        "inscription": {
+          "name": "inscription",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "height": {
+          "name": "height",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "width": {
+          "name": "width",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "local_image_path": {
@@ -245,24 +405,8 @@
           "autoincrement": false
         }
       },
-      "indexes": {
-        "schemes_song_uuid_idx": {
-          "name": "schemes_song_uuid_idx",
-          "columns": ["song_uuid"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "schemes_song_uuid_songs_uuid_fk": {
-          "name": "schemes_song_uuid_songs_uuid_fk",
-          "tableFrom": "schemes",
-          "tableTo": "songs",
-          "columnsFrom": ["song_uuid"],
-          "columnsTo": ["uuid"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -321,6 +465,60 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "song_schemes": {
+      "name": "song_schemes",
+      "columns": {
+        "song_uuid": {
+          "name": "song_uuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scheme_id": {
+          "name": "scheme_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "song_schemes_scheme_id_idx": {
+          "name": "song_schemes_scheme_id_idx",
+          "columns": ["scheme_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "song_schemes_song_uuid_songs_uuid_fk": {
+          "name": "song_schemes_song_uuid_songs_uuid_fk",
+          "tableFrom": "song_schemes",
+          "tableTo": "songs",
+          "columnsFrom": ["song_uuid"],
+          "columnsTo": ["uuid"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "song_schemes_scheme_id_schemes_id_fk": {
+          "name": "song_schemes_scheme_id_schemes_id_fk",
+          "tableFrom": "song_schemes",
+          "tableTo": "schemes",
+          "columnsFrom": ["scheme_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "song_schemes_song_uuid_scheme_id_pk": {
+          "columns": ["song_uuid", "scheme_id"],
+          "name": "song_schemes_song_uuid_scheme_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "songs": {
       "name": "songs",
       "columns": {
@@ -328,13 +526,6 @@
           "name": "uuid",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "lesson_uuid": {
-          "name": "lesson_uuid",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
@@ -356,28 +547,13 @@
           "name": "metronome",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         }
       },
-      "indexes": {
-        "songs_lesson_uuid_idx": {
-          "name": "songs_lesson_uuid_idx",
-          "columns": ["lesson_uuid"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "songs_lesson_uuid_lessons_uuid_fk": {
-          "name": "songs_lesson_uuid_lessons_uuid_fk",
-          "tableFrom": "songs",
-          "tableTo": "lessons",
-          "columnsFrom": ["lesson_uuid"],
-          "columnsTo": ["uuid"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
