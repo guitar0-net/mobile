@@ -16,6 +16,13 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Lessons</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="music.note.list" md="library_music" />
       </NativeTabs.Trigger>
+
+      {__DEV__ && (
+        <NativeTabs.Trigger name="dev">
+          <NativeTabs.Trigger.Label>Dev</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="wrench.and.screwdriver.fill" md="build" />
+        </NativeTabs.Trigger>
+      )}
     </NativeTabs>
   );
 }
