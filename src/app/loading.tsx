@@ -5,9 +5,10 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, Image, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
@@ -42,11 +43,7 @@ export default function LoadingScreen() {
       <SafeAreaView className="flex-1 items-center px-8">
         <View className="w-full flex-1 items-center justify-center gap-10">
           <View className="items-center gap-3">
-            <Image
-              source={require("../../assets/images/splash-icon.png")}
-              style={{ width: 100, height: 100, tintColor: primaryColor }}
-              resizeMode="contain"
-            />
+            <AppIcon />
             <Text variant="logo" className="text-4xl text-primary">
               Гитара с нуля
             </Text>
