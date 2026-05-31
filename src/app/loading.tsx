@@ -59,9 +59,7 @@ export default function LoadingScreen() {
                 />
               </View>
               <Text className="text-sm text-muted-fg">
-                {progress
-                  ? `Загружаем уроки... ${progress.completed} из ${progress.total}`
-                  : "Загружаем уроки..."}
+                {progress ? `Загружаем уроки... ${percentage}%` : "Загружаем уроки..."}
               </Text>
             </>
           )}

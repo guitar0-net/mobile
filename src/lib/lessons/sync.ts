@@ -133,7 +133,7 @@ export async function syncAll(
       });
   }
 
-  const total = schemes.length + lessons.length;
+  const total = schemes.length;
   let completed = 0;
 
   // Phase 2: Download and upsert schemes — no FK dependencies on songs.
@@ -234,9 +234,6 @@ export async function syncAll(
         .values({ lessonUuid: lesson.uuid, songUuid: song.uuid })
         .onConflictDoNothing();
     }
-
-    completed++;
-    onProgress?.({ total, completed });
   }
 
   // Phase 4: Prune lessons removed from the server, then orphaned songs.

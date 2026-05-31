@@ -217,30 +217,6 @@ test("syncAll returns null version when server has no lessons", async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Progress callback
-// ---------------------------------------------------------------------------
-
-test("onProgress fires after each lesson with correct total and completed", async () => {
-  const db = await initDb();
-  const calls: { total: number; completed: number }[] = [];
-
-  await syncAll(db, null, (p) => calls.push(p), {
-    getSyncData: () =>
-      Promise.resolve(
-        makeSyncResponse({
-          lesson_uuids: ["x", "y", "z"],
-          lessons: ["x", "y", "z"].map((id) => makeLesson(id)),
-        }),
-      ),
-    downloadImage: noopDownload,
-  });
-
-  expect(calls).toHaveLength(3);
-  expect(calls[0]).toEqual({ total: 3, completed: 1 });
-  expect(calls[2]).toEqual({ total: 3, completed: 3 });
-});
-
-// ---------------------------------------------------------------------------
 // Song persistence
 // ---------------------------------------------------------------------------
 
