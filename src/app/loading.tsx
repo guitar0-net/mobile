@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useRouter } from "expo-router";
-import { SymbolView } from "expo-symbols";
 import { useEffect } from "react";
-import { ActivityIndicator, Image, Pressable, View } from "react-native";
+import { ActivityIndicator, Image, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/button";
+import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 import { useAppSync } from "@/lib/sync";
 import { useTheme } from "@/lib/themes";
@@ -41,7 +42,7 @@ export default function LoadingScreen() {
         <View className="items-center gap-3">
           <Image
             source={require("../../assets/images/splash-icon.png")}
-            style={{ width: 100, height: 100 }}
+            style={{ width: 100, height: 100, tintColor: primaryColor }}
             resizeMode="contain"
           />
           <Text variant="logo" className="text-4xl text-primary">
@@ -72,42 +73,27 @@ export default function LoadingScreen() {
           )}
 
           {status === "success" && (
-            <>
-              <SymbolView
-                name={{ ios: "checkmark.circle.fill", android: "check_circle" }}
-                size={32}
-                tintColor="#22C55E"
-              />
-              <Text className="text-sm text-muted-fg">Синхронизировано</Text>
-            </>
+            <StatusMessage variant="success">Синхронизировано</StatusMessage>
           )}
 
           {status === "offline" && (
-            <>
-              <SymbolView
-                name={{ ios: "wifi.slash", android: "wifi_off" }}
-                size={32}
-                tintColor="#F59E0B"
-              />
-              <Text className="text-center text-sm text-muted-fg">
-                Нет соединения — работаем офлайн
-              </Text>
-            </>
+            <StatusMessage
+              variant="warning"
+              icon={{ ios: "wifi.slash", android: "wifi_off" }}
+            >
+              Нет соединения
+            </StatusMessage>
           )}
 
           {status === "error" && (
             <>
-              <SymbolView
-                name={{ ios: "exclamationmark.triangle.fill", android: "error" }}
-                size={32}
-                tintColor="#EF4444"
-              />
-              <Text className="text-center text-sm text-muted-fg">
-                Не удалось загрузить данные.{"\n"}Проверьте подключение к интернету.
-              </Text>
-              <Pressable onPress={retry} className="mt-1">
-                <Text className="font-semibold text-primary">Повторить</Text>
-              </Pressable>
+              <StatusMessage variant="error">
+                Не удалось загрузить данные.{"\n"}Проверьте подключение к интернету или
+                попробуйте позже.
+              </StatusMessage>
+              <Button variant="ghost" size="sm" onPress={retry}>
+                Повторить
+              </Button>
             </>
           )}
         </View>
