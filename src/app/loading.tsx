@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, Image, View } from "react-native";
@@ -38,65 +39,73 @@ export default function LoadingScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <SafeAreaView className="flex-1 items-center justify-center gap-10 px-8">
-        <View className="items-center gap-3">
-          <Image
-            source={require("../../assets/images/splash-icon.png")}
-            style={{ width: 100, height: 100, tintColor: primaryColor }}
-            resizeMode="contain"
-          />
-          <Text variant="logo" className="text-4xl text-primary">
-            Гитара с нуля
-          </Text>
-        </View>
+      <SafeAreaView className="flex-1 items-center px-8">
+        <View className="w-full flex-1 items-center justify-center gap-10">
+          <View className="items-center gap-3">
+            <Image
+              source={require("../../assets/images/splash-icon.png")}
+              style={{ width: 100, height: 100, tintColor: primaryColor }}
+              resizeMode="contain"
+            />
+            <Text variant="logo" className="text-4xl text-primary">
+              Гитара с нуля
+            </Text>
+          </View>
 
-        <View className="w-full items-center gap-3">
-          {status === "loading" && isFirstLaunch && (
-            <>
-              <View className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
-                <View
-                  className="h-full rounded-full bg-primary"
-                  style={{ width: `${percentage}%` }}
-                />
-              </View>
-              <Text className="text-sm text-muted-fg">
-                {progress ? `Загружаем уроки... ${percentage}%` : "Загружаем уроки..."}
-              </Text>
-            </>
-          )}
+          <View className="w-full items-center gap-3">
+            {status === "loading" && isFirstLaunch && (
+              <>
+                <View className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+                  <View
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${percentage}%` }}
+                  />
+                </View>
+                <Text className="text-sm text-muted-fg">
+                  {progress
+                    ? `Загружаем уроки... ${percentage}%`
+                    : "Загружаем уроки..."}
+                </Text>
+              </>
+            )}
 
-          {status === "loading" && !isFirstLaunch && (
-            <>
-              <ActivityIndicator size="small" color={primaryColor} />
-              <Text className="text-sm text-muted-fg">Синхронизация...</Text>
-            </>
-          )}
+            {status === "loading" && !isFirstLaunch && (
+              <>
+                <ActivityIndicator size="small" color={primaryColor} />
+                <Text className="text-sm text-muted-fg">Синхронизация...</Text>
+              </>
+            )}
 
-          {status === "success" && (
-            <StatusMessage variant="success">Синхронизировано</StatusMessage>
-          )}
+            {status === "success" && (
+              <StatusMessage variant="success">Синхронизировано</StatusMessage>
+            )}
 
-          {status === "offline" && (
-            <StatusMessage
-              variant="warning"
-              icon={{ ios: "wifi.slash", android: "wifi_off" }}
-            >
-              Нет соединения
-            </StatusMessage>
-          )}
-
-          {status === "error" && (
-            <>
-              <StatusMessage variant="error">
-                Не удалось загрузить данные.{"\n"}Проверьте подключение к интернету или
-                попробуйте позже.
+            {status === "offline" && (
+              <StatusMessage
+                variant="warning"
+                icon={{ ios: "wifi.slash", android: "wifi_off" }}
+              >
+                Нет соединения
               </StatusMessage>
-              <Button variant="ghost" size="sm" onPress={retry}>
-                Повторить
-              </Button>
-            </>
-          )}
+            )}
+
+            {status === "error" && (
+              <>
+                <StatusMessage variant="error">
+                  Не удалось загрузить данные.{"\n"}Проверьте подключение к интернету
+                  или попробуйте позже.
+                </StatusMessage>
+                <Button variant="ghost" size="sm" onPress={retry}>
+                  Повторить
+                </Button>
+              </>
+            )}
+          </View>
         </View>
+
+        <Text className="pb-2 text-xs text-muted-fg">
+          v{Constants.expoConfig?.version}
+        </Text>
       </SafeAreaView>
     </View>
   );
