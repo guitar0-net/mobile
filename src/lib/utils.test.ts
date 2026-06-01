@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { cn } from "./utils";
+import { cn, formatTodayRu } from "./utils";
 
 describe("cn", () => {
   test("joins truthy strings", () => {
@@ -37,5 +37,20 @@ describe("cn", () => {
 
   test("accepts arrays and nested falsy values (clsx compat)", () => {
     expect(cn(["a", false, "b"], undefined, "c")).toBe("a b c");
+  });
+});
+
+describe("formatTodayRu", () => {
+  test("formats sunday correctly", () => {
+    expect(formatTodayRu(new Date("2026-05-31"))).toBe("Воскресенье, 31 мая");
+  });
+
+  test("formats monday correctly", () => {
+    expect(formatTodayRu(new Date("2026-06-01"))).toBe("Понедельник, 1 июня");
+  });
+
+  test("starts with uppercase", () => {
+    const result = formatTodayRu(new Date("2026-05-31"));
+    expect(result[0]).toBe(result[0].toUpperCase());
   });
 });

@@ -5,6 +5,8 @@
 export { initDb, getDb } from "./db";
 export { syncAll } from "./sync";
 export type { SyncProgress, SyncDeps } from "./sync";
+export { fetchCourses, fetchCourseLessons, useContinueLesson } from "./queries";
+export type { CourseLessonRow } from "./queries";
 
 export type {
   Course,
