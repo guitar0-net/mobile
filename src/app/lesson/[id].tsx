@@ -3,11 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { Stack, useLocalSearchParams } from "expo-router";
-import { ScrollView, View } from "react-native";
+import { SymbolView } from "expo-symbols";
+import { Pressable, ScrollView, View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
 import { Text } from "@/components/ui/text";
 import { useLessonDetail } from "@/features/lessons";
+import { useFavorites } from "@/features/settings";
+import { useTheme } from "@/lib/themes";
+import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -17,15 +21,39 @@ function formatDuration(seconds: number): string {
 
 export default function LessonScreen() {
   const { id, courseId } = useLocalSearchParams<{ id: string; courseId: string }>();
+  const { theme } = useTheme();
+  const colors = THEME_DEFINITIONS[theme];
   const { data } = useLessonDetail(id, courseId);
+  const { favorites, addFavorite, removeFavorite } = useFavorites();
 
+  const isBookmarked = favorites.includes(id);
   const headerTitle = data
     ? `Урок ${data.lessonOrder} / ${data.totalLessonsInCourse}`
     : "Урок";
 
   return (
     <>
-      <Stack.Screen options={{ title: headerTitle }} />
+      <Stack.Screen
+        options={{
+          title: headerTitle,
+          headerRight: () => (
+            <Pressable
+              hitSlop={8}
+              onPress={() => (isBookmarked ? removeFavorite(id) : addFavorite(id))}
+            >
+              <SymbolView
+                name={
+                  isBookmarked
+                    ? { ios: "bookmark.fill", android: "bookmark" }
+                    : { ios: "bookmark", android: "bookmark_border" }
+                }
+                size={22}
+                tintColor={colors["--color-foreground"]}
+              />
+            </Pressable>
+          ),
+        }}
+      />
       <ScrollView
         className="flex-1 bg-background"
         contentContainerClassName="px-4 pb-8 pt-4"
