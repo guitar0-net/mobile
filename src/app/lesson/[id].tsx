@@ -9,7 +9,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Badge } from "@/components/ui/badge";
 import { Text } from "@/components/ui/text";
 import { useLessonDetail } from "@/features/lessons";
-import { useFavorites } from "@/features/settings";
+import { useFavorites, useProgress } from "@/features/settings";
 import { useTheme } from "@/lib/themes";
 import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
 
@@ -25,9 +25,11 @@ export default function LessonScreen() {
   const colors = THEME_DEFINITIONS[theme];
   const { data } = useLessonDetail(id, courseId);
   const { favorites, addFavorite, removeFavorite } = useFavorites();
+  const { progress } = useProgress();
 
   const router = useRouter();
   const isBookmarked = favorites.includes(id);
+  const completedSongIds = progress[id]?.completedSongIds ?? [];
   const headerTitle = data
     ? `Урок ${data.lessonOrder} / ${data.totalLessonsInCourse}`
     : "Урок";
@@ -118,6 +120,54 @@ export default function LessonScreen() {
                 </Pressable>
               </View>
             </Pressable>
+
+            {data.songs.length > 0 && (
+              <View className="mt-6">
+                <View className="flex-row items-center gap-2">
+                  <Text variant="caption" className="text-xs uppercase tracking-wider">
+                    SONGS IN THIS LESSON
+                  </Text>
+                  <Badge variant="secondary">{String(data.songs.length)}</Badge>
+                </View>
+                <View className="mt-3 gap-2">
+                  {data.songs.map((song) => {
+                    const isCompleted = completedSongIds.includes(song.uuid);
+                    return (
+                      <Pressable
+                        key={song.uuid}
+                        className="flex-row items-center gap-3 rounded-xl border border-border bg-surface p-4"
+                        onPress={() => console.log(song.uuid)}
+                      >
+                        <SymbolView
+                          name={
+                            isCompleted
+                              ? {
+                                  ios: "checkmark.circle.fill",
+                                  android: "check_circle",
+                                }
+                              : { ios: "circle", android: "radio_button_unchecked" }
+                          }
+                          size={24}
+                          tintColor={
+                            isCompleted
+                              ? colors["--color-success"]
+                              : colors["--color-muted-fg"]
+                          }
+                        />
+                        <View className="flex-1">
+                          <Text variant="body" className="font-sans-semibold">
+                            {song.title}
+                          </Text>
+                        </View>
+                        {song.metronome > 0 && (
+                          <Badge variant="outline">{song.metronome} BPM</Badge>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
