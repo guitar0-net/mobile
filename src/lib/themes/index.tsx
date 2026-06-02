@@ -6,7 +6,7 @@ import { vars } from "nativewind";
 import { createContext, useContext, type ReactElement, type ReactNode } from "react";
 import { useColorScheme, View } from "react-native";
 
-import { useThemePreference } from "@/lib/settings";
+import { useThemePreference } from "@/features/settings";
 
 import { THEME_DEFINITIONS, type ThemeName } from "./definitions";
 
