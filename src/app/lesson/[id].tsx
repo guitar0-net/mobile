@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { Pressable, ScrollView, View } from "react-native";
 
@@ -26,6 +26,7 @@ export default function LessonScreen() {
   const { data } = useLessonDetail(id, courseId);
   const { favorites, addFavorite, removeFavorite } = useFavorites();
 
+  const router = useRouter();
   const isBookmarked = favorites.includes(id);
   const headerTitle = data
     ? `Урок ${data.lessonOrder} / ${data.totalLessonsInCourse}`
@@ -88,6 +89,35 @@ export default function LessonScreen() {
                 </Badge>
               )}
             </View>
+
+            <Pressable
+              className="mt-4 overflow-hidden rounded-xl bg-zinc-900"
+              onPress={() => router.push(`/video/${id}`)}
+            >
+              <View className="h-48 items-center justify-center">
+                <View className="h-16 w-16 items-center justify-center rounded-full bg-white/20">
+                  <SymbolView
+                    name={{ ios: "play.fill", android: "play_arrow" }}
+                    size={32}
+                    tintColor="#FFFFFF"
+                  />
+                </View>
+              </View>
+              <View className="flex-row items-center justify-between px-4 py-3">
+                <Text className="text-sm text-white/70">
+                  {data.localVideoPath
+                    ? "Video lesson · guitar0.net · downloaded"
+                    : "Video lesson · guitar0.net · online"}
+                </Text>
+                <Pressable hitSlop={8} onPress={() => {}}>
+                  <SymbolView
+                    name={{ ios: "arrow.down.to.line", android: "download" }}
+                    size={20}
+                    tintColor="rgba(255,255,255,0.7)"
+                  />
+                </Pressable>
+              </View>
+            </Pressable>
           </View>
         )}
       </ScrollView>
