@@ -11,7 +11,7 @@ import { useSettingsStore } from "@/features/settings/store";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { initDb } from "./db";
-import { fetchCourseLessons, useContinueLesson } from "./queries";
+import { fetchCourseLessons, fetchLessonDetail, useContinueLesson } from "./queries";
 import { courseLessons, courses, lessons, lessonSongs, songs } from "./schema";
 
 // ---------------------------------------------------------------------------
@@ -270,5 +270,101 @@ describe("useContinueLesson", () => {
     await waitFor(() => {
       expect(result.current.lesson?.lessonUuid).toBe("lesson-2");
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchLessonDetail
+// ---------------------------------------------------------------------------
+
+describe("fetchLessonDetail", () => {
+  async function seedLessonDetail() {
+    const db = await initDb();
+    await db.insert(courses).values({
+      uuid: "course-1",
+      title: "Guitar Basics",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(lessons).values([
+      {
+        uuid: "lesson-1",
+        title: "Introduction",
+        description: "Welcome to guitar",
+        videoUrl: "https://example.com/v1.mp4",
+        duration: 874,
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+      {
+        uuid: "lesson-2",
+        title: "Open Chords",
+        videoUrl: "https://example.com/v2.mp4",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+    ]);
+    await db.insert(courseLessons).values([
+      { courseUuid: "course-1", lessonUuid: "lesson-1", order: 1 },
+      { courseUuid: "course-1", lessonUuid: "lesson-2", order: 2 },
+    ]);
+    await db.insert(songs).values([
+      { uuid: "song-1", title: "Am", text: "...", metronome: 120 },
+      { uuid: "song-2", title: "Em", text: "...", metronome: 0 },
+    ]);
+    await db.insert(lessonSongs).values([
+      { lessonUuid: "lesson-1", songUuid: "song-1" },
+      { lessonUuid: "lesson-1", songUuid: "song-2" },
+    ]);
+  }
+
+  test("returns correct courseTitle, lessonOrder, and totalLessonsInCourse", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-2", "course-1");
+    expect(result).toMatchObject({
+      courseTitle: "Guitar Basics",
+      lessonOrder: 2,
+      totalLessonsInCourse: 2,
+    });
+  });
+
+  test("lessonOrder is 1-based", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-1", "course-1");
+    expect(result?.lessonOrder).toBe(1);
+  });
+
+  test("returns songs array with uuid, title, metronome", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-1", "course-1");
+    expect(result?.songs).toHaveLength(2);
+    expect(result?.songs).toEqual(
+      expect.arrayContaining([
+        { uuid: "song-1", title: "Am", metronome: 120 },
+        { uuid: "song-2", title: "Em", metronome: 0 },
+      ]),
+    );
+  });
+
+  test("includes songs with metronome = 0", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-1", "course-1");
+    expect(result?.songs.some((s) => s.metronome === 0)).toBe(true);
+  });
+
+  test("returns null for duration when not set", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-2", "course-1");
+    expect(result?.duration).toBeNull();
+  });
+
+  test("returns null for localVideoPath when not set", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-1", "course-1");
+    expect(result?.localVideoPath).toBeNull();
+  });
+
+  test("returns null when lesson does not belong to the given course", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-1", "wrong-course");
+    expect(result).toBeNull();
   });
 });
