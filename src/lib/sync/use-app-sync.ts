@@ -5,10 +5,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-import { initDb as defaultInitDb } from "@/lib/lessons/db";
-import type { LessonsDb } from "@/lib/lessons/db";
-import { syncAll as defaultSyncAll } from "@/lib/lessons/sync";
-import type { SyncProgress } from "@/lib/lessons/sync";
+import { initDb as defaultInitDb } from "@/features/lessons/db";
+import type { LessonsDb } from "@/features/lessons/db";
+import { syncAll as defaultSyncAll } from "@/features/lessons/sync";
+import type { SyncProgress } from "@/features/lessons/sync";
 
 import { useSyncStore } from "./store";
 

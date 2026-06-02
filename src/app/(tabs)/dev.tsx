@@ -10,9 +10,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
+import { getDb } from "@/features/lessons/db";
+import { chords, courses, lessons, schemes, songs } from "@/features/lessons/schema";
 import { resetAllData, resetSyncState } from "@/lib/dev";
-import { getDb } from "@/lib/lessons/db";
-import { chords, courses, lessons, schemes, songs } from "@/lib/lessons/schema";
 import { useSyncState } from "@/lib/sync";
 
 type DbCounts = {

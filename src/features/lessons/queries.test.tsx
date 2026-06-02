@@ -6,8 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
 
-import { resetSettingsForTesting } from "@/lib/settings/__tests__/testing";
-import { useSettingsStore } from "@/lib/settings/store";
+import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
+import { useSettingsStore } from "@/features/settings/store";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { initDb } from "./db";

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { asc, count, eq } from "drizzle-orm";
 import { useMemo } from "react";
 
-import { useProgress } from "@/lib/settings";
+import { useProgress } from "@/features/settings";
 
 import { getDb } from "./db";
 import { courseLessons, courses, lessons, lessonSongs } from "./schema";
