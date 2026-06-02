@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 import { Text } from "./text";
 
-export type ButtonVariant = "default" | "outline" | "ghost";
+export type ButtonVariant = "default" | "outline" | "ghost" | "inverse" | "link";
 export type ButtonSize = "sm" | "default" | "lg" | "icon";
 
 type ButtonProps = Omit<PressableProps, "style"> & {
@@ -32,12 +32,16 @@ const VARIANT_WRAPPER: Record<ButtonVariant, string> = {
   default: "bg-primary",
   outline: "bg-transparent border border-border",
   ghost: "bg-transparent",
+  inverse: "bg-primary-fg",
+  link: "bg-transparent",
 };
 
 const VARIANT_TEXT: Record<ButtonVariant, string> = {
   default: "text-primary-fg",
   outline: "text-foreground",
   ghost: "text-foreground",
+  inverse: "text-primary",
+  link: "text-primary",
 };
 
 const SIZE_WRAPPER: Record<ButtonSize, string> = {
@@ -45,6 +49,7 @@ const SIZE_WRAPPER: Record<ButtonSize, string> = {
   default: "h-11 rounded-full px-5",
   lg: "h-14 rounded-full px-6",
   icon: "h-11 w-11 rounded-full",
+  link: "",
 };
 
 const SIZE_INNER_GAP: Record<ButtonSize, string> = {
@@ -52,6 +57,7 @@ const SIZE_INNER_GAP: Record<ButtonSize, string> = {
   default: "gap-2",
   lg: "gap-2",
   icon: "",
+  link: "",
 };
 
 const SIZE_TEXT: Record<ButtonSize, string> = {
@@ -59,6 +65,7 @@ const SIZE_TEXT: Record<ButtonSize, string> = {
   default: "text-base",
   lg: "text-lg",
   icon: "text-base",
+  link: "text-sm",
 };
 
 const ICON_SIZE: Record<ButtonSize, number> = {
@@ -66,13 +73,15 @@ const ICON_SIZE: Record<ButtonSize, number> = {
   default: 18,
   lg: 20,
   icon: 22,
+  link: 14,
 };
 
-// default has a solid colored background → white icon; outline/ghost are transparent → theme foreground.
-const VARIANT_ICON_COLOR: Record<ButtonVariant, "white" | "foreground"> = {
+const VARIANT_ICON_COLOR: Record<ButtonVariant, "white" | "foreground" | "primary"> = {
   default: "white",
   outline: "foreground",
   ghost: "foreground",
+  inverse: "primary",
+  link: "primary",
 };
 
 export function Button({
@@ -95,7 +104,7 @@ export function Button({
       className={cn(
         "flex-row items-center justify-center",
         VARIANT_WRAPPER[variant],
-        SIZE_WRAPPER[size],
+        variant !== "link" && SIZE_WRAPPER[size],
         disabled && "opacity-50",
         className,
       )}
