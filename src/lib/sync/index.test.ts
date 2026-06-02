@@ -4,7 +4,7 @@
 
 import { act, renderHook } from "@testing-library/react-native";
 
-import { useSettingsStore } from "@/lib/settings/store";
+import { useSettingsStore } from "@/features/settings/store";
 
 import { resetSyncForTesting } from "./__tests__/testing";
 import { useSyncState } from "./index";

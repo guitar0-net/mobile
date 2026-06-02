@@ -6,10 +6,10 @@ import { act, renderHook } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 import * as ReactNative from "react-native";
 
-import { useThemePreference } from "@/lib/settings";
+import { useThemePreference } from "@/features/settings";
+import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 
 import { resolveIconColor, ThemeProvider, useTheme, type ThemeName } from "./index";
-import { resetSettingsForTesting } from "../settings/__tests__/testing";
 
 beforeEach(() => {
   resetSettingsForTesting();

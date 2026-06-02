@@ -68,3 +68,12 @@ export function useProgress() {
     })),
   );
 }
+
+export function useHideCompletedLessons() {
+  return useSettingsStore(
+    useShallow((s) => ({
+      hideCompletedLessons: s.hideCompletedLessons,
+      setHideCompletedLessons: s.setHideCompletedLessons,
+    })),
+  );
+}

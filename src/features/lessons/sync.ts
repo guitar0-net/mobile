@@ -5,9 +5,9 @@
 import { eq, notInArray } from "drizzle-orm";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
 
-import { getSyncData as defaultGetSyncData } from "@/lib/network";
 import type { components } from "@/lib/network/api.types";
 
+import { getSyncData as defaultGetSyncData } from "./api";
 import type { LessonsDb } from "./db";
 import {
   chords as chordsTable,

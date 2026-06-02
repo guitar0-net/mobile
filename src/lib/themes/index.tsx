@@ -6,7 +6,7 @@ import { vars } from "nativewind";
 import { createContext, useContext, type ReactElement, type ReactNode } from "react";
 import { useColorScheme, View } from "react-native";
 
-import { useThemePreference } from "@/lib/settings";
+import { useThemePreference } from "@/features/settings";
 
 import { THEME_DEFINITIONS, type ThemeName } from "./definitions";
 
@@ -17,13 +17,16 @@ export type { ThemeName };
  * tintColor prop (which cannot accept CSS variables or Tailwind classes).
  *
  * Use "white" for icons on solid colored backgrounds (e.g. primary, destructive),
- * and "foreground" for icons on transparent or neutral backgrounds.
+ * "foreground" for icons on transparent or neutral backgrounds,
+ * and "primary" for icons on primary-fg (inverse) backgrounds.
  */
 export function resolveIconColor(
-  color: "white" | "foreground",
+  color: "white" | "foreground" | "primary",
   theme: ThemeName,
 ): string {
-  return color === "white" ? "#FFFFFF" : THEME_DEFINITIONS[theme]["--color-foreground"];
+  if (color === "white") return "#FFFFFF";
+  if (color === "primary") return THEME_DEFINITIONS[theme]["--color-primary"];
+  return THEME_DEFINITIONS[theme]["--color-foreground"];
 }
 
 type ThemeContextValue = {
