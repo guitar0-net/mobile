@@ -16,6 +16,7 @@ export type CourseLessonRow = {
   title: string;
   order: number;
   songCount: number;
+  duration: number | null;
 };
 
 export async function fetchCourses() {
@@ -31,6 +32,7 @@ export async function fetchCourseLessons(
       title: lessons.title,
       order: courseLessons.order,
       songCount: count(lessonSongs.songUuid),
+      duration: lessons.duration,
     })
     .from(courseLessons)
     .innerJoin(lessons, eq(lessons.uuid, courseLessons.lessonUuid))

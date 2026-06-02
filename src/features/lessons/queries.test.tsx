@@ -132,6 +132,39 @@ describe("fetchCourseLessons", () => {
     expect(rows.find((r) => r.lessonUuid === "lesson-1")?.songCount).toBe(2);
   });
 
+  test("returns duration from the lessons table", async () => {
+    const db = await initDb();
+    await db.insert(courses).values({
+      uuid: "course-1",
+      title: "Beginner",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(lessons).values([
+      {
+        uuid: "lesson-d1",
+        title: "With duration",
+        videoUrl: "https://example.com/v.mp4",
+        duration: 600,
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+      {
+        uuid: "lesson-d2",
+        title: "No duration",
+        videoUrl: "https://example.com/v.mp4",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+    ]);
+    await db.insert(courseLessons).values([
+      { courseUuid: "course-1", lessonUuid: "lesson-d1", order: 1 },
+      { courseUuid: "course-1", lessonUuid: "lesson-d2", order: 2 },
+    ]);
+
+    const rows = await fetchCourseLessons("course-1");
+    expect(rows.find((r) => r.lessonUuid === "lesson-d1")?.duration).toBe(600);
+    expect(rows.find((r) => r.lessonUuid === "lesson-d2")?.duration).toBeNull();
+  });
+
   test("does not include lessons from other courses", async () => {
     await seedCourse();
     const db = await initDb();

@@ -12,13 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { AnnouncementCard, getAnnouncements } from "@/features/announcements";
-import { fetchCourses, useContinueLesson } from "@/features/lessons";
+import { fetchCourses, MAIN_COURSE_ID, useContinueLesson } from "@/features/lessons";
 import { useProgress } from "@/features/settings";
 import { useTheme } from "@/lib/themes";
 import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
 import { describeRemainingItems, formatTodayRu } from "@/lib/utils";
-
-const MAIN_COURSE_ID = "6236a799-32b4-4e98-b9b2-9ade9ba83b47";
 
 type LessonInfo = {
   order: number;

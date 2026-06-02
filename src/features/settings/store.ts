@@ -38,6 +38,7 @@ type SettingsData = {
   // Content Interaction
   favorites: string[];
   progress: Record<string, LessonProgress>;
+  hideCompletedLessons: boolean;
 };
 
 type SettingsActions = {
@@ -55,6 +56,7 @@ type SettingsActions = {
   removeFavorite: (uuid: string) => void;
   setVideoViewed: (lessonId: string, viewed: boolean) => void;
   setSongCompleted: (lessonId: string, songId: string, completed: boolean) => void;
+  setHideCompletedLessons: (value: boolean) => void;
 };
 
 export type SettingsState = SettingsData & SettingsActions;
@@ -73,6 +75,7 @@ const KEYS = {
   IMAGE_SCHEME_VISIBLE: "settings.imageSchemeVisible",
   FAVORITES: "settings.favorites",
   PROGRESS: "settings.progress",
+  HIDE_COMPLETED_LESSONS: "settings.hideCompletedLessons",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -137,6 +140,7 @@ export function readDefaults(): SettingsData {
       storage.getString(KEYS.PROGRESS),
       {},
     ),
+    hideCompletedLessons: storage.getBoolean(KEYS.HIDE_COMPLETED_LESSONS) ?? false,
   };
 }
 
@@ -210,6 +214,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     };
     storage.set(KEYS.PROGRESS, JSON.stringify(progress));
     set({ progress });
+  },
+
+  setHideCompletedLessons: (hideCompletedLessons) => {
+    storage.set(KEYS.HIDE_COMPLETED_LESSONS, hideCompletedLessons);
+    set({ hideCompletedLessons });
   },
 
   setSongCompleted: (lessonId, songId, completed) => {

@@ -9,6 +9,7 @@ import {
   useDiagramSettings,
   useFavorites,
   useFontSize,
+  useHideCompletedLessons,
   useProgress,
   useThemePreference,
 } from "./index";
@@ -287,6 +288,41 @@ describe("useProgress", () => {
     expect(result.current.progress["uuid-a"]?.videoViewed).toBe(true);
     expect(result.current.progress["uuid-a"]?.completedSongIds).toEqual([]);
     expect(result.current.progress["uuid-b"]?.completedSongIds).toEqual(["song-1"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useHideCompletedLessons
+// ---------------------------------------------------------------------------
+
+describe("useHideCompletedLessons", () => {
+  test("defaults to false", () => {
+    const { result } = renderHook(() => useHideCompletedLessons());
+    expect(result.current.hideCompletedLessons).toBe(false);
+  });
+
+  test("setHideCompletedLessons write-read roundtrip", () => {
+    const { result } = renderHook(() => useHideCompletedLessons());
+
+    act(() => {
+      result.current.setHideCompletedLessons(true);
+    });
+    expect(result.current.hideCompletedLessons).toBe(true);
+
+    act(() => {
+      result.current.setHideCompletedLessons(false);
+    });
+    expect(result.current.hideCompletedLessons).toBe(false);
+  });
+
+  test("persists via MMKV and reads back after simulated restart", () => {
+    const { result } = renderHook(() => useHideCompletedLessons());
+
+    act(() => {
+      result.current.setHideCompletedLessons(true);
+    });
+
+    expect(readDefaults().hideCompletedLessons).toBe(true);
   });
 });
 
