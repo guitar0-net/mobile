@@ -14,6 +14,7 @@ import { getDb } from "@/features/lessons/db";
 import { chords, courses, lessons, schemes, songs } from "@/features/lessons/schema";
 import { resetAllData, resetSyncState } from "@/lib/dev";
 import { useSyncState } from "@/lib/sync";
+import { useTheme, type ThemeName } from "@/lib/themes";
 
 type DbCounts = {
   courses: number;
@@ -23,9 +24,17 @@ type DbCounts = {
   schemes: number;
 };
 
+const THEMES: { name: ThemeName; label: string }[] = [
+  { name: "light", label: "Light" },
+  { name: "dark", label: "Dark" },
+  { name: "contrast-light", label: "Contrast Light" },
+  { name: "contrast-dark", label: "Contrast Dark" },
+];
+
 export default function DevToolsScreen() {
   const router = useRouter();
   const { isInitialSyncDone, contentVersion } = useSyncState();
+  const { theme, setTheme } = useTheme();
   const [counts, setCounts] = useState<DbCounts | null>(null);
 
   useEffect(() => {
@@ -113,6 +122,29 @@ export default function DevToolsScreen() {
                 >
                   <Text className="text-foreground">{label}</Text>
                   <Text className="text-muted-fg">{value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View className="gap-2">
+            <Text className="text-xs font-semibold uppercase tracking-widest text-muted-fg">
+              Тема
+            </Text>
+            <View className="overflow-hidden rounded-xl bg-surface">
+              {THEMES.map(({ name, label }, i) => (
+                <View
+                  key={name}
+                  className={`flex-row items-center justify-between px-4 py-3 ${i < THEMES.length - 1 ? "border-b border-border" : ""}`}
+                >
+                  <Text className="text-foreground">{label}</Text>
+                  {theme === name ? (
+                    <Text className="text-sm font-medium text-primary">Активна</Text>
+                  ) : (
+                    <Button variant="outline" size="sm" onPress={() => setTheme(name)}>
+                      Выбрать
+                    </Button>
+                  )}
                 </View>
               ))}
             </View>
