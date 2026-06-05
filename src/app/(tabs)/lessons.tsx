@@ -152,6 +152,7 @@ export default function LessonsScreen() {
                 key={lesson.lessonUuid}
                 lesson={lesson}
                 state={state}
+                completedSongIds={progress[lesson.lessonUuid]?.completedSongIds ?? []}
                 onPress={() =>
                   router.push(`/lesson/${lesson.lessonUuid}?courseId=${selectedCourse}`)
                 }

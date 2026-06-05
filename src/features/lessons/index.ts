@@ -18,6 +18,9 @@ export type { CourseLessonRow, LessonDetailRow, LessonDetailSong } from "./queri
 export { deriveLessonState, computeCourseProgress } from "./logic";
 export type { LessonState } from "./logic";
 
+export { CourseContinueCard } from "./components/CourseContinueCard";
+export { SongRow } from "./components/SongRow";
+
 export type {
   Course,
   NewCourse,

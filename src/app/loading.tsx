@@ -13,12 +13,11 @@ import { Button } from "@/components/ui/button";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 import { useAppSync } from "@/lib/sync";
-import { useTheme } from "@/lib/themes";
-import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
+import { useColors } from "@/lib/themes";
 
 export default function LoadingScreen() {
   const router = useRouter();
-  const { theme } = useTheme();
+  const colors = useColors();
   const { status, progress, isFirstLaunch, retry } = useAppSync();
 
   useEffect(() => {
@@ -31,8 +30,6 @@ export default function LoadingScreen() {
       return () => clearTimeout(t);
     }
   }, [status, router]);
-
-  const primaryColor = THEME_DEFINITIONS[theme]["--color-primary"];
   const percentage =
     progress && progress.total > 0
       ? Math.round((progress.completed / progress.total) * 100)
@@ -68,7 +65,7 @@ export default function LoadingScreen() {
 
             {status === "loading" && !isFirstLaunch && (
               <>
-                <ActivityIndicator size="small" color={primaryColor} />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text className="text-sm text-muted-fg">Синхронизация...</Text>
               </>
             )}

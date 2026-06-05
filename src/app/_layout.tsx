@@ -45,7 +45,7 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="loading" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="lesson/[id]" />
+          <Stack.Screen name="lesson/[id]" options={{ headerBackTitle: "Назад" }} />
         </Stack>
         <StatusBarAdapter />
       </ThemeProvider>

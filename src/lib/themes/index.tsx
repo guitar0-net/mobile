@@ -43,6 +43,36 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+export type Colors = {
+  primary: string;
+  primaryFg: string;
+  background: string;
+  surface: string;
+  foreground: string;
+  mutedFg: string;
+  border: string;
+  success: string;
+  warning: string;
+  destructive: string;
+};
+
+export function useColors(): Colors {
+  const { theme } = useContext(ThemeContext);
+  const t = THEME_DEFINITIONS[theme];
+  return {
+    primary: t["--color-primary"],
+    primaryFg: t["--color-primary-fg"],
+    background: t["--color-background"],
+    surface: t["--color-surface"],
+    foreground: t["--color-foreground"],
+    mutedFg: t["--color-muted-fg"],
+    border: t["--color-border"],
+    success: t["--color-success"],
+    warning: t["--color-warning"],
+    destructive: t["--color-destructive"],
+  };
+}
+
 type ThemeProviderProps = {
   children: ReactNode;
 };

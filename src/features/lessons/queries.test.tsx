@@ -165,6 +165,27 @@ describe("fetchCourseLessons", () => {
     expect(rows.find((r) => r.lessonUuid === "lesson-d2")?.duration).toBeNull();
   });
 
+  test("songs array contains titles and uuids for linked songs", async () => {
+    await seedCourse();
+
+    const rows = await fetchCourseLessons("course-1");
+    const lesson1 = rows.find((r) => r.lessonUuid === "lesson-1");
+    expect(lesson1?.songs).toHaveLength(2);
+    expect(lesson1?.songs).toEqual(
+      expect.arrayContaining([
+        { uuid: "song-1", title: "Song A" },
+        { uuid: "song-2", title: "Song B" },
+      ]),
+    );
+  });
+
+  test("songs array is empty for a lesson with no songs", async () => {
+    await seedCourse();
+
+    const rows = await fetchCourseLessons("course-1");
+    expect(rows.find((r) => r.lessonUuid === "lesson-2")?.songs).toEqual([]);
+  });
+
   test("does not include lessons from other courses", async () => {
     await seedCourse();
     const db = await initDb();

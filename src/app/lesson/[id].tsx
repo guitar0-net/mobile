@@ -8,10 +8,9 @@ import { Pressable, ScrollView, View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
 import { Text } from "@/components/ui/text";
-import { useLessonDetail } from "@/features/lessons";
+import { useLessonDetail, SongRow } from "@/features/lessons";
 import { useFavorites, useProgress } from "@/features/settings";
-import { useTheme } from "@/lib/themes";
-import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
+import { useColors } from "@/lib/themes";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -21,8 +20,7 @@ function formatDuration(seconds: number): string {
 
 export default function LessonScreen() {
   const { id, courseId } = useLocalSearchParams<{ id: string; courseId: string }>();
-  const { theme } = useTheme();
-  const colors = THEME_DEFINITIONS[theme];
+  const colors = useColors();
   const { data } = useLessonDetail(id, courseId);
   const { favorites, addFavorite, removeFavorite } = useFavorites();
   const { progress } = useProgress();
@@ -51,7 +49,7 @@ export default function LessonScreen() {
                     : { ios: "bookmark", android: "bookmark_border" }
                 }
                 size={22}
-                tintColor={colors["--color-foreground"]}
+                tintColor={colors.foreground}
               />
             </Pressable>
           ),
@@ -80,7 +78,7 @@ export default function LessonScreen() {
             )}
             <View className="mt-1 flex-row gap-2">
               {data.duration != null && (
-                <Badge variant="outline">{formatDuration(data.duration)}</Badge>
+                <Badge variant="outline">{formatDuration(data.duration)} мин.</Badge>
               )}
               {data.videoDownloadStatus === "downloaded" && (
                 <Badge
@@ -125,46 +123,20 @@ export default function LessonScreen() {
               <View className="mt-6">
                 <View className="flex-row items-center gap-2">
                   <Text variant="caption" className="text-xs uppercase tracking-wider">
-                    SONGS IN THIS LESSON
+                    Песни в этом уроке
                   </Text>
                   <Badge variant="secondary">{String(data.songs.length)}</Badge>
                 </View>
                 <View className="mt-3 gap-2">
-                  {data.songs.map((song) => {
-                    const isCompleted = completedSongIds.includes(song.uuid);
-                    return (
-                      <Pressable
-                        key={song.uuid}
-                        className="flex-row items-center gap-3 rounded-xl border border-border bg-surface p-4"
-                        onPress={() => console.log(song.uuid)}
-                      >
-                        <SymbolView
-                          name={
-                            isCompleted
-                              ? {
-                                  ios: "checkmark.circle.fill",
-                                  android: "check_circle",
-                                }
-                              : { ios: "circle", android: "radio_button_unchecked" }
-                          }
-                          size={24}
-                          tintColor={
-                            isCompleted
-                              ? colors["--color-success"]
-                              : colors["--color-muted-fg"]
-                          }
-                        />
-                        <View className="flex-1">
-                          <Text variant="body" className="font-sans-semibold">
-                            {song.title}
-                          </Text>
-                        </View>
-                        {song.metronome > 0 && (
-                          <Badge variant="outline">{song.metronome} BPM</Badge>
-                        )}
-                      </Pressable>
-                    );
-                  })}
+                  {data.songs.map((song) => (
+                    <SongRow
+                      key={song.uuid}
+                      title={song.title}
+                      completed={completedSongIds.includes(song.uuid)}
+                      metronome={song.metronome}
+                      onPress={() => console.log(song.uuid)}
+                    />
+                  ))}
                 </View>
               </View>
             )}

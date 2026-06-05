@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useQuery } from "@tanstack/react-query";
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { useMemo } from "react";
 
 import { useProgress } from "@/features/settings";
@@ -18,6 +18,7 @@ export type CourseLessonRow = {
   order: number;
   songCount: number;
   duration: number | null;
+  songs: { uuid: string; title: string }[];
 };
 
 export async function fetchCourses() {
@@ -27,7 +28,9 @@ export async function fetchCourses() {
 export async function fetchCourseLessons(
   courseUuid: string,
 ): Promise<CourseLessonRow[]> {
-  return getDb()
+  const db = getDb();
+
+  const lessonRows = await db
     .select({
       lessonUuid: lessons.uuid,
       title: lessons.title,
@@ -41,6 +44,31 @@ export async function fetchCourseLessons(
     .where(eq(courseLessons.courseUuid, courseUuid))
     .groupBy(lessons.uuid)
     .orderBy(asc(courseLessons.order));
+
+  if (lessonRows.length === 0) return [];
+
+  const lessonUuids = lessonRows.map((r) => r.lessonUuid);
+  const songRows = await db
+    .select({
+      lessonUuid: lessonSongs.lessonUuid,
+      uuid: songs.uuid,
+      title: songs.title,
+    })
+    .from(lessonSongs)
+    .innerJoin(songs, eq(songs.uuid, lessonSongs.songUuid))
+    .where(inArray(lessonSongs.lessonUuid, lessonUuids));
+
+  const songsByLesson = new Map<string, { uuid: string; title: string }[]>();
+  for (const row of songRows) {
+    const arr = songsByLesson.get(row.lessonUuid) ?? [];
+    arr.push({ uuid: row.uuid, title: row.title });
+    songsByLesson.set(row.lessonUuid, arr);
+  }
+
+  return lessonRows.map((row) => ({
+    ...row,
+    songs: songsByLesson.get(row.lessonUuid) ?? [],
+  }));
 }
 
 export type LessonDetailSong = {

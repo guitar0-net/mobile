@@ -7,8 +7,7 @@ import { Pressable, View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
 import { Text } from "@/components/ui/text";
-import { useTheme } from "@/lib/themes";
-import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
+import { useColors } from "@/lib/themes";
 import { formatDateRu, stripMarkdown } from "@/lib/utils";
 
 import type { AnnouncementItem } from "./api";
@@ -19,12 +18,11 @@ type Props = {
 };
 
 export function AnnouncementCard({ item, onPress }: Props) {
-  const { theme } = useTheme();
-  const primaryColor = THEME_DEFINITIONS[theme]["--color-primary"];
+  const { primary } = useColors();
 
   const isUpdate = Boolean(item.product_version);
-  const badgeBg = isUpdate ? primaryColor + "1F" : "#D9770620";
-  const iconColor = isUpdate ? primaryColor : "#D97706";
+  const badgeBg = isUpdate ? primary + "1F" : "#D9770620";
+  const iconColor = isUpdate ? primary : "#D97706";
   const iconName = isUpdate
     ? { ios: "sparkles" as const, android: "auto_awesome" as const }
     : { ios: "music.note" as const, android: "music_note" as const };
