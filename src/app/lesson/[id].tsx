@@ -4,12 +4,14 @@
 
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import { useCallback, useMemo } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
 import { Text } from "@/components/ui/text";
 import { useLessonDetail, SongRow } from "@/features/lessons";
-import { useFavorites, useProgress } from "@/features/settings";
+import { BookmarkButton } from "@/features/lessons/components/BookmarkButton";
+import { useProgress } from "@/features/settings";
 import { useColors } from "@/lib/themes";
 
 function formatDuration(seconds: number): string {
@@ -22,39 +24,22 @@ export default function LessonScreen() {
   const { id, courseId } = useLocalSearchParams<{ id: string; courseId: string }>();
   const colors = useColors();
   const { data } = useLessonDetail(id, courseId);
-  const { favorites, addFavorite, removeFavorite } = useFavorites();
   const { progress } = useProgress();
 
   const router = useRouter();
-  const isBookmarked = favorites.includes(id);
   const completedSongIds = progress[id]?.completedSongIds ?? [];
   const headerTitle = data
     ? `Урок ${data.lessonOrder} / ${data.totalLessonsInCourse}`
     : "Урок";
+  const headerRight = useCallback(() => <BookmarkButton lessonId={id} />, [id]);
+  const screenOptions = useMemo(
+    () => ({ title: headerTitle, headerRight }),
+    [headerTitle, headerRight],
+  );
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: headerTitle,
-          headerRight: () => (
-            <Pressable
-              hitSlop={8}
-              onPress={() => (isBookmarked ? removeFavorite(id) : addFavorite(id))}
-            >
-              <SymbolView
-                name={
-                  isBookmarked
-                    ? { ios: "bookmark.fill", android: "bookmark" }
-                    : { ios: "bookmark", android: "bookmark_border" }
-                }
-                size={22}
-                tintColor={colors.foreground}
-              />
-            </Pressable>
-          ),
-        }}
-      />
+      <Stack.Screen options={screenOptions} />
       <ScrollView
         className="flex-1 bg-background"
         contentContainerClassName="px-4 pb-8 pt-4"

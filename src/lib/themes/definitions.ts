@@ -32,7 +32,7 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
   },
 
   dark: {
-    "--color-primary": "#9D4EDD",
+    "--color-primary": "#8B44D4",
     "--color-primary-fg": "#FFFFFF",
     "--color-background": "#09090B",
     "--color-surface": "#18181B",

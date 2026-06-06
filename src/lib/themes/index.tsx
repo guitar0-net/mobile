@@ -2,9 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import * as SystemUI from "expo-system-ui";
 import { vars } from "nativewind";
-import { createContext, useContext, type ReactElement, type ReactNode } from "react";
-import { useColorScheme, View } from "react-native";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { Appearance, useColorScheme, View } from "react-native";
 
 import { useThemePreference } from "@/features/settings";
 
@@ -31,11 +39,13 @@ export function resolveIconColor(
 
 type ThemeContextValue = {
   theme: ThemeName;
+  colors: Colors;
   setTheme: (theme: ThemeName) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: "light",
+  colors: colorsFromTheme("light"),
   setTheme: () => {},
 });
 
@@ -56,8 +66,7 @@ export type Colors = {
   destructive: string;
 };
 
-export function useColors(): Colors {
-  const { theme } = useContext(ThemeContext);
+function colorsFromTheme(theme: ThemeName): Colors {
   const t = THEME_DEFINITIONS[theme];
   return {
     primary: t["--color-primary"],
@@ -73,6 +82,24 @@ export function useColors(): Colors {
   };
 }
 
+export function useColors(): Colors {
+  return useContext(ThemeContext).colors;
+}
+
+export function useThemedScreenOptions() {
+  const { colors } = useContext(ThemeContext);
+  return useMemo(
+    () => ({
+      headerStyle: { backgroundColor: colors.background },
+      headerTintColor: colors.foreground,
+      headerTitleStyle: { color: colors.foreground },
+      headerShadowVisible: false,
+      contentStyle: { backgroundColor: colors.background },
+    }),
+    [colors],
+  );
+}
+
 type ThemeProviderProps = {
   children: ReactNode;
 };
@@ -81,11 +108,32 @@ export function ThemeProvider({ children }: ThemeProviderProps): ReactElement {
   const { theme: storedTheme, setTheme } = useThemePreference();
   const systemScheme = useColorScheme();
 
-  const theme: ThemeName = storedTheme ?? (systemScheme === "dark" ? "dark" : "light");
+  const theme = useMemo<ThemeName>(
+    () => storedTheme ?? (systemScheme === "dark" ? "dark" : "light"),
+    [storedTheme, systemScheme],
+  );
+  const colors = useMemo(() => colorsFromTheme(theme), [theme]);
+  const ctx = useMemo(() => ({ theme, colors, setTheme }), [theme, colors, setTheme]);
+  const viewStyle = useMemo(
+    () => [
+      { flex: 1, backgroundColor: colors.background },
+      vars(THEME_DEFINITIONS[theme]),
+    ],
+    [theme, colors],
+  );
+
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(colors.background);
+  }, [colors.background]);
+
+  useEffect(() => {
+    const isDark = theme === "dark" || theme === "contrast-dark";
+    Appearance.setColorScheme(isDark ? "dark" : "light");
+  }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      <View style={[{ flex: 1 }, vars(THEME_DEFINITIONS[theme])]}>{children}</View>
+    <ThemeContext.Provider value={ctx}>
+      <View style={viewStyle}>{children}</View>
     </ThemeContext.Provider>
   );
 }
