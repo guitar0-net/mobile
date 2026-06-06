@@ -5,7 +5,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { eq } from "drizzle-orm";
 
-import { chords, getDb, schemes, songChords, songs, songSchemes } from "@/lib/db";
+import {
+  chords,
+  getDb,
+  lessonSongs,
+  schemes,
+  songChords,
+  songs,
+  songSchemes,
+} from "@/lib/db";
 
 export type SongDetailChord = {
   id: number;
@@ -32,6 +40,7 @@ export type SongDetailRow = {
   title: string;
   text: string;
   metronome: number;
+  lessonUuid: string | null;
   chords: SongDetailChord[];
   schemes: SongDetailScheme[];
 };
@@ -45,8 +54,10 @@ export async function fetchSongDetail(songUuid: string): Promise<SongDetailRow |
       title: songs.title,
       text: songs.text,
       metronome: songs.metronome,
+      lessonUuid: lessonSongs.lessonUuid,
     })
     .from(songs)
+    .leftJoin(lessonSongs, eq(lessonSongs.songUuid, songs.uuid))
     .where(eq(songs.uuid, songUuid));
 
   if (!song) return null;

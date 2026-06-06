@@ -6,7 +6,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
 
-import { chords, initDb, schemes, songChords, songs, songSchemes } from "@/lib/db";
+import {
+  chords,
+  initDb,
+  lessons,
+  lessonSongs,
+  schemes,
+  songChords,
+  songs,
+  songSchemes,
+} from "@/lib/db";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { fetchSongDetail, useSongDetail } from "./queries";
@@ -185,6 +194,31 @@ describe("fetchSongDetail", () => {
 
     const result = await fetchSongDetail("song-1");
     expect(result?.chords.every((c) => c.id !== 99)).toBe(true);
+  });
+
+  test("returns lessonUuid when song is linked to a lesson", async () => {
+    await seedSong();
+    const db = await initDb();
+    await db.insert(lessons).values({
+      uuid: "lesson-1",
+      title: "Lesson 1",
+      videoUrl: "https://example.com/video.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(lessonSongs).values({ lessonUuid: "lesson-1", songUuid: "song-1" });
+
+    const result = await fetchSongDetail("song-1");
+    expect(result?.lessonUuid).toBe("lesson-1");
+  });
+
+  test("returns null lessonUuid when song has no lesson", async () => {
+    const db = await initDb();
+    await db
+      .insert(songs)
+      .values({ uuid: "song-solo", title: "Solo", text: "...", metronome: 0 });
+
+    const result = await fetchSongDetail("song-solo");
+    expect(result?.lessonUuid).toBeNull();
   });
 
   test("does not include schemes from other songs", async () => {
