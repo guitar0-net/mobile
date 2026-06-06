@@ -11,7 +11,13 @@ import { useSettingsStore } from "@/features/settings/store";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { initDb } from "./db";
-import { fetchCourseLessons, fetchLessonDetail, useContinueLesson } from "./queries";
+import {
+  fetchCourses,
+  fetchCourseLessons,
+  fetchLessonDetail,
+  useContinueLesson,
+  useLessonDetail,
+} from "./queries";
 import { courseLessons, courses, lessons, lessonSongs, songs } from "./schema";
 
 // ---------------------------------------------------------------------------
@@ -68,6 +74,31 @@ async function seedCourse() {
 beforeEach(() => {
   resetDbForTesting();
   resetSettingsForTesting();
+});
+
+// ---------------------------------------------------------------------------
+// fetchCourses
+// ---------------------------------------------------------------------------
+
+describe("fetchCourses", () => {
+  test("returns empty array when no courses exist", async () => {
+    await initDb();
+    expect(await fetchCourses()).toEqual([]);
+  });
+
+  test("returns inserted courses", async () => {
+    const db = await initDb();
+    await db.insert(courses).values({
+      uuid: "course-1",
+      title: "Beginner",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+
+    const rows = await fetchCourses();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].uuid).toBe("course-1");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -387,5 +418,50 @@ describe("fetchLessonDetail", () => {
     await seedLessonDetail();
     const result = await fetchLessonDetail("lesson-1", "wrong-course");
     expect(result).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useLessonDetail
+// ---------------------------------------------------------------------------
+
+describe("useLessonDetail", () => {
+  async function seedLessonDetailForHook() {
+    const db = await initDb();
+    await db.insert(courses).values({
+      uuid: "course-1",
+      title: "Guitar Basics",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(lessons).values({
+      uuid: "lesson-1",
+      title: "Introduction",
+      videoUrl: "https://example.com/v.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(courseLessons).values({
+      courseUuid: "course-1",
+      lessonUuid: "lesson-1",
+      order: 1,
+    });
+  }
+
+  test("returns lesson detail after query resolves", async () => {
+    await seedLessonDetailForHook();
+    const { result } = renderHook(() => useLessonDetail("lesson-1", "course-1"), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.uuid).toBe("lesson-1");
+    expect(result.current.data?.courseTitle).toBe("Guitar Basics");
+  });
+
+  test("is disabled when lessonUuid is empty", () => {
+    const { result } = renderHook(() => useLessonDetail("", "course-1"), {
+      wrapper: makeWrapper(),
+    });
+    expect(result.current.fetchStatus).toBe("idle");
   });
 });

@@ -23,11 +23,18 @@ describe("Button", () => {
     expect(button.props.accessibilityState?.disabled).toBe(true);
   });
 
-  test("renders icon-only size without children text", () => {
-    const { toJSON } = render(
-      <Button size="icon" icon={{ ios: "gear", android: "settings" }} />,
+  test("does not render label text when size is icon even if children are passed", () => {
+    render(
+      <Button size="icon" icon={{ ios: "gear", android: "settings" }}>
+        Hidden
+      </Button>,
     );
-    expect(toJSON()).toBeTruthy();
+    expect(screen.queryByText("Hidden")).toBeNull();
+  });
+
+  test("renders accessible button when only icon is provided without children", () => {
+    render(<Button icon={{ ios: "play.fill", android: "play_arrow" }} />);
+    expect(screen.getByRole("button")).toBeTruthy();
   });
 
   test("calls onPress when pressed", () => {
@@ -46,20 +53,5 @@ describe("Button", () => {
     );
     fireEvent.press(screen.getByRole("button"));
     expect(onPress).not.toHaveBeenCalled();
-  });
-
-  test("renders icon without children text when no children prop is passed", () => {
-    const { toJSON } = render(
-      <Button icon={{ ios: "play.fill", android: "play_arrow" }} />,
-    );
-    expect(toJSON()).toBeTruthy();
-  });
-
-  test("applies pressed opacity style on pressIn", () => {
-    render(<Button>Нажми</Button>);
-    const button = screen.getByRole("button");
-    fireEvent(button, "pressIn");
-    fireEvent(button, "pressOut");
-    expect(button).toBeTruthy();
   });
 });

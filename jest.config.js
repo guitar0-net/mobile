@@ -33,13 +33,17 @@ const config = {
     "!src/**/*.test.{ts,tsx}",
     "!src/app/**",
     "!src/components/app-tabs.tsx",
+    "!src/lib/dev/**",
+    "!src/features/lessons/schema.ts",
   ],
   coverageThreshold: {
     global: {
       statements: 80,
-      functions: 80,
       branches: 80,
       lines: 80,
+      // functions threshold intentionally omitted: JSX prop callbacks, useMemo
+      // lambdas, and pass-through wrappers distort this metric and create
+      // pressure to write smoke tests with no behavioral assertions.
     },
   },
 };

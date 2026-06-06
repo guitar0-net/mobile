@@ -9,7 +9,13 @@ import * as ReactNative from "react-native";
 import { useThemePreference } from "@/features/settings";
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 
-import { resolveIconColor, ThemeProvider, useTheme, type ThemeName } from "./index";
+import {
+  resolveIconColor,
+  ThemeProvider,
+  useTheme,
+  useThemedScreenOptions,
+  type ThemeName,
+} from "./index";
 
 beforeEach(() => {
   resetSettingsForTesting();
@@ -98,6 +104,34 @@ describe("ThemeProvider", () => {
     });
 
     expect(settingsResult.current.theme).toBe<ThemeName>("contrast-dark");
+  });
+});
+
+describe("useThemedScreenOptions", () => {
+  test("returns header options with background and tint colors", () => {
+    const { result } = renderHook(() => useThemedScreenOptions(), { wrapper });
+    expect(result.current.headerShadowVisible).toBe(false);
+    expect(result.current.headerStyle).toBeDefined();
+    expect(result.current.headerTintColor).toBeDefined();
+    expect(result.current.contentStyle).toBeDefined();
+  });
+
+  test("options update when theme changes", () => {
+    const { result } = renderHook(
+      () => ({ options: useThemedScreenOptions(), theme: useTheme() }),
+      { wrapper },
+    );
+
+    const lightBg = (result.current.options.contentStyle as { backgroundColor: string })
+      .backgroundColor;
+
+    act(() => {
+      result.current.theme.setTheme("dark");
+    });
+
+    const darkBg = (result.current.options.contentStyle as { backgroundColor: string })
+      .backgroundColor;
+    expect(darkBg).not.toBe(lightBg);
   });
 });
 
