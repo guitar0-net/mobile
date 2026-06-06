@@ -9,7 +9,7 @@ import { Text } from "@/components/ui/text";
 import { useColors } from "@/lib/themes";
 import { describeRemainingItems } from "@/lib/utils";
 
-import type { LessonInfo } from "./CourseContinueCard";
+import type { LessonInfo } from "./course-continue-card";
 
 type Props = {
   lesson: LessonInfo;

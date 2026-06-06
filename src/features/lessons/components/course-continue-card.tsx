@@ -7,8 +7,8 @@ import { useRouter } from "expo-router";
 import { useProgress } from "@/features/settings";
 
 import { useContinueLesson } from "../queries";
-import { CompactCourseCard } from "./CompactCourseCard";
-import { FeaturedCourseCard } from "./FeaturedCourseCard";
+import { CompactCourseCard } from "./compact-course-card";
+import { FeaturedCourseCard } from "./featured-course-card";
 
 export type LessonInfo = {
   order: number;

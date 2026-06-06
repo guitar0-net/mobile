@@ -17,8 +17,8 @@ import {
   MAIN_COURSE_ID,
   useContinueLesson,
 } from "@/features/lessons";
-import { CourseProgressCard } from "@/features/lessons/components/CourseProgressCard";
-import { LessonListItem } from "@/features/lessons/components/LessonListItem";
+import { CourseProgressCard } from "@/features/lessons/components/course-progress-card";
+import { LessonListItem } from "@/features/lessons/components/lesson-list-item";
 import { useHideCompletedLessons, useProgress } from "@/features/settings";
 import { cn } from "@/lib/utils";
 

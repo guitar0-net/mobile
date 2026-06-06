@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { describeRemainingItems } from "@/lib/utils";
 
-import type { LessonInfo } from "./CourseContinueCard";
+import type { LessonInfo } from "./course-continue-card";
 
 type Props = {
   lesson: LessonInfo;

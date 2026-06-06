@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 import type { LessonState } from "../logic";
 import type { CourseLessonRow } from "../queries";
-import { SongChip } from "./SongChip";
+import { SongChip } from "./song-chip";
 
 type Props = {
   lesson: CourseLessonRow;

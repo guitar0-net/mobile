@@ -9,7 +9,7 @@ import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { ThemeProvider } from "@/lib/themes";
 
 import type { CourseLessonRow } from "../queries";
-import { LessonListItem } from "./LessonListItem";
+import { LessonListItem } from "./lesson-list-item";
 
 beforeEach(() => {
   resetSettingsForTesting();

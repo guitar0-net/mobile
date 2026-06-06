@@ -10,7 +10,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Badge } from "@/components/ui/badge";
 import { Text } from "@/components/ui/text";
 import { useLessonDetail, SongRow } from "@/features/lessons";
-import { BookmarkButton } from "@/features/lessons/components/BookmarkButton";
+import { BookmarkButton } from "@/features/lessons/components/bookmark-button";
 import { useProgress } from "@/features/settings";
 import { useColors } from "@/lib/themes";
 
