@@ -4,18 +4,20 @@
 
 import { sql } from "drizzle-orm";
 
-import { resetDbForTesting } from "./__tests__/testing";
-import { _resetDbForTesting } from "./db";
-import { initDb, getDb } from "./index";
 import {
+  _resetDbForTesting,
   chords,
   courseLessons,
   courses,
+  getDb,
+  initDb,
   lessons,
   schemes,
   songChords,
   songs,
-} from "./schema";
+} from "@/lib/db";
+
+import { resetDbForTesting } from "./__tests__/testing";
 
 beforeEach(() => {
   resetDbForTesting();

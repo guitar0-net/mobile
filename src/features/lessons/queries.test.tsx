@@ -8,9 +8,9 @@ import React from "react";
 
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { useSettingsStore } from "@/features/settings/store";
+import { courseLessons, courses, initDb, lessons, lessonSongs, songs } from "@/lib/db";
 
 import { resetDbForTesting } from "./__tests__/testing";
-import { initDb } from "./db";
 import {
   fetchCourses,
   fetchCourseLessons,
@@ -18,7 +18,6 @@ import {
   useContinueLesson,
   useLessonDetail,
 } from "./queries";
-import { courseLessons, courses, lessons, lessonSongs, songs } from "./schema";
 
 // ---------------------------------------------------------------------------
 // Helpers

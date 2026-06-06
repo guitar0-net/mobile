@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { _resetDbForTesting } from "../db";
+import { _resetDbForTesting } from "@/lib/db";
 
 /**
  * Resets the database singleton between tests so each test starts with a

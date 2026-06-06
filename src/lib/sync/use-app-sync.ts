@@ -5,10 +5,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-import { initDb as defaultInitDb } from "@/features/lessons/db";
-import type { LessonsDb } from "@/features/lessons/db";
 import { syncAll as defaultSyncAll } from "@/features/lessons/sync";
 import type { SyncProgress } from "@/features/lessons/sync";
+import { initDb as defaultInitDb } from "@/lib/db";
+import type { AppDb } from "@/lib/db";
 
 import { useSyncStore } from "./store";
 
@@ -22,9 +22,9 @@ export type AppSyncState = {
 };
 
 export type AppSyncDeps = {
-  initDb: () => Promise<LessonsDb>;
+  initDb: () => Promise<AppDb>;
   syncAll: (
-    db: LessonsDb,
+    db: AppDb,
     since: string | null,
     onProgress?: (progress: SyncProgress) => void,
   ) => Promise<string | null>;

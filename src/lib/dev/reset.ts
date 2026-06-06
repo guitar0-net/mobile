@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { getDb } from "@/features/lessons/db";
 import {
   chords,
   courseLessons,
   courses,
+  getDb,
   lessonAdditionLessons,
   lessonSongs,
   lessons,
@@ -14,7 +14,7 @@ import {
   songChords,
   songSchemes,
   songs,
-} from "@/features/lessons/schema";
+} from "@/lib/db";
 import { syncStorage } from "@/lib/sync/storage";
 import { readDefaults, useSyncStore } from "@/lib/sync/store";
 

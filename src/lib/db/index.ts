@@ -9,11 +9,11 @@ import { openDatabaseSync } from "expo-sqlite";
 import * as schema from "./schema";
 import migrations from "../../../drizzle/migrations";
 
-export type LessonsDb = ReturnType<typeof drizzle<typeof schema>>;
+export type AppDb = ReturnType<typeof drizzle<typeof schema>>;
 
-let db: LessonsDb | null = null;
+let db: AppDb | null = null;
 
-function openDb(): LessonsDb {
+function openDb(): AppDb {
   if (!db) {
     const sqlite = openDatabaseSync("lessons.db");
     // SQLite does not enforce foreign keys by default; enable per-connection.
@@ -23,13 +23,13 @@ function openDb(): LessonsDb {
   return db;
 }
 
-export async function initDb(): Promise<LessonsDb> {
+export async function initDb(): Promise<AppDb> {
   const database = openDb();
   await migrate(database, migrations);
   return database;
 }
 
-export function getDb(): LessonsDb {
+export function getDb(): AppDb {
   if (!db) {
     throw new Error("Database not initialised — call initDb() before getDb()");
   }
@@ -39,3 +39,41 @@ export function getDb(): LessonsDb {
 export function _resetDbForTesting(): void {
   db = null;
 }
+
+export {
+  courses,
+  lessons,
+  courseLessons,
+  lessonAdditionLessons,
+  songs,
+  lessonSongs,
+  chords,
+  songChords,
+  schemes,
+  songSchemes,
+  VIDEO_DOWNLOAD_STATUSES,
+} from "./schema";
+
+export type {
+  Course,
+  NewCourse,
+  Lesson,
+  NewLesson,
+  CourseLesson,
+  NewCourseLesson,
+  LessonAdditionLesson,
+  NewLessonAdditionLesson,
+  Song,
+  NewSong,
+  LessonSong,
+  NewLessonSong,
+  Chord,
+  NewChord,
+  SongChord,
+  NewSongChord,
+  Scheme,
+  NewScheme,
+  SongScheme,
+  NewSongScheme,
+  VideoDownloadStatus,
+} from "./schema";

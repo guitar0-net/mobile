@@ -10,8 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
-import { getDb } from "@/features/lessons/db";
-import { chords, courses, lessons, schemes, songs } from "@/features/lessons/schema";
+import { chords, courses, getDb, lessons, schemes, songs } from "@/lib/db";
 import { resetAllData, resetSyncState } from "@/lib/dev";
 import { useSyncState } from "@/lib/sync";
 import { useTheme, type ThemeName } from "@/lib/themes";
