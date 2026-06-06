@@ -10,36 +10,28 @@ import Markdown from "react-native-markdown-display";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { getAnnouncement } from "@/features/announcements";
-import { useTheme } from "@/lib/themes";
-import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
+import { useColors } from "@/lib/themes";
 import { formatDateRu } from "@/lib/utils";
 
 export default function AnnouncementDetailScreen() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
-  const { theme } = useTheme();
-  const colors = THEME_DEFINITIONS[theme];
+  const colors = useColors();
 
   const query = useQuery({
     queryKey: ["announcement", uuid],
     queryFn: () => getAnnouncement(uuid),
   });
 
-  const headingStyle = {
-    color: colors["--color-foreground"],
-    fontFamily: "Geist-SemiBold",
-  };
+  const headingStyle = { color: colors.foreground, fontFamily: "Geist-SemiBold" };
   const markdownStyles = {
-    body: { color: colors["--color-foreground"], fontSize: 16, lineHeight: 24 },
+    body: { color: colors.foreground, fontSize: 16, lineHeight: 24 },
     heading1: headingStyle,
     heading2: headingStyle,
     heading3: headingStyle,
-    code_inline: {
-      backgroundColor: colors["--color-surface"],
-      color: colors["--color-foreground"],
-    },
-    fence: { backgroundColor: colors["--color-surface"] },
-    blockquote: { backgroundColor: colors["--color-surface"] },
-    link: { color: colors["--color-primary"] },
+    code_inline: { backgroundColor: colors.surface, color: colors.foreground },
+    fence: { backgroundColor: colors.surface },
+    blockquote: { backgroundColor: colors.surface },
+    link: { color: colors.primary },
   };
 
   if (query.isLoading) {

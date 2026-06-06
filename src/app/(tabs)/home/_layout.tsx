@@ -4,9 +4,12 @@
 
 import { Stack } from "expo-router";
 
+import { useThemedScreenOptions } from "@/lib/themes";
+
 export default function HomeLayout() {
+  const screenOptions = useThemedScreenOptions();
   return (
-    <Stack>
+    <Stack screenOptions={screenOptions}>
       <Stack.Screen
         name="index"
         options={{ headerShown: false, headerBackTitle: "Главная" }}

@@ -5,8 +5,7 @@
 import { SymbolView, SymbolViewProps } from "expo-symbols";
 
 import { Text } from "@/components/ui/text";
-import { useTheme } from "@/lib/themes";
-import { THEME_DEFINITIONS, ThemeTokens } from "@/lib/themes/definitions";
+import { useColors, type Colors } from "@/lib/themes";
 
 type SymbolName = SymbolViewProps["name"];
 
@@ -24,15 +23,15 @@ const DEFAULT_ICONS: Record<Variant, SymbolName> = {
   error: { ios: "exclamationmark.triangle.fill", android: "error" },
 };
 
-const COLOR_TOKEN: Record<Variant, keyof ThemeTokens> = {
-  success: "--color-success",
-  warning: "--color-warning",
-  error: "--color-destructive",
+const COLOR_KEY: Record<Variant, keyof Colors> = {
+  success: "success",
+  warning: "warning",
+  error: "destructive",
 };
 
 export function StatusMessage({ variant, icon, children }: StatusMessageProps) {
-  const { theme } = useTheme();
-  const color = THEME_DEFINITIONS[theme][COLOR_TOKEN[variant]];
+  const colors = useColors();
+  const color = colors[COLOR_KEY[variant]];
 
   return (
     <>

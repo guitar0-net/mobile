@@ -6,22 +6,22 @@ import { SymbolView } from "expo-symbols";
 import { Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/text";
-import { useTheme } from "@/lib/themes";
-import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
-import { cn, pluralSongs } from "@/lib/utils";
+import { useColors } from "@/lib/themes";
+import { cn } from "@/lib/utils";
 
 import type { LessonState } from "../logic";
 import type { CourseLessonRow } from "../queries";
+import { SongChip } from "./song-chip";
 
 type Props = {
   lesson: CourseLessonRow;
   state: LessonState;
+  completedSongIds: string[];
   onPress: () => void;
 };
 
-export function LessonListItem({ lesson, state, onPress }: Props) {
-  const { theme } = useTheme();
-  const colors = THEME_DEFINITIONS[theme];
+export function LessonListItem({ lesson, state, completedSongIds, onPress }: Props) {
+  const colors = useColors();
 
   const isContinue = state === "continue";
   const isCompleted = state === "completed";
@@ -35,9 +35,6 @@ export function LessonListItem({ lesson, state, onPress }: Props) {
         ? "В процессе"
         : null;
 
-  const durationText =
-    lesson.duration != null ? `${Math.round(lesson.duration / 60)} мин` : null;
-
   return (
     <Pressable
       onPress={onPress}
@@ -50,7 +47,7 @@ export function LessonListItem({ lesson, state, onPress }: Props) {
         <SymbolView
           name={{ ios: "checkmark.circle.fill", android: "check_circle" }}
           size={32}
-          tintColor={colors["--color-success"]}
+          tintColor={colors.success}
         />
       )}
 
@@ -66,7 +63,7 @@ export function LessonListItem({ lesson, state, onPress }: Props) {
         <SymbolView
           name={{ ios: "circle.righthalf.filled", android: "timelapse" }}
           size={32}
-          tintColor={colors["--color-primary"]}
+          tintColor={colors.primary}
         />
       )}
 
@@ -78,7 +75,7 @@ export function LessonListItem({ lesson, state, onPress }: Props) {
         </View>
       )}
 
-      <View className="flex-1 gap-0.5">
+      <View className="flex-1 shrink gap-0.5" style={{ maxWidth: "100%" }}>
         {statusLabel && (
           <Text
             variant="caption"
@@ -96,29 +93,25 @@ export function LessonListItem({ lesson, state, onPress }: Props) {
         >
           {lesson.title}
         </Text>
-        <View className="flex-row gap-2">
-          {durationText && (
-            <Text
-              variant="caption"
-              className={isContinue ? "text-primary-fg opacity-70" : ""}
-            >
-              {durationText}
-            </Text>
-          )}
-          <Text
-            variant="caption"
-            className={isContinue ? "text-primary-fg opacity-70" : ""}
-          >
-            {pluralSongs(lesson.songCount)}
-          </Text>
-        </View>
+        {lesson.songs.length > 0 && (
+          <View className="mt-1 flex-row flex-wrap gap-1">
+            {lesson.songs.map((song) => (
+              <SongChip
+                key={song.uuid}
+                title={song.title}
+                done={completedSongIds.includes(song.uuid)}
+                isContinue={isContinue}
+              />
+            ))}
+          </View>
+        )}
       </View>
 
       {isContinue && (
         <SymbolView
           name={{ ios: "play.fill", android: "play_arrow" }}
           size={20}
-          tintColor={colors["--color-primary-fg"]}
+          tintColor={colors.primaryFg}
         />
       )}
     </Pressable>

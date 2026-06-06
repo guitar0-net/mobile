@@ -13,9 +13,8 @@ describe("Text", () => {
   });
 
   test("uses body variant by default (no variant prop)", () => {
-    // Covers the default-parameter branch: variant = "body"
-    const { toJSON } = render(<Text>Default body</Text>);
-    expect(toJSON()).toBeTruthy();
+    render(<Text>Default body</Text>);
+    expect(screen.getByText("Default body")).toBeTruthy();
   });
 
   test("heading variant", () => {

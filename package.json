@@ -102,7 +102,9 @@
     ]
   },
   "overrides": {
-    "tmp": "^0.2.6"
+    "tmp": "^0.2.6",
+    "uuid": ">=14.0.0",
+    "esbuild": ">=0.25.0"
   },
   "private": true
 }

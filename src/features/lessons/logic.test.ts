@@ -12,7 +12,14 @@ function row(
   songCount: number,
   duration: number | null = null,
 ): CourseLessonRow {
-  return { lessonUuid, title: `L-${lessonUuid}`, order: 1, songCount, duration };
+  return {
+    lessonUuid,
+    title: `L-${lessonUuid}`,
+    order: 1,
+    songCount,
+    duration,
+    songs: [],
+  };
 }
 
 function prog(videoViewed: boolean, completedSongIds: string[]): LessonProgress {

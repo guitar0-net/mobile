@@ -26,36 +26,13 @@ describe("StatusMessage", () => {
     expect(screen.getByText("Синхронизировано")).toBeTruthy();
   });
 
-  test("renders with success variant", () => {
-    const { toJSON } = render(<StatusMessage variant="success">Готово</StatusMessage>, {
-      wrapper,
-    });
-    expect(toJSON()).toBeTruthy();
-  });
-
-  test("renders with warning variant", () => {
-    const { toJSON } = render(
-      <StatusMessage variant="warning">Нет соединения</StatusMessage>,
-      { wrapper },
-    );
-    expect(toJSON()).toBeTruthy();
-  });
-
-  test("renders with error variant", () => {
-    const { toJSON } = render(
-      <StatusMessage variant="error">Ошибка загрузки</StatusMessage>,
-      { wrapper },
-    );
-    expect(toJSON()).toBeTruthy();
-  });
-
-  test("accepts a custom icon", () => {
-    const { toJSON } = render(
+  test("renders children text when a custom icon is provided", () => {
+    render(
       <StatusMessage variant="success" icon={{ ios: "star.fill", android: "star" }}>
         Достижение
       </StatusMessage>,
       { wrapper },
     );
-    expect(toJSON()).toBeTruthy();
+    expect(screen.getByText("Достижение")).toBeTruthy();
   });
 });

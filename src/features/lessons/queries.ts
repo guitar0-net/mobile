@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useQuery } from "@tanstack/react-query";
-import { asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { useMemo } from "react";
 
 import { useProgress } from "@/features/settings";
 
 import { getDb } from "./db";
-import { courseLessons, courses, lessons, lessonSongs } from "./schema";
+import { courseLessons, courses, lessons, lessonSongs, songs } from "./schema";
+import type { VideoDownloadStatus } from "./schema";
 
 export type CourseLessonRow = {
   lessonUuid: string;
@@ -17,6 +18,7 @@ export type CourseLessonRow = {
   order: number;
   songCount: number;
   duration: number | null;
+  songs: { uuid: string; title: string }[];
 };
 
 export async function fetchCourses() {
@@ -26,7 +28,9 @@ export async function fetchCourses() {
 export async function fetchCourseLessons(
   courseUuid: string,
 ): Promise<CourseLessonRow[]> {
-  return getDb()
+  const db = getDb();
+
+  const lessonRows = await db
     .select({
       lessonUuid: lessons.uuid,
       title: lessons.title,
@@ -40,6 +44,108 @@ export async function fetchCourseLessons(
     .where(eq(courseLessons.courseUuid, courseUuid))
     .groupBy(lessons.uuid)
     .orderBy(asc(courseLessons.order));
+
+  if (lessonRows.length === 0) return [];
+
+  const lessonUuids = lessonRows.map((r) => r.lessonUuid);
+  const songRows = await db
+    .select({
+      lessonUuid: lessonSongs.lessonUuid,
+      uuid: songs.uuid,
+      title: songs.title,
+    })
+    .from(lessonSongs)
+    .innerJoin(songs, eq(songs.uuid, lessonSongs.songUuid))
+    .where(inArray(lessonSongs.lessonUuid, lessonUuids));
+
+  const songsByLesson = new Map<string, { uuid: string; title: string }[]>();
+  for (const row of songRows) {
+    const arr = songsByLesson.get(row.lessonUuid) ?? [];
+    arr.push({ uuid: row.uuid, title: row.title });
+    songsByLesson.set(row.lessonUuid, arr);
+  }
+
+  return lessonRows.map((row) => ({
+    ...row,
+    songs: songsByLesson.get(row.lessonUuid) ?? [],
+  }));
+}
+
+export type LessonDetailSong = {
+  uuid: string;
+  title: string;
+  metronome: number;
+};
+
+export type LessonDetailRow = {
+  uuid: string;
+  title: string;
+  description: string | null;
+  videoUrl: string;
+  duration: number | null;
+  localVideoPath: string | null;
+  videoDownloadStatus: VideoDownloadStatus;
+  courseTitle: string;
+  lessonOrder: number;
+  totalLessonsInCourse: number;
+  songs: LessonDetailSong[];
+};
+
+export async function fetchLessonDetail(
+  lessonUuid: string,
+  courseUuid: string,
+): Promise<LessonDetailRow | null> {
+  const db = getDb();
+
+  const [lesson] = await db
+    .select({
+      uuid: lessons.uuid,
+      title: lessons.title,
+      description: lessons.description,
+      videoUrl: lessons.videoUrl,
+      duration: lessons.duration,
+      localVideoPath: lessons.localVideoPath,
+      videoDownloadStatus: lessons.videoDownloadStatus,
+      courseTitle: courses.title,
+      lessonOrder: courseLessons.order,
+    })
+    .from(lessons)
+    .innerJoin(
+      courseLessons,
+      and(
+        eq(courseLessons.lessonUuid, lessons.uuid),
+        eq(courseLessons.courseUuid, courseUuid),
+      ),
+    )
+    .innerJoin(courses, eq(courses.uuid, courseLessons.courseUuid))
+    .where(eq(lessons.uuid, lessonUuid));
+
+  if (!lesson) return null;
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(courseLessons)
+    .where(eq(courseLessons.courseUuid, courseUuid));
+
+  const songRows = await db
+    .select({
+      uuid: songs.uuid,
+      title: songs.title,
+      metronome: songs.metronome,
+    })
+    .from(songs)
+    .innerJoin(lessonSongs, eq(lessonSongs.songUuid, songs.uuid))
+    .where(eq(lessonSongs.lessonUuid, lessonUuid));
+
+  return { ...lesson, totalLessonsInCourse: total, songs: songRows };
+}
+
+export function useLessonDetail(lessonUuid: string, courseUuid: string) {
+  return useQuery({
+    queryKey: ["lesson-detail", lessonUuid, courseUuid],
+    queryFn: () => fetchLessonDetail(lessonUuid, courseUuid),
+    enabled: lessonUuid.length > 0 && courseUuid.length > 0,
+  });
 }
 
 export function useContinueLesson(courseUuid: string) {

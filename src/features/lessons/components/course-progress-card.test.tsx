@@ -4,7 +4,7 @@
 
 import { render, screen } from "@testing-library/react-native";
 
-import { CourseProgressCard } from "./CourseProgressCard";
+import { CourseProgressCard } from "./course-progress-card";
 
 describe("CourseProgressCard", () => {
   test("renders course title", () => {

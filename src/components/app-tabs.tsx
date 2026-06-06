@@ -4,21 +4,26 @@
 
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 
+import { useColors } from "@/lib/themes";
+
 export default function AppTabs() {
+  const colors = useColors();
+  const contentStyle = { backgroundColor: colors.background };
+
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="home">
+    <NativeTabs backgroundColor={colors.surface} disableTransparentOnScrollEdge>
+      <NativeTabs.Trigger name="home" contentStyle={contentStyle}>
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="house" md="home" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="lessons">
+      <NativeTabs.Trigger name="lessons" contentStyle={contentStyle}>
         <NativeTabs.Trigger.Label>Lessons</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="music.note.list" md="library_music" />
       </NativeTabs.Trigger>
 
       {__DEV__ && (
-        <NativeTabs.Trigger name="dev">
+        <NativeTabs.Trigger name="dev" contentStyle={contentStyle}>
           <NativeTabs.Trigger.Label>Dev</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf="wrench.and.screwdriver.fill" md="build" />
         </NativeTabs.Trigger>

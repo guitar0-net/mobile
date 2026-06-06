@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,12 +17,13 @@ import {
   MAIN_COURSE_ID,
   useContinueLesson,
 } from "@/features/lessons";
-import { CourseProgressCard } from "@/features/lessons/components/CourseProgressCard";
-import { LessonListItem } from "@/features/lessons/components/LessonListItem";
+import { CourseProgressCard } from "@/features/lessons/components/course-progress-card";
+import { LessonListItem } from "@/features/lessons/components/lesson-list-item";
 import { useHideCompletedLessons, useProgress } from "@/features/settings";
 import { cn } from "@/lib/utils";
 
 export default function LessonsScreen() {
+  const router = useRouter();
   const [selectedCourse, setSelectedCourse] = useState(MAIN_COURSE_ID);
   const { progress } = useProgress();
   const { hideCompletedLessons, setHideCompletedLessons } = useHideCompletedLessons();
@@ -150,7 +152,10 @@ export default function LessonsScreen() {
                 key={lesson.lessonUuid}
                 lesson={lesson}
                 state={state}
-                onPress={() => console.log(lesson.lessonUuid)}
+                completedSongIds={progress[lesson.lessonUuid]?.completedSongIds ?? []}
+                onPress={() =>
+                  router.push(`/lesson/${lesson.lessonUuid}?courseId=${selectedCourse}`)
+                }
               />
             ))}
           </View>
