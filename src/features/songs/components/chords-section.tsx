@@ -11,7 +11,7 @@ import { useDiagramSettings, type DiagramSize } from "@/features/settings";
 import { useColors } from "@/lib/themes";
 
 import { type SongDetailChord } from "../queries";
-import { ControlButton, SectionHeader } from "./section-header";
+import { SectionHeader } from "./section-header";
 
 type ChordsSectionProps = {
   chords: SongDetailChord[];
@@ -88,7 +88,9 @@ export function ChordsSection({ chords }: ChordsSectionProps) {
   return (
     <View className="mb-4 gap-2">
       <SectionHeader title="Аккорды">
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={orientationIcon}
           onPress={() =>
             setChordOrientation(
@@ -96,17 +98,23 @@ export function ChordsSection({ chords }: ChordsSectionProps) {
             )
           }
         />
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={{ ios: "minus", android: "remove" }}
           onPress={() => setChordSize((chordSize - 1) as DiagramSize)}
           disabled={chordSize === 1}
         />
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={{ ios: "plus", android: "add" }}
           onPress={() => setChordSize((chordSize + 1) as DiagramSize)}
           disabled={chordSize === 5}
         />
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={{ ios: "eye.slash", android: "visibility_off" }}
           onPress={() => setChordVisible(false)}
         />

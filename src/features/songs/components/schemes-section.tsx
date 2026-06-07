@@ -10,7 +10,7 @@ import { Text } from "@/components/ui/text";
 import { useDiagramSettings, type DiagramSize } from "@/features/settings";
 
 import { type SongDetailScheme } from "../queries";
-import { ControlButton, SectionHeader } from "./section-header";
+import { SectionHeader } from "./section-header";
 
 const HORIZONTAL_PADDING = 32;
 const FALLBACK_HEIGHTS = [60, 90, 120, 160, 200] as const;
@@ -57,17 +57,23 @@ export function SchemesSection({ schemes }: { schemes: SongDetailScheme[] }) {
   return (
     <View className="mb-4 gap-3">
       <SectionHeader title="Ритмические рисунки">
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={{ ios: "minus", android: "remove" }}
           onPress={() => setImageSchemeSize((imageSchemeSize - 1) as DiagramSize)}
           disabled={imageSchemeSize === 1}
         />
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={{ ios: "plus", android: "add" }}
           onPress={() => setImageSchemeSize((imageSchemeSize + 1) as DiagramSize)}
           disabled={imageSchemeSize === 5}
         />
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={{ ios: "eye.slash", android: "visibility_off" }}
           onPress={() => setImageSchemeVisible(false)}
         />

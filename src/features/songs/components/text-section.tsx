@@ -5,10 +5,11 @@
 import { Platform, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
+import { Button } from "@/components/ui/button";
 import { useFontSize, type FontSize } from "@/features/settings";
 import { useColors } from "@/lib/themes";
 
-import { ControlButton, SectionHeader } from "./section-header";
+import { SectionHeader } from "./section-header";
 
 const FONT_SIZES: Record<FontSize, number> = {
   1: 13,
@@ -68,12 +69,16 @@ export function TextSection({ text }: TextSectionProps) {
   return (
     <View>
       <SectionHeader title="Текст">
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={{ ios: "minus", android: "remove" }}
           onPress={() => setFontSize((fontSize - 1) as FontSize)}
           disabled={fontSize === 1}
         />
-        <ControlButton
+        <Button
+          size="icon-sm"
+          variant="ghost"
           icon={{ ios: "plus", android: "add" }}
           onPress={() => setFontSize((fontSize + 1) as FontSize)}
           disabled={fontSize === 5}
