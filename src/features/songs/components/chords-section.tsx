@@ -18,13 +18,14 @@ type ChordsSectionProps = {
 };
 
 const CHORD_WIDTH = {
-  horizontal: [180, 220, 270, 310, 360],
-  vertical: [100, 115, 130, 150, 175],
+  vertical: { 1: 101, 2: 115, 3: 130, 4: 144, 5: 173 },
+  horizontal: { 1: 133, 2: 189, 3: 244, 4: 289, 5: 355 },
 } as const;
 
+// Heights derived from SVG viewBox ratios: horizontal 217×88 (×0.4055), vertical 91×214 (×2.352)
 const CHORD_HEIGHT = {
-  horizontal: [72, 88, 108, 124, 144],
-  vertical: [140, 161, 182, 210, 245],
+  vertical: { 1: 237, 2: 271, 3: 305, 4: 338, 5: 407 },
+  horizontal: { 1: 54, 2: 77, 3: 99, 4: 117, 5: 144 },
 } as const;
 
 function ChordCard({
@@ -41,9 +42,8 @@ function ChordCard({
     orientation === "horizontal"
       ? (chord.svgHorizontal ?? chord.svgVertical)
       : (chord.svgVertical ?? chord.svgHorizontal);
-  const idx = size - 1;
-  const width = CHORD_WIDTH[orientation][idx];
-  const height = CHORD_HEIGHT[orientation][idx];
+  const width = CHORD_WIDTH[orientation][size];
+  const height = CHORD_HEIGHT[orientation][size];
 
   return (
     <View className="items-center">
@@ -81,9 +81,9 @@ export function ChordsSection({ chords }: ChordsSectionProps) {
   }
 
   const orientationIcon =
-    chordOrientation === "horizontal"
-      ? { ios: "arrow.left.arrow.right" as const, android: "swap_horiz" as const }
-      : { ios: "arrow.up.arrow.down" as const, android: "swap_vert" as const };
+    chordOrientation === "vertical"
+      ? { ios: "arrow.clockwise" as const, android: "rotate_right" as const }
+      : { ios: "arrow.counterclockwise" as const, android: "rotate_left" as const };
 
   return (
     <View className="mb-4 gap-2">
