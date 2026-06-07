@@ -78,26 +78,30 @@ export function SchemesSection({ schemes }: { schemes: SongDetailScheme[] }) {
           onPress={() => setImageSchemeVisible(false)}
         />
       </SectionHeader>
-      {schemes.map((scheme) => {
-        const remoteUri = scheme.image.startsWith("http")
-          ? scheme.image
-          : `${process.env.EXPO_PUBLIC_API_URL ?? ""}${scheme.image}`;
-        const sources = scheme.localImagePath
-          ? [{ uri: scheme.localImagePath }, { uri: remoteUri }]
-          : [{ uri: remoteUri }];
-        const { width, height } = computeSize(
-          scheme.width,
-          scheme.height,
-          imageSchemeSize,
-          screenWidth,
-        );
-        return (
-          <View key={scheme.id} className="gap-1">
-            <Image source={sources} style={{ width, height }} contentFit="contain" />
-            {scheme.inscription && <Text variant="caption">{scheme.inscription}</Text>}
-          </View>
-        );
-      })}
+      <View className="flex-row flex-wrap gap-4">
+        {schemes.map((scheme) => {
+          const remoteUri = scheme.image.startsWith("http")
+            ? scheme.image
+            : `${process.env.EXPO_PUBLIC_API_URL ?? ""}${scheme.image}`;
+          const sources = scheme.localImagePath
+            ? [{ uri: scheme.localImagePath }, { uri: remoteUri }]
+            : [{ uri: remoteUri }];
+          const { width, height } = computeSize(
+            scheme.width,
+            scheme.height,
+            imageSchemeSize,
+            screenWidth,
+          );
+          return (
+            <View key={scheme.id} className="items-center">
+              {scheme.inscription && (
+                <Text variant="caption">{scheme.inscription}</Text>
+              )}
+              <Image source={sources} style={{ width, height }} contentFit="contain" />
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
