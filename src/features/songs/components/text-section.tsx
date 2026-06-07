@@ -19,6 +19,14 @@ const FONT_SIZES: Record<FontSize, number> = {
   5: 22,
 };
 
+const LINE_HEIGHTS: Record<FontSize, number> = {
+  1: 18,
+  2: 21,
+  3: 25,
+  4: 29,
+  5: 34,
+};
+
 type TextSectionProps = {
   text: string;
 };
@@ -27,17 +35,25 @@ export function TextSection({ text }: TextSectionProps) {
   const colors = useColors();
   const { fontSize, setFontSize } = useFontSize();
   const fontSizeValue = FONT_SIZES[fontSize];
+  const lineHeightValue = LINE_HEIGHTS[fontSize];
 
-  const headingStyle = { color: colors.foreground, fontFamily: "Geist-SemiBold" };
+  const headingStyle = {
+    color: colors.foreground,
+    fontFamily: "Geist-SemiBold",
+    fontSize: fontSizeValue,
+    lineHeight: lineHeightValue,
+  };
   const destructiveHeadingStyle = {
     color: colors.destructive,
     fontFamily: "Geist-SemiBold",
+    fontSize: fontSizeValue,
+    lineHeight: lineHeightValue,
   };
   const markdownStyles = {
     body: {
       color: colors.foreground,
       fontSize: fontSizeValue,
-      lineHeight: fontSizeValue * 1.5,
+      lineHeight: lineHeightValue,
     },
     heading1: headingStyle,
     heading2: headingStyle,
@@ -51,7 +67,7 @@ export function TextSection({ text }: TextSectionProps) {
       padding: 4,
       fontFamily: "Geist-SemiBold",
       fontSize: fontSizeValue,
-      lineHeight: fontSizeValue * 1.5,
+      lineHeight: lineHeightValue,
     },
     code_inline: {
       backgroundColor: colors.surface,
