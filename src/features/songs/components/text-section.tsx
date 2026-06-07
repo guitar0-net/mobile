@@ -2,11 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
-import { Text } from "@/components/ui/text";
+import { useFontSize, type FontSize } from "@/features/settings";
 import { useColors } from "@/lib/themes";
+
+import { ControlButton, SectionHeader } from "./section-header";
+
+const FONT_SIZES: Record<FontSize, number> = {
+  1: 13,
+  2: 15,
+  3: 17,
+  4: 19,
+  5: 22,
+};
 
 type TextSectionProps = {
   text: string;
@@ -14,14 +24,20 @@ type TextSectionProps = {
 
 export function TextSection({ text }: TextSectionProps) {
   const colors = useColors();
-  const headingStyle = { color: colors.foreground, fontFamily: "Geist-SemiBold" };
+  const { fontSize, setFontSize } = useFontSize();
+  const fontSizeValue = FONT_SIZES[fontSize];
 
+  const headingStyle = { color: colors.foreground, fontFamily: "Geist-SemiBold" };
   const destructiveHeadingStyle = {
     color: colors.destructive,
     fontFamily: "Geist-SemiBold",
   };
   const markdownStyles = {
-    body: { color: colors.foreground, fontSize: 16, lineHeight: 24 },
+    body: {
+      color: colors.foreground,
+      fontSize: fontSizeValue,
+      lineHeight: fontSizeValue * 1.5,
+    },
     heading1: headingStyle,
     heading2: headingStyle,
     heading3: headingStyle,
@@ -33,8 +49,8 @@ export function TextSection({ text }: TextSectionProps) {
       borderRadius: 4,
       padding: 4,
       fontFamily: "Geist-SemiBold",
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: fontSizeValue,
+      lineHeight: fontSizeValue * 1.5,
     },
     code_inline: {
       backgroundColor: colors.surface,
@@ -48,10 +64,22 @@ export function TextSection({ text }: TextSectionProps) {
     blockquote: { backgroundColor: colors.surface },
     link: { color: colors.primary },
   };
+
   return (
-    <>
-      <Text variant="heading">Текст</Text>
+    <View>
+      <SectionHeader title="Текст">
+        <ControlButton
+          icon={{ ios: "minus", android: "remove" }}
+          onPress={() => setFontSize((fontSize - 1) as FontSize)}
+          disabled={fontSize === 1}
+        />
+        <ControlButton
+          icon={{ ios: "plus", android: "add" }}
+          onPress={() => setFontSize((fontSize + 1) as FontSize)}
+          disabled={fontSize === 5}
+        />
+      </SectionHeader>
       <Markdown style={markdownStyles}>{text}</Markdown>
-    </>
+    </View>
   );
 }

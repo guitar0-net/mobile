@@ -72,7 +72,7 @@ describe("useSyncState", () => {
 
     // Change a settings value that has nothing to do with sync
     act(() => {
-      useSettingsStore.getState().setFontSize("xl");
+      useSettingsStore.getState().setFontSize(5);
     });
 
     // useSyncState must not have re-rendered
