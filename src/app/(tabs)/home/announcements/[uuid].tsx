@@ -4,10 +4,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import { Button } from "@/components/ui/button";
+import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
 import { getAnnouncement } from "@/features/announcements";
 import { useColors } from "@/lib/themes";
@@ -60,10 +61,9 @@ export default function AnnouncementDetailScreen() {
   return (
     <>
       <Stack.Screen options={{ title: announcement.title }} />
-      <ScrollView
+      <ScreenScrollView
         className="flex-1 bg-background"
-        contentContainerClassName="px-4 pb-8 pt-4"
-        contentInsetAdjustmentBehavior="automatic"
+        contentContainerClassName="px-4 pb-6 pt-4"
       >
         <Text variant="heading" className="mb-1 text-2xl">
           {announcement.title}
@@ -75,7 +75,7 @@ export default function AnnouncementDetailScreen() {
           )}
         </View>
         <Markdown style={markdownStyles}>{announcement.content}</Markdown>
-      </ScrollView>
+      </ScreenScrollView>
     </>
   );
 }

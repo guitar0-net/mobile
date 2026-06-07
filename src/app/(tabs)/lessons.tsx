@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
 import {
   computeCourseProgress,
@@ -70,11 +71,7 @@ export default function LessonsScreen() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="pb-6"
-          showsVerticalScrollIndicator={false}
-        >
+        <ScreenScrollView className="flex-1" contentContainerClassName="pb-6">
           <View className="px-4 pt-2">
             <Text variant="heading" className="text-4xl">
               Уроки
@@ -159,7 +156,7 @@ export default function LessonsScreen() {
               />
             ))}
           </View>
-        </ScrollView>
+        </ScreenScrollView>
       </SafeAreaView>
     </View>
   );

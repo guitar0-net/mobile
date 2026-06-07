@@ -5,9 +5,10 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useMemo } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
+import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
 import { useLessonDetail, SongRow } from "@/features/lessons";
 import { BookmarkButton } from "@/features/lessons/components/bookmark-button";
@@ -38,10 +39,9 @@ export default function LessonScreen() {
   return (
     <>
       <Stack.Screen options={screenOptions} />
-      <ScrollView
+      <ScreenScrollView
         className="flex-1 bg-background"
-        contentContainerClassName="px-4 pb-8 pt-4"
-        contentInsetAdjustmentBehavior="automatic"
+        contentContainerClassName="px-4 pb-6 pt-4"
       >
         {lessonDetail && (
           <View className="gap-2">
@@ -127,7 +127,7 @@ export default function LessonScreen() {
             )}
           </View>
         )}
-      </ScrollView>
+      </ScreenScrollView>
     </>
   );
 }

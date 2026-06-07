@@ -4,8 +4,9 @@
 
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useCallback, useMemo } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 
+import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { CompleteButton, useSongDetail } from "@/features/songs";
 import { ChordsSection } from "@/features/songs/components/chords-section";
 import { SchemesSection } from "@/features/songs/components/schemes-section";
@@ -30,10 +31,9 @@ export default function SongScreen() {
   return (
     <>
       <Stack.Screen options={screenOptions} />
-      <ScrollView
+      <ScreenScrollView
         className="flex-1 bg-background"
-        contentContainerClassName="px-4 pb-8 pt-4"
-        contentInsetAdjustmentBehavior="automatic"
+        contentContainerClassName="px-4 pb-6 pt-4"
       >
         {songDetail && (
           <View className="p-2">
@@ -46,7 +46,7 @@ export default function SongScreen() {
             <TextSection text={songDetail.text} />
           </View>
         )}
-      </ScrollView>
+      </ScreenScrollView>
     </>
   );
 }
