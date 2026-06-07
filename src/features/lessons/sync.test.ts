@@ -2,21 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import type { components } from "@/lib/network/api.types";
-
-import { resetDbForTesting } from "./__tests__/testing";
-import { initDb } from "./index";
 import {
   chords,
   courseLessons,
   courses,
+  initDb,
   lessonSongs,
   lessons,
   schemes,
   songChords,
   songSchemes,
   songs,
-} from "./schema";
+} from "@/lib/db";
+import type { components } from "@/lib/network/api.types";
+
+import { resetDbForTesting } from "./__tests__/testing";
 import { syncAll } from "./sync";
 
 jest.mock("expo-file-system", () => {

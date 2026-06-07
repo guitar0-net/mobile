@@ -10,8 +10,8 @@ import { storage } from "./storage";
 
 // --- UI Preferences ---
 
-export type FontSize = "sm" | "md" | "lg" | "xl";
-export type DiagramSize = "sm" | "md" | "lg";
+export type FontSize = 1 | 2 | 3 | 4 | 5;
+export type DiagramSize = 1 | 2 | 3 | 4 | 5;
 export type DiagramOrientation = "horizontal" | "vertical";
 
 // --- Content Interaction ---
@@ -97,18 +97,14 @@ function parseTheme(raw: string | undefined): ThemeName | undefined {
   return raw !== undefined && VALID_THEMES.has(raw) ? (raw as ThemeName) : undefined;
 }
 
-const VALID_FONT_SIZES = new Set<string>(["sm", "md", "lg", "xl"]);
+const VALID_SIZES = new Set<number>([1, 2, 3, 4, 5]);
 
-function parseFontSize(raw: string | undefined): FontSize {
-  return raw !== undefined && VALID_FONT_SIZES.has(raw) ? (raw as FontSize) : "md";
+function parseFontSize(raw: number | undefined): FontSize {
+  return raw !== undefined && VALID_SIZES.has(raw) ? (raw as FontSize) : 3;
 }
 
-const VALID_DIAGRAM_SIZES = new Set<string>(["sm", "md", "lg"]);
-
-function parseDiagramSize(raw: string | undefined, fallback: DiagramSize): DiagramSize {
-  return raw !== undefined && VALID_DIAGRAM_SIZES.has(raw)
-    ? (raw as DiagramSize)
-    : fallback;
+function parseDiagramSize(raw: number | undefined, fallback: DiagramSize): DiagramSize {
+  return raw !== undefined && VALID_SIZES.has(raw) ? (raw as DiagramSize) : fallback;
 }
 
 const VALID_DIAGRAM_ORIENTATIONS = new Set<string>(["horizontal", "vertical"]);
@@ -127,13 +123,13 @@ function parseDiagramOrientation(raw: string | undefined): DiagramOrientation {
 export function readDefaults(): SettingsData {
   return {
     theme: parseTheme(storage.getString(KEYS.THEME)),
-    fontSize: parseFontSize(storage.getString(KEYS.FONT_SIZE)),
-    chordSize: parseDiagramSize(storage.getString(KEYS.CHORD_SIZE), "md"),
+    fontSize: parseFontSize(storage.getNumber(KEYS.FONT_SIZE)),
+    chordSize: parseDiagramSize(storage.getNumber(KEYS.CHORD_SIZE), 3),
     chordOrientation: parseDiagramOrientation(
       storage.getString(KEYS.CHORD_ORIENTATION),
     ),
     chordVisible: storage.getBoolean(KEYS.CHORD_VISIBLE) ?? true,
-    imageSchemeSize: parseDiagramSize(storage.getString(KEYS.IMAGE_SCHEME_SIZE), "md"),
+    imageSchemeSize: parseDiagramSize(storage.getNumber(KEYS.IMAGE_SCHEME_SIZE), 3),
     imageSchemeVisible: storage.getBoolean(KEYS.IMAGE_SCHEME_VISIBLE) ?? true,
     favorites: tryParse<string[]>(storage.getString(KEYS.FAVORITES), []),
     progress: tryParse<Record<string, LessonProgress>>(

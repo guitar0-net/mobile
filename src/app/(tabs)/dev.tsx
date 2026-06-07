@@ -5,13 +5,13 @@
 import { count } from "drizzle-orm";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
+import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
-import { getDb } from "@/features/lessons/db";
-import { chords, courses, lessons, schemes, songs } from "@/features/lessons/schema";
+import { chords, courses, getDb, lessons, schemes, songs } from "@/lib/db";
 import { resetAllData, resetSyncState } from "@/lib/dev";
 import { useSyncState } from "@/lib/sync";
 import { useTheme, type ThemeName } from "@/lib/themes";
@@ -75,10 +75,9 @@ export default function DevToolsScreen() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <ScrollView
+        <ScreenScrollView
           className="flex-1"
-          contentContainerClassName="px-4 py-4 gap-6"
-          showsVerticalScrollIndicator={false}
+          contentContainerClassName="px-4 pt-4 pb-6 gap-6"
         >
           <Text className="text-2xl font-semibold">Dev Tools</Text>
 
@@ -161,7 +160,7 @@ export default function DevToolsScreen() {
               Сбросить синк-стейт
             </Button>
           </View>
-        </ScrollView>
+        </ScreenScrollView>
       </SafeAreaView>
     </View>
   );

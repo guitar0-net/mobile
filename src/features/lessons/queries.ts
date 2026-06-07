@@ -7,10 +7,8 @@ import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { useMemo } from "react";
 
 import { useProgress } from "@/features/settings";
-
-import { getDb } from "./db";
-import { courseLessons, courses, lessons, lessonSongs, songs } from "./schema";
-import type { VideoDownloadStatus } from "./schema";
+import { getDb, courseLessons, courses, lessons, lessonSongs, songs } from "@/lib/db";
+import type { VideoDownloadStatus } from "@/lib/db";
 
 export type CourseLessonRow = {
   lessonUuid: string;

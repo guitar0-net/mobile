@@ -50,18 +50,18 @@ describe("useThemePreference", () => {
 // ---------------------------------------------------------------------------
 
 describe("useFontSize", () => {
-  test("fontSize defaults to 'md'", () => {
+  test("fontSize defaults to 3", () => {
     const { result } = renderHook(() => useFontSize());
-    expect(result.current.fontSize).toBe("md");
+    expect(result.current.fontSize).toBe(3);
   });
 
   test("setFontSize write-read roundtrip", () => {
     const { result } = renderHook(() => useFontSize());
 
     act(() => {
-      result.current.setFontSize("lg");
+      result.current.setFontSize(4);
     });
-    expect(result.current.fontSize).toBe("lg");
+    expect(result.current.fontSize).toBe(4);
   });
 });
 
@@ -70,9 +70,9 @@ describe("useFontSize", () => {
 // ---------------------------------------------------------------------------
 
 describe("useDiagramSettings — defaults", () => {
-  test("chordSize defaults to 'md'", () => {
+  test("chordSize defaults to 3", () => {
     const { result } = renderHook(() => useDiagramSettings());
-    expect(result.current.chordSize).toBe("md");
+    expect(result.current.chordSize).toBe(3);
   });
 
   test("chordOrientation defaults to 'vertical'", () => {
@@ -85,9 +85,9 @@ describe("useDiagramSettings — defaults", () => {
     expect(result.current.chordVisible).toBe(true);
   });
 
-  test("imageSchemeSize defaults to 'md'", () => {
+  test("imageSchemeSize defaults to 3", () => {
     const { result } = renderHook(() => useDiagramSettings());
-    expect(result.current.imageSchemeSize).toBe("md");
+    expect(result.current.imageSchemeSize).toBe(3);
   });
 
   test("imageSchemeVisible defaults to true", () => {
@@ -101,9 +101,9 @@ describe("useDiagramSettings — setters", () => {
     const { result } = renderHook(() => useDiagramSettings());
 
     act(() => {
-      result.current.setChordSize("sm");
+      result.current.setChordSize(1);
     });
-    expect(result.current.chordSize).toBe("sm");
+    expect(result.current.chordSize).toBe(1);
   });
 
   test("setChordOrientation write-read roundtrip", () => {
@@ -128,9 +128,9 @@ describe("useDiagramSettings — setters", () => {
     const { result } = renderHook(() => useDiagramSettings());
 
     act(() => {
-      result.current.setImageSchemeSize("lg");
+      result.current.setImageSchemeSize(5);
     });
-    expect(result.current.imageSchemeSize).toBe("lg");
+    expect(result.current.imageSchemeSize).toBe(5);
   });
 
   test("setImageSchemeVisible write-read roundtrip", () => {
@@ -360,23 +360,23 @@ describe("readDefaults — valid stored values", () => {
   });
 
   test("returns stored fontSize when a valid size is stored", () => {
-    storage.set("settings.fontSize", "lg");
-    expect(readDefaults().fontSize).toBe("lg");
+    storage.set("settings.fontSize", 4);
+    expect(readDefaults().fontSize).toBe(4);
   });
 
   test("returns default fontSize when an invalid size is stored", () => {
-    storage.set("settings.fontSize", "xxl");
-    expect(readDefaults().fontSize).toBe("md");
+    storage.set("settings.fontSize", 99);
+    expect(readDefaults().fontSize).toBe(3);
   });
 
   test("returns stored chordSize when a valid size is stored", () => {
-    storage.set("settings.chordSize", "sm");
-    expect(readDefaults().chordSize).toBe("sm");
+    storage.set("settings.chordSize", 1);
+    expect(readDefaults().chordSize).toBe(1);
   });
 
   test("returns default chordSize when an invalid value is stored", () => {
-    storage.set("settings.chordSize", "xxl");
-    expect(readDefaults().chordSize).toBe("md");
+    storage.set("settings.chordSize", 99);
+    expect(readDefaults().chordSize).toBe(3);
   });
 
   test("returns stored chordOrientation when horizontal is stored", () => {
@@ -390,7 +390,7 @@ describe("readDefaults — valid stored values", () => {
   });
 
   test("returns stored imageSchemeSize when a valid size is stored", () => {
-    storage.set("settings.imageSchemeSize", "lg");
-    expect(readDefaults().imageSchemeSize).toBe("lg");
+    storage.set("settings.imageSchemeSize", 5);
+    expect(readDefaults().imageSchemeSize).toBe(5);
   });
 });

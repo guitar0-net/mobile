@@ -5,14 +5,14 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useMemo } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
+import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
 import { useLessonDetail, SongRow } from "@/features/lessons";
 import { BookmarkButton } from "@/features/lessons/components/bookmark-button";
 import { useProgress } from "@/features/settings";
-import { useColors } from "@/lib/themes";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -22,14 +22,13 @@ function formatDuration(seconds: number): string {
 
 export default function LessonScreen() {
   const { id, courseId } = useLocalSearchParams<{ id: string; courseId: string }>();
-  const colors = useColors();
-  const { data } = useLessonDetail(id, courseId);
+  const { data: lessonDetail } = useLessonDetail(id, courseId);
   const { progress } = useProgress();
 
   const router = useRouter();
   const completedSongIds = progress[id]?.completedSongIds ?? [];
-  const headerTitle = data
-    ? `Урок ${data.lessonOrder} / ${data.totalLessonsInCourse}`
+  const headerTitle = lessonDetail
+    ? `Урок ${lessonDetail.lessonOrder} / ${lessonDetail.totalLessonsInCourse}`
     : "Урок";
   const headerRight = useCallback(() => <BookmarkButton lessonId={id} />, [id]);
   const screenOptions = useMemo(
@@ -40,32 +39,33 @@ export default function LessonScreen() {
   return (
     <>
       <Stack.Screen options={screenOptions} />
-      <ScrollView
+      <ScreenScrollView
         className="flex-1 bg-background"
-        contentContainerClassName="px-4 pb-8 pt-4"
-        contentInsetAdjustmentBehavior="automatic"
+        contentContainerClassName="px-4 pb-6 pt-4"
       >
-        {data && (
+        {lessonDetail && (
           <View className="gap-2">
             <Text
               variant="caption"
               className="text-xs uppercase tracking-wider text-muted-fg"
             >
-              {data.courseTitle}
+              {lessonDetail.courseTitle}
             </Text>
             <Text variant="heading" className="text-2xl">
-              {data.title}
+              {lessonDetail.title}
             </Text>
-            {data.description && (
+            {lessonDetail.description && (
               <Text variant="body" className="text-muted-fg">
-                {data.description}
+                {lessonDetail.description}
               </Text>
             )}
             <View className="mt-1 flex-row gap-2">
-              {data.duration != null && (
-                <Badge variant="outline">{formatDuration(data.duration)} мин.</Badge>
+              {lessonDetail.duration != null && (
+                <Badge variant="outline">
+                  {formatDuration(lessonDetail.duration)} мин.
+                </Badge>
               )}
-              {data.videoDownloadStatus === "downloaded" && (
+              {lessonDetail.videoDownloadStatus === "downloaded" && (
                 <Badge
                   variant="outline"
                   icon={{ ios: "arrow.down.circle.fill", android: "download_done" }}
@@ -90,7 +90,7 @@ export default function LessonScreen() {
               </View>
               <View className="flex-row items-center justify-between px-4 py-3">
                 <Text className="text-sm text-white/70">
-                  {data.localVideoPath
+                  {lessonDetail.localVideoPath
                     ? "Video lesson · guitar0.net · downloaded"
                     : "Video lesson · guitar0.net · online"}
                 </Text>
@@ -104,22 +104,22 @@ export default function LessonScreen() {
               </View>
             </Pressable>
 
-            {data.songs.length > 0 && (
+            {lessonDetail.songs.length > 0 && (
               <View className="mt-6">
                 <View className="flex-row items-center gap-2">
                   <Text variant="caption" className="text-xs uppercase tracking-wider">
                     Песни в этом уроке
                   </Text>
-                  <Badge variant="secondary">{String(data.songs.length)}</Badge>
+                  <Badge variant="secondary">{String(lessonDetail.songs.length)}</Badge>
                 </View>
                 <View className="mt-3 gap-2">
-                  {data.songs.map((song) => (
+                  {lessonDetail.songs.map((song) => (
                     <SongRow
                       key={song.uuid}
                       title={song.title}
                       completed={completedSongIds.includes(song.uuid)}
                       metronome={song.metronome}
-                      onPress={() => console.log(song.uuid)}
+                      onPress={() => router.push(`/song/${song.uuid}`)}
                     />
                   ))}
                 </View>
@@ -127,7 +127,7 @@ export default function LessonScreen() {
             )}
           </View>
         )}
-      </ScrollView>
+      </ScreenScrollView>
     </>
   );
 }

@@ -5,10 +5,7 @@
 import { eq, notInArray } from "drizzle-orm";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
 
-import type { components } from "@/lib/network/api.types";
-
-import { getSyncData as defaultGetSyncData } from "./api";
-import type { LessonsDb } from "./db";
+import type { AppDb } from "@/lib/db";
 import {
   chords as chordsTable,
   courseLessons as courseLessonsTable,
@@ -19,7 +16,10 @@ import {
   songChords as songChordsTable,
   songSchemes as songSchemesTable,
   songs as songsTable,
-} from "./schema";
+} from "@/lib/db";
+import type { components } from "@/lib/network/api.types";
+
+import { getSyncData as defaultGetSyncData } from "./api";
 
 type SyncLessonsResponse = components["schemas"]["SyncLessonsResponse"];
 
@@ -45,14 +45,11 @@ async function defaultDownloadImage(schemeId: number, url: string): Promise<stri
   return downloaded.uri;
 }
 
-async function deleteJunctionsForLesson(
-  db: LessonsDb,
-  lessonUuid: string,
-): Promise<void> {
+async function deleteJunctionsForLesson(db: AppDb, lessonUuid: string): Promise<void> {
   await db.delete(lessonSongsTable).where(eq(lessonSongsTable.lessonUuid, lessonUuid));
 }
 
-async function deleteOrphanedSongs(db: LessonsDb): Promise<void> {
+async function deleteOrphanedSongs(db: AppDb): Promise<void> {
   const linkedUuids = db
     .select({ uuid: lessonSongsTable.songUuid })
     .from(lessonSongsTable);
@@ -65,10 +62,7 @@ async function deleteOrphanedSongs(db: LessonsDb): Promise<void> {
   await db.delete(songsTable).where(notInArray(songsTable.uuid, linkedUuids));
 }
 
-async function deleteRemovedLessons(
-  db: LessonsDb,
-  serverUuids: string[],
-): Promise<void> {
+async function deleteRemovedLessons(db: AppDb, serverUuids: string[]): Promise<void> {
   if (serverUuids.length === 0) {
     await db.delete(lessonSongsTable);
     await db.delete(lessonsTable);
@@ -85,7 +79,7 @@ async function deleteRemovedLessons(
 }
 
 export async function syncAll(
-  db: LessonsDb,
+  db: AppDb,
   since: string | null,
   onProgress?: (progress: SyncProgress) => void,
   deps?: Partial<SyncDeps>,

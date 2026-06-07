@@ -3,12 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useQuery } from "@tanstack/react-query";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
 import { AnnouncementsPreview } from "@/features/announcements";
 import { CourseContinueCard, fetchCourses, MAIN_COURSE_ID } from "@/features/lessons";
@@ -26,12 +27,7 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-4 pb-6"
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-        >
+        <ScreenScrollView className="flex-1" contentContainerClassName="px-4 pb-6">
           <View className="mb-6 flex-row items-center justify-between gap-2">
             <View className="flex flex-row items-center gap-2">
               <AppIcon size={32} />
@@ -84,7 +80,7 @@ export default function HomeScreen() {
               ))}
             </View>
           )}
-        </ScrollView>
+        </ScreenScrollView>
       </SafeAreaView>
     </View>
   );
