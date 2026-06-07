@@ -36,7 +36,7 @@ export default function SongScreen() {
         contentContainerClassName="px-4 pb-6 pt-4"
       >
         {songDetail && (
-          <View className="p-2">
+          <View>
             {songDetail.chords.length > 0 && (
               <ChordsSection chords={songDetail.chords} />
             )}
