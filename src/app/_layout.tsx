@@ -4,6 +4,7 @@
 
 import "@/global.css";
 
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import {
   DarkTheme,
   DefaultTheme,
@@ -15,6 +16,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { queryClient } from "@/lib/network/query-client";
 import { ThemeProvider, useTheme, useThemedScreenOptions } from "@/lib/themes";
@@ -85,11 +87,15 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ThemedStack />
-        <StatusBarAdapter />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <BottomSheetModalProvider>
+            <ThemedStack />
+            <StatusBarAdapter />
+          </BottomSheetModalProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
