@@ -7,10 +7,17 @@ import { defineConfig } from "eslint/config";
 import expo from "eslint-config-expo/flat.js";
 import prettierConfig from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
+import globals from "globals";
 
 const eslintConfig = defineConfig([
   ...expo,
   prettierConfig,
+  {
+    files: ["__mocks__/**/*.js"],
+    languageOptions: {
+      globals: globals.jest,
+    },
+  },
   {
     plugins: {
       prettier: prettierPlugin,
