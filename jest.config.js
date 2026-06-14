@@ -23,6 +23,9 @@ const config = {
     // Replace expo-sqlite with a better-sqlite3-backed in-memory mock so
     // tests never touch native TurboModule code.
     "^expo-sqlite$": "<rootDir>/__mocks__/expo-sqlite.js",
+    // Replace @gorhom/bottom-sheet with a pure JS mock — the real package
+    // requires native Worklets/Reanimated initialization unavailable in Jest.
+    "^@gorhom/bottom-sheet$": "<rootDir>/__mocks__/@gorhom/bottom-sheet.js",
     // The jest-expo preset maps @/ → src/, but static assets live in the
     // project root. This more-specific entry takes precedence over the preset.
     "^@/assets/(.*)$": "<rootDir>/assets/$1",

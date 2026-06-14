@@ -91,6 +91,6 @@ describe("InlineNameForm", () => {
       <InlineNameForm {...baseProps} pattern={["strong", "normal", "muted"]} />,
       { wrapper },
     );
-    expect(getByText("3 долей")).toBeTruthy();
+    expect(getByText("3 доли")).toBeTruthy();
   });
 });
