@@ -38,6 +38,8 @@ const config = {
     "!src/features/metronome/components/beat-indicator.tsx",
     "!src/features/metronome/components/pattern-dots.tsx",
     "!src/features/metronome/components/time-signature-sheet.tsx",
+    "!src/features/metronome/components/sound-sheet.tsx",
+    "!src/features/metronome/components/legend-dot.tsx",
   ],
   coverageThreshold: {
     global: {

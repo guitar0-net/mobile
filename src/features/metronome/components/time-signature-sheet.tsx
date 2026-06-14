@@ -17,6 +17,7 @@ import { patternsEqual, PRESET_SIZES } from "../presets";
 import type { SavedPattern } from "../store";
 import { BeatIndicator } from "./beat-indicator";
 import { InlineNameForm } from "./inline-name-form";
+import { LegendDot } from "./legend-dot";
 import { PatternDots } from "./pattern-dots";
 
 const MAX_BEATS = 16;
@@ -408,32 +409,6 @@ function SavedPatternRow({
           </>
         )}
       </Pressable>
-    </View>
-  );
-}
-
-function LegendDot({
-  color,
-  border,
-  label,
-}: {
-  color: string;
-  border?: string;
-  label: string;
-}) {
-  return (
-    <View className="flex-row items-center gap-[5px]">
-      <View
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: 4,
-          backgroundColor: color,
-          borderWidth: border ? 1 : 0,
-          borderColor: border,
-        }}
-      />
-      <Text className="text-xs text-muted-fg">{label}</Text>
     </View>
   );
 }

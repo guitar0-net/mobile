@@ -28,6 +28,7 @@ import {
   useMetronomeStore,
 } from "@/features/metronome";
 import { BeatIndicator } from "@/features/metronome/components/beat-indicator";
+import { LegendDot } from "@/features/metronome/components/legend-dot";
 import { SOUND_LABELS, SoundSheet } from "@/features/metronome/components/sound-sheet";
 import { TapTempoSheet } from "@/features/metronome/components/tap-tempo-sheet";
 import { TimeSignatureSheet } from "@/features/metronome/components/time-signature-sheet";
@@ -305,33 +306,5 @@ export default function MetronomeScreen() {
         onRenamePattern={renameSavedPattern}
       />
     </>
-  );
-}
-
-function LegendDot({
-  color,
-  border,
-  label,
-}: {
-  color: string;
-  border?: string;
-  label: string;
-}) {
-  const colors = useColors();
-
-  return (
-    <View className="flex-row items-center gap-1">
-      <View
-        style={{
-          width: 7,
-          height: 7,
-          borderRadius: 3.5,
-          backgroundColor: color,
-          borderWidth: border ? 1 : 0,
-          borderColor: border,
-        }}
-      />
-      <Text style={{ fontSize: 11, color: colors.mutedFg }}>{label}</Text>
-    </View>
   );
 }
