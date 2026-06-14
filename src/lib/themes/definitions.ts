@@ -13,6 +13,9 @@ export type ThemeTokens = {
   "--color-success": string;
   "--color-warning": string;
   "--color-destructive": string;
+  "--color-brand-red": string;
+  "--color-brand-amber": string;
+  "--color-brand-brown": string;
 };
 
 export type ThemeName = "light" | "dark" | "contrast-light" | "contrast-dark";
@@ -29,6 +32,9 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
     "--color-success": "#22C55E",
     "--color-warning": "#F59E0B",
     "--color-destructive": "#EF4444",
+    "--color-brand-red": "#C94040",
+    "--color-brand-amber": "#D49A12",
+    "--color-brand-brown": "#7C4030",
   },
 
   dark: {
@@ -42,6 +48,9 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
     "--color-success": "#4ADE80",
     "--color-warning": "#FBBF24",
     "--color-destructive": "#F87171",
+    "--color-brand-red": "#E05252",
+    "--color-brand-amber": "#E8AE20",
+    "--color-brand-brown": "#A05540",
   },
 
   "contrast-light": {
@@ -55,6 +64,9 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
     "--color-success": "#166534",
     "--color-warning": "#92400E",
     "--color-destructive": "#991B1B",
+    "--color-brand-red": "#000000",
+    "--color-brand-amber": "#000000",
+    "--color-brand-brown": "#000000",
   },
 
   "contrast-dark": {
@@ -68,5 +80,8 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
     "--color-success": "#86EFAC",
     "--color-warning": "#FCD34D",
     "--color-destructive": "#FCA5A5",
+    "--color-brand-red": "#FFFFFF",
+    "--color-brand-amber": "#FFFFFF",
+    "--color-brand-brown": "#FFFFFF",
   },
 };

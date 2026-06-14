@@ -64,6 +64,9 @@ export type Colors = {
   success: string;
   warning: string;
   destructive: string;
+  brandRed: string;
+  brandAmber: string;
+  brandBrown: string;
 };
 
 function colorsFromTheme(theme: ThemeName): Colors {
@@ -79,6 +82,9 @@ function colorsFromTheme(theme: ThemeName): Colors {
     success: t["--color-success"],
     warning: t["--color-warning"],
     destructive: t["--color-destructive"],
+    brandRed: t["--color-brand-red"],
+    brandAmber: t["--color-brand-amber"],
+    brandBrown: t["--color-brand-brown"],
   };
 }
 

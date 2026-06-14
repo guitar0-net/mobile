@@ -15,9 +15,9 @@ module.exports = {
 
         brand: {
           purple: "#7B2FBE",
-          red: "#DC2626",
-          yellow: "#EAB308",
-          tortoise: "#78350F",
+          red: "var(--color-brand-red)",
+          amber: "var(--color-brand-amber)",
+          brown: "var(--color-brand-brown)",
           black: "#09090B",
         },
       },
