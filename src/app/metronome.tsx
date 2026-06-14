@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import ExpoPrecisionMetronomeModule, {
   setBpm as setMetronomeBpm,
   setPattern as setMetronomePattern,
@@ -67,6 +68,14 @@ export default function MetronomeScreen() {
   useEffect(() => {
     soundPresetRef.current = soundPreset;
   }, [soundPreset]);
+
+  useEffect(() => {
+    if (screenAwakeEnabled && isPlaying) {
+      void activateKeepAwakeAsync();
+    } else {
+      deactivateKeepAwake();
+    }
+  }, [screenAwakeEnabled, isPlaying]);
 
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
