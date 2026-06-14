@@ -17,31 +17,40 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function pluralSongs(n: number): string {
+// Appends a two-digit hex alpha to a 6-digit hex color string.
+export function withAlpha(hex: string, opacity: number): string {
+  return (
+    hex +
+    Math.round(opacity * 255)
+      .toString(16)
+      .padStart(2, "0")
+  );
+}
+
+export function pluralRu(
+  n: number,
+  form1: string,
+  form2: string,
+  form5: string,
+): string {
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 14) return `${n} песен`;
-  if (mod10 === 1) return `${n} песня`;
-  if (mod10 >= 2 && mod10 <= 4) return `${n} песни`;
-  return `${n} песен`;
+  if (mod100 >= 11 && mod100 <= 14) return `${n} ${form5}`;
+  if (mod10 === 1) return `${n} ${form1}`;
+  if (mod10 >= 2 && mod10 <= 4) return `${n} ${form2}`;
+  return `${n} ${form5}`;
 }
 
 export function describeRemainingItems(songs: number, videoRemaining: boolean): string {
   if (songs === 0 && !videoRemaining) return "";
   if (songs === 0) return "осталось видео";
 
-  const mod10 = songs % 10;
-  const mod100 = songs % 100;
-
   if (videoRemaining) {
-    let songPart: string;
-    if (mod100 >= 11 && mod100 <= 14) songPart = `${songs} песен`;
-    else if (mod10 === 1) songPart = `${songs} песня`;
-    else if (mod10 >= 2 && mod10 <= 4) songPart = `${songs} песни`;
-    else songPart = `${songs} песен`;
-    return `осталось видео и ${songPart}`;
+    return `осталось видео и ${pluralRu(songs, "песня", "песни", "песен")}`;
   }
 
+  const mod10 = songs % 10;
+  const mod100 = songs % 100;
   if (mod100 >= 11 && mod100 <= 14) return `осталось ${songs} песен`;
   if (mod10 === 1) return `осталась ${songs} песня`;
   if (mod10 >= 2 && mod10 <= 4) return `остались ${songs} песни`;

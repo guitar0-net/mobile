@@ -22,6 +22,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@gorhom/bottom-sheet": "^5.2.14",
     "@react-navigation/bottom-tabs": "^7.15.5",
     "@react-navigation/elements": "^2.9.10",
     "@react-navigation/native": "^7.1.33",
@@ -36,7 +37,9 @@
     "expo-font": "~55.0.8",
     "expo-glass-effect": "~55.0.11",
     "expo-image": "~55.0.11",
+    "expo-keep-awake": "~55.0.8",
     "expo-linking": "~55.0.15",
+    "expo-precision-metronome": "^1.2.0",
     "expo-router": "~55.0.16",
     "expo-splash-screen": "~55.0.21",
     "expo-sqlite": "~55.0.16",

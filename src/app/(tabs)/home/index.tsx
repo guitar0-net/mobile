@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useQuery } from "@tanstack/react-query";
-import { View } from "react-native";
+import { useRouter } from "expo-router";
+import { SymbolView } from "expo-symbols";
+import { type ComponentProps } from "react";
+import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppIcon } from "@/components/ui/app-icon";
@@ -12,10 +15,49 @@ import { Button } from "@/components/ui/button";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
 import { AnnouncementsPreview } from "@/features/announcements";
+import { fetchChordsCount } from "@/features/chords";
 import { CourseContinueCard, fetchCourses, MAIN_COURSE_ID } from "@/features/lessons";
-import { formatTodayRu } from "@/lib/utils";
+import { useMetronomeStore } from "@/features/metronome";
+import { useColors } from "@/lib/themes";
+import { cn, formatTodayRu, pluralRu } from "@/lib/utils";
+
+type ToolCardProps = {
+  icon: ComponentProps<typeof SymbolView>["name"];
+  label: string;
+  subtitle: string;
+  onPress: () => void;
+  color: "brand-red" | "brand-amber" | "brand-brown";
+};
+
+function ToolCard({ icon, label, subtitle, onPress, color }: ToolCardProps) {
+  const { primaryFg } = useColors();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      className={cn(
+        "flex-1 rounded-2xl p-4 active:opacity-70",
+        color === "brand-red" && "bg-brand-red",
+        color === "brand-amber" && "bg-brand-amber",
+        color === "brand-brown" && "bg-brand-brown",
+      )}
+    >
+      <SymbolView name={icon} size={28} tintColor={primaryFg} />
+      <View className="mt-3">
+        <Text className="font-sans-semibold text-primary-fg">{label}</Text>
+        <Text className="text-sm text-primary-fg opacity-70">{subtitle}</Text>
+      </View>
+    </Pressable>
+  );
+}
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const metronomeBpm = useMetronomeStore((s) => s.bpm);
+  const chordsCountQuery = useQuery({
+    queryKey: ["chords", "count"],
+    queryFn: fetchChordsCount,
+  });
   const coursesQuery = useQuery({
     queryKey: ["courses"],
     queryFn: fetchCourses,
@@ -63,6 +105,34 @@ export default function HomeScreen() {
             courseTitle="Гитара с нуля"
             variant="featured"
           />
+
+          <View className="mt-4 flex-row gap-3">
+            <ToolCard
+              icon={{ ios: "metronome.fill", android: "timer" }}
+              label="Метроном"
+              subtitle={`${metronomeBpm} BPM`}
+              color="brand-red"
+              onPress={() => router.push("/metronome" as any)}
+            />
+            <ToolCard
+              icon={{ ios: "tuningfork", android: "music_note" }}
+              label="Тюнер"
+              subtitle="E A D G B E"
+              color="brand-amber"
+              onPress={() => router.push("/tuner" as any)}
+            />
+            <ToolCard
+              icon={{ ios: "music.note.list", android: "library_music" }}
+              label="Аккорды"
+              subtitle={
+                chordsCountQuery.data != null
+                  ? pluralRu(chordsCountQuery.data, "аккорд", "аккорда", "аккордов")
+                  : "—"
+              }
+              color="brand-brown"
+              onPress={() => router.push("/chords" as any)}
+            />
+          </View>
 
           <AnnouncementsPreview />
 
