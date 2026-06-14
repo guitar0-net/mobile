@@ -7,8 +7,9 @@ import {
   describeRemainingItems,
   formatDateRu,
   formatTodayRu,
-  pluralSongs,
+  pluralRu,
   stripMarkdown,
+  withAlpha,
 } from "./utils";
 
 describe("cn", () => {
@@ -47,14 +48,15 @@ describe("cn", () => {
   });
 });
 
-describe("pluralSongs", () => {
-  test("1 → песня", () => expect(pluralSongs(1)).toBe("1 песня"));
-  test("2 → песни", () => expect(pluralSongs(2)).toBe("2 песни"));
-  test("4 → песни", () => expect(pluralSongs(4)).toBe("4 песни"));
-  test("5 → песен", () => expect(pluralSongs(5)).toBe("5 песен"));
-  test("11 → песен (исключение)", () => expect(pluralSongs(11)).toBe("11 песен"));
-  test("21 → песня", () => expect(pluralSongs(21)).toBe("21 песня"));
-  test("114 → песен (исключение)", () => expect(pluralSongs(114)).toBe("114 песен"));
+describe("pluralRu", () => {
+  const tap = (n: number) => pluralRu(n, "нажатие", "нажатия", "нажатий");
+  test("1 → нажатие", () => expect(tap(1)).toBe("1 нажатие"));
+  test("2 → нажатия", () => expect(tap(2)).toBe("2 нажатия"));
+  test("4 → нажатия", () => expect(tap(4)).toBe("4 нажатия"));
+  test("5 → нажатий", () => expect(tap(5)).toBe("5 нажатий"));
+  test("11 → нажатий (исключение)", () => expect(tap(11)).toBe("11 нажатий"));
+  test("21 → нажатие", () => expect(tap(21)).toBe("21 нажатие"));
+  test("114 → нажатий (исключение)", () => expect(tap(114)).toBe("114 нажатий"));
 });
 
 describe("describeRemainingItems", () => {
@@ -163,6 +165,26 @@ describe("stripMarkdown", () => {
 
   test("returns plain text unchanged", () => {
     expect(stripMarkdown("обычный текст")).toBe("обычный текст");
+  });
+});
+
+describe("withAlpha", () => {
+  test("opacity 0 appends 00", () => {
+    expect(withAlpha("#FF5733", 0)).toBe("#FF573300");
+  });
+
+  test("opacity 1 appends ff", () => {
+    expect(withAlpha("#FF5733", 1)).toBe("#FF5733ff");
+  });
+
+  test("opacity 0.5 appends 80", () => {
+    // Math.round(0.5 * 255) = 128 = 0x80
+    expect(withAlpha("#AABBCC", 0.5)).toBe("#AABBCC80");
+  });
+
+  test("single hex digit is padded to two characters", () => {
+    // Math.round(0.01 * 255) = 3 = 0x03
+    expect(withAlpha("#000000", 0.01)).toBe("#00000003");
   });
 });
 
