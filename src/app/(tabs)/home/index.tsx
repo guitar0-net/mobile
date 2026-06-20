@@ -18,6 +18,7 @@ import { AnnouncementsPreview } from "@/features/announcements";
 import { fetchChordsCount } from "@/features/chords";
 import { CourseContinueCard, fetchCourses, MAIN_COURSE_ID } from "@/features/lessons";
 import { useMetronomeStore } from "@/features/metronome";
+import { TUNINGS, useTunerStore } from "@/features/tuner";
 import { useColors } from "@/lib/themes";
 import { cn, formatTodayRu, pluralRu } from "@/lib/utils";
 
@@ -54,6 +55,9 @@ function ToolCard({ icon, label, subtitle, onPress, color }: ToolCardProps) {
 export default function HomeScreen() {
   const router = useRouter();
   const metronomeBpm = useMetronomeStore((s) => s.bpm);
+  const tunerTuningId = useTunerStore((s) => s.tuningId);
+  const tunerShortLabel = (TUNINGS.find((t) => t.id === tunerTuningId) ?? TUNINGS[0])
+    .shortLabel;
   const chordsCountQuery = useQuery({
     queryKey: ["chords", "count"],
     queryFn: fetchChordsCount,
@@ -71,9 +75,9 @@ export default function HomeScreen() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <ScreenScrollView className="flex-1" contentContainerClassName="px-4 pb-6">
           <View className="mb-6 flex-row items-center justify-between gap-2">
-            <View className="flex flex-row items-center gap-2">
+            <View className="flex flex-1 flex-row items-center gap-2">
               <AppIcon size={32} />
-              <Text variant="logo" className="text-4xl text-primary">
+              <Text variant="logo" className="flex-1 text-4xl leading-snug">
                 Гитара с нуля
               </Text>
             </View>
@@ -117,7 +121,7 @@ export default function HomeScreen() {
             <ToolCard
               icon={{ ios: "tuningfork", android: "music_note" }}
               label="Тюнер"
-              subtitle="E A D G B E"
+              subtitle={tunerShortLabel}
               color="brand-amber"
               onPress={() => router.push("/tuner" as any)}
             />
