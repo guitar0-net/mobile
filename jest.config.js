@@ -26,6 +26,9 @@ const config = {
     // Replace @gorhom/bottom-sheet with a pure JS mock — the real package
     // requires native Worklets/Reanimated initialization unavailable in Jest.
     "^@gorhom/bottom-sheet$": "<rootDir>/__mocks__/@gorhom/bottom-sheet.js",
+    // Replace react-native-audio-api with a pure JS mock — the real package
+    // requires native TurboModule code unavailable in Jest.
+    "^react-native-audio-api$": "<rootDir>/__mocks__/react-native-audio-api.js",
     // The jest-expo preset maps @/ → src/, but static assets live in the
     // project root. This more-specific entry takes precedence over the preset.
     "^@/assets/(.*)$": "<rootDir>/assets/$1",
@@ -43,6 +46,12 @@ const config = {
     "!src/features/metronome/components/time-signature-sheet.tsx",
     "!src/features/metronome/components/sound-sheet.tsx",
     "!src/features/metronome/components/legend-dot.tsx",
+    // Tuner files that wrap native modules or produce audio — no behavioral logic to test
+    "!src/features/tuner/pitch-detector.ts",
+    "!src/features/tuner/sine-wave.ts",
+    "!src/features/tuner/components/tuner-needle.tsx",
+    "!src/features/tuner/components/string-selector.tsx",
+    "!src/features/tuner/components/tuning-sheet.tsx",
   ],
   coverageThreshold: {
     global: {
