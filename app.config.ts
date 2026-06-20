@@ -48,6 +48,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-font",
     "expo-image",
     "expo-sqlite",
+    [
+      "react-native-audio-api",
+      {
+        iosMicrophonePermission:
+          "Тюнер использует микрофон для определения высоты звука",
+        androidPermissions: ["android.permission.RECORD_AUDIO"],
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
