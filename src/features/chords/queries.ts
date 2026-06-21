@@ -12,7 +12,7 @@ export async function fetchChordsCount(): Promise<number> {
   return result[0]?.count ?? 0;
 }
 
-const NOTE_ORDER = ["C", "D", "E", "F", "G", "H", "A"] as const;
+const NOTE_ORDER = ["C", "D", "E", "F", "G", "A", "H"] as const;
 type Note = (typeof NOTE_ORDER)[number];
 
 export type ChordRow = {
