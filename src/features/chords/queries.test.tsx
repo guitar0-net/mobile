@@ -60,7 +60,7 @@ describe("fetchAllChords", () => {
     expect(eSection.chords[0].title).toBe("Em");
   });
 
-  test("sections appear in fixed order C D E F G H A", async () => {
+  test("sections appear in fixed order C D E F G A H", async () => {
     const db = await initDb();
     await db.insert(chords).values([
       { id: 1, title: "Am", musicalTitle: "A minor", hasBarre: false },

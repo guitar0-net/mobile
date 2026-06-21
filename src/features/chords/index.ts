@@ -4,3 +4,4 @@
 
 export { fetchChordsCount, fetchAllChords, useAllChords } from "./queries";
 export type { ChordRow, ChordSection } from "./queries";
+export { ChordsScreen } from "./components/chords-screen";

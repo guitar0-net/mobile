@@ -116,14 +116,14 @@ export default function HomeScreen() {
               label="Метроном"
               subtitle={`${metronomeBpm} BPM`}
               color="brand-red"
-              onPress={() => router.push("/metronome" as any)}
+              onPress={() => router.push("/metronome")}
             />
             <ToolCard
               icon={{ ios: "tuningfork", android: "music_note" }}
               label="Тюнер"
               subtitle={tunerShortLabel}
               color="brand-amber"
-              onPress={() => router.push("/tuner" as any)}
+              onPress={() => router.push("/tuner")}
             />
             <ToolCard
               icon={{ ios: "music.note.list", android: "library_music" }}
@@ -134,7 +134,7 @@ export default function HomeScreen() {
                   : "—"
               }
               color="brand-brown"
-              onPress={() => router.push("/chords" as any)}
+              onPress={() => router.push("/chords")}
             />
           </View>
 
