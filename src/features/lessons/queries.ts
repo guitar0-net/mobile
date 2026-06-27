@@ -89,6 +89,10 @@ export type LessonDetailRow = {
   songs: LessonDetailSong[];
 };
 
+function toYoutubeWatchUrl(url: string): string {
+  return url.replace(/youtube\.com\/embed\/([^?#/]+)/, "youtube.com/watch?v=$1");
+}
+
 export async function fetchLessonDetail(
   lessonUuid: string,
   courseUuid: string,
@@ -135,7 +139,21 @@ export async function fetchLessonDetail(
     .innerJoin(lessonSongs, eq(lessonSongs.songUuid, songs.uuid))
     .where(eq(lessonSongs.lessonUuid, lessonUuid));
 
-  return { ...lesson, totalLessonsInCourse: total, songs: songRows };
+  return {
+    ...lesson,
+    videoUrl: toYoutubeWatchUrl(lesson.videoUrl),
+    totalLessonsInCourse: total,
+    songs: songRows,
+  };
+}
+
+export async function fetchLessonVideoPath(lessonUuid: string): Promise<string | null> {
+  const db = getDb();
+  const [lesson] = await db
+    .select({ localVideoPath: lessons.localVideoPath })
+    .from(lessons)
+    .where(eq(lessons.uuid, lessonUuid));
+  return lesson?.localVideoPath ?? null;
 }
 
 export function useLessonDetail(lessonUuid: string, courseUuid: string) {

@@ -2,16 +2,99 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useLocalSearchParams } from "expo-router";
-import { View } from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { SymbolView } from "expo-symbols";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { Text } from "@/components/ui/text";
+import { fetchLessonVideoPath, videoStreamUrl } from "@/features/lessons";
+import { useProgress } from "@/features/settings";
+import { useColors } from "@/lib/themes";
+import { cn } from "@/lib/utils";
 
 export default function VideoScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const { id, source } = useLocalSearchParams<{ id: string; source: string }>();
+  const { setVideoViewed } = useProgress();
+  const colors = useColors();
+  const [hasError, setHasError] = useState(false);
+
+  const { data: localVideoPath } = useQuery({
+    queryKey: ["lesson-video-path", id],
+    queryFn: () => fetchLessonVideoPath(id),
+    enabled: source === "offline",
+  });
+
+  const videoUri = source === "offline" ? (localVideoPath ?? null) : videoStreamUrl(id);
+
+  const player = useVideoPlayer(videoUri);
+
+  useEffect(() => {
+    if (videoUri) player.play();
+  }, [videoUri, player]);
+
+  useEffect(() => {
+    setVideoViewed(id, true);
+  }, [id, setVideoViewed]);
+
+  useEffect(() => {
+    void ScreenOrientation.unlockAsync();
+    return () => {
+      void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    };
+  }, []);
+
+  useEffect(() => {
+    const sub = player.addListener("statusChange", ({ status }) => {
+      if (status === "error") setHasError(true);
+    });
+    return () => sub.remove();
+  }, [player]);
+
   return (
-    <View className="flex-1 items-center justify-center">
-      <Text>Video {id}</Text>
-    </View>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }]}>
+        <VideoView
+          player={player}
+          style={StyleSheet.absoluteFill}
+          nativeControls
+          contentFit="contain"
+        />
+        {hasError && (
+          <View
+            style={StyleSheet.absoluteFill}
+            className="items-center justify-center gap-4 bg-black/80"
+          >
+            <SymbolView
+              name={{ ios: "exclamationmark.triangle.fill", android: "warning" }}
+              size={48}
+              tintColor={colors.warning}
+            />
+            <Text variant="body" className="px-8 text-center text-white">
+              Не удалось загрузить видео
+            </Text>
+            <Pressable onPress={() => router.back()}>
+              {({ pressed }) => (
+                <View
+                  className={cn(
+                    "rounded-full border border-white/40 px-6 py-3",
+                    pressed && "opacity-70",
+                  )}
+                >
+                  <Text variant="body" className="text-white">
+                    Назад
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </>
   );
 }
