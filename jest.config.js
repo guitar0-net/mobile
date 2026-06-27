@@ -41,6 +41,7 @@ const config = {
     "!src/components/app-tabs.tsx",
     "!src/lib/dev/**",
     "!src/features/lessons/schema.ts",
+    "!src/features/lessons/components/download-button.tsx",
     "!src/features/metronome/components/beat-indicator.tsx",
     "!src/features/metronome/components/pattern-dots.tsx",
     "!src/features/metronome/components/time-signature-sheet.tsx",

@@ -10,6 +10,7 @@ export {
   fetchCourses,
   fetchCourseLessons,
   fetchLessonDetail,
+  fetchLessonVideoPath,
   useContinueLesson,
   useLessonDetail,
 } from "./queries";
@@ -17,5 +18,7 @@ export type { CourseLessonRow, LessonDetailRow, LessonDetailSong } from "./queri
 export { deriveLessonState, computeCourseProgress } from "./logic";
 export type { LessonState } from "./logic";
 
+export { videoStreamUrl } from "./use-video-download";
 export { CourseContinueCard } from "./components/course-continue-card";
 export { SongRow } from "./components/song-row";
+export { VideoCard } from "./components/video-card";

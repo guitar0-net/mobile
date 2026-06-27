@@ -418,6 +418,36 @@ describe("fetchLessonDetail", () => {
     const result = await fetchLessonDetail("lesson-1", "wrong-course");
     expect(result).toBeNull();
   });
+
+  test("converts embed YouTube URL to watch URL", async () => {
+    const db = await initDb();
+    await db.insert(courses).values({
+      uuid: "course-yt",
+      title: "YT Course",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(lessons).values({
+      uuid: "lesson-yt",
+      title: "YT Lesson",
+      videoUrl: "https://www.youtube.com/embed/SifxRnzo_hc",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(courseLessons).values({
+      courseUuid: "course-yt",
+      lessonUuid: "lesson-yt",
+      order: 1,
+    });
+
+    const result = await fetchLessonDetail("lesson-yt", "course-yt");
+    expect(result?.videoUrl).toBe("https://www.youtube.com/watch?v=SifxRnzo_hc");
+  });
+
+  test("leaves non-YouTube videoUrl unchanged", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-1", "course-1");
+    expect(result?.videoUrl).toBe("https://example.com/v1.mp4");
+  });
 });
 
 // ---------------------------------------------------------------------------
