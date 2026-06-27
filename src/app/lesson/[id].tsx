@@ -3,14 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { SymbolView } from "expo-symbols";
 import { useCallback, useMemo } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
-import { useLessonDetail, SongRow } from "@/features/lessons";
+import { useLessonDetail, SongRow, VideoCard } from "@/features/lessons";
 import { BookmarkButton } from "@/features/lessons/components/bookmark-button";
 import { useProgress } from "@/features/settings";
 
@@ -75,34 +74,11 @@ export default function LessonScreen() {
               )}
             </View>
 
-            <Pressable
-              className="mt-4 overflow-hidden rounded-xl bg-zinc-900"
-              onPress={() => router.push(`/video/${id}`)}
-            >
-              <View className="h-48 items-center justify-center">
-                <View className="h-16 w-16 items-center justify-center rounded-full bg-white/20">
-                  <SymbolView
-                    name={{ ios: "play.fill", android: "play_arrow" }}
-                    size={32}
-                    tintColor="#FFFFFF"
-                  />
-                </View>
-              </View>
-              <View className="flex-row items-center justify-between px-4 py-3">
-                <Text className="text-sm text-white/70">
-                  {lessonDetail.localVideoPath
-                    ? "Video lesson · guitar0.net · downloaded"
-                    : "Video lesson · guitar0.net · online"}
-                </Text>
-                <Pressable hitSlop={8} onPress={() => {}}>
-                  <SymbolView
-                    name={{ ios: "arrow.down.to.line", android: "download" }}
-                    size={20}
-                    tintColor="rgba(255,255,255,0.7)"
-                  />
-                </Pressable>
-              </View>
-            </Pressable>
+            <VideoCard
+              lessonId={id}
+              youtubeUrl={lessonDetail.videoUrl}
+              dbDownloadStatus={lessonDetail.videoDownloadStatus}
+            />
 
             {lessonDetail.songs.length > 0 && (
               <View className="mt-6">
