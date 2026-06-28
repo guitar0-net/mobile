@@ -7,6 +7,7 @@ import { Alert, Linking, View } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
+import { useProgress } from "@/features/settings";
 import type { VideoDownloadStatus } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ type VideoCardProps = {
 
 export function VideoCard({ lessonId, youtubeUrl, dbDownloadStatus }: VideoCardProps) {
   const router = useRouter();
+  const { setVideoViewed } = useProgress();
   const { status, progress, startDownload, cancelDownload, deleteDownload } =
     useVideoDownload(lessonId, dbDownloadStatus);
 
@@ -54,7 +56,10 @@ export function VideoCard({ lessonId, youtubeUrl, dbDownloadStatus }: VideoCardP
           <Button
             variant="default"
             disabled={!youtubeUrl}
-            onPress={() => Linking.openURL(youtubeUrl).catch(() => {})}
+            onPress={() => {
+              setVideoViewed(lessonId, true);
+              Linking.openURL(youtubeUrl).catch(() => {});
+            }}
             icon={{ ios: "play.fill", android: "play_arrow" }}
             className="flex-1 rounded-xl bg-brand-red"
           >
@@ -66,11 +71,12 @@ export function VideoCard({ lessonId, youtubeUrl, dbDownloadStatus }: VideoCardP
           <Button
             variant="default"
             disabled={status === "downloading"}
-            onPress={() =>
+            onPress={() => {
+              setVideoViewed(lessonId, true);
               router.push(
                 `/video/${lessonId}?source=${isDownloaded ? "offline" : "online"}`,
-              )
-            }
+              );
+            }}
             icon={{ ios: "play.fill", android: "play_arrow" }}
             className={cn("flex-1 rounded-xl", isDownloaded && "bg-brand-purple")}
           >

@@ -26,10 +26,11 @@ import {
   getSizeName,
   getTempoName,
   useMetronomeStore,
+  SOUND_LABELS,
 } from "@/features/metronome";
 import { BeatIndicator } from "@/features/metronome/components/beat-indicator";
 import { LegendDot } from "@/features/metronome/components/legend-dot";
-import { SOUND_LABELS, SoundSheet } from "@/features/metronome/components/sound-sheet";
+import { SoundSheet } from "@/features/metronome/components/sound-sheet";
 import { TapTempoSheet } from "@/features/metronome/components/tap-tempo-sheet";
 import { TimeSignatureSheet } from "@/features/metronome/components/time-signature-sheet";
 import { useColors } from "@/lib/themes";
