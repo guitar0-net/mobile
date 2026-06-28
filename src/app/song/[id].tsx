@@ -10,6 +10,7 @@ import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { CompleteButton, useSongDetail } from "@/features/songs";
 import { ChordsSection } from "@/features/songs/components/chords-section";
 import { SchemesSection } from "@/features/songs/components/schemes-section";
+import { SongToolbar } from "@/features/songs/components/song-toolbar";
 import { TextSection } from "@/features/songs/components/text-section";
 
 export default function SongScreen() {
@@ -31,22 +32,22 @@ export default function SongScreen() {
   return (
     <>
       <Stack.Screen options={screenOptions} />
-      <ScreenScrollView
-        className="flex-1 bg-background"
-        contentContainerClassName="px-4 pb-6 pt-4"
-      >
-        {songDetail && (
-          <View>
-            {songDetail.chords.length > 0 && (
-              <ChordsSection chords={songDetail.chords} />
-            )}
-            {songDetail.schemes.length > 0 && (
-              <SchemesSection schemes={songDetail.schemes} />
-            )}
-            <TextSection text={songDetail.text} />
-          </View>
-        )}
-      </ScreenScrollView>
+      <View className="flex-1 bg-background">
+        <ScreenScrollView className="flex-1" contentContainerClassName="px-4 pb-6 pt-4">
+          {songDetail && (
+            <View>
+              {songDetail.chords.length > 0 && (
+                <ChordsSection chords={songDetail.chords} />
+              )}
+              {songDetail.schemes.length > 0 && (
+                <SchemesSection schemes={songDetail.schemes} />
+              )}
+              <TextSection text={songDetail.text} />
+            </View>
+          )}
+        </ScreenScrollView>
+        {songDetail && <SongToolbar songBpm={songDetail.metronome} />}
+      </View>
     </>
   );
 }
