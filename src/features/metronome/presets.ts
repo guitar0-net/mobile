@@ -2,7 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import type { BeatAccent } from "expo-precision-metronome";
+import type { BeatAccent, SoundPreset } from "expo-precision-metronome";
+
+export const SOUND_LABELS: Record<SoundPreset, string> = {
+  click: "Клик",
+  beep: "Бип",
+  woodblock: "Деревянный щелчок",
+  rim: "Обод",
+  hihat: "Хай-хэт",
+  cowbell: "Каубелл",
+};
 
 export type PresetSize = {
   label: string;

@@ -10,14 +10,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
 import { useColors } from "@/lib/themes";
 
-export const SOUND_LABELS: Record<SoundPreset, string> = {
-  click: "Клик",
-  beep: "Бип",
-  woodblock: "Деревянный щелчок",
-  rim: "Обод",
-  hihat: "Хай-хэт",
-  cowbell: "Каубелл",
-};
+import { SOUND_LABELS } from "../presets";
 
 type Props = {
   visible: boolean;
