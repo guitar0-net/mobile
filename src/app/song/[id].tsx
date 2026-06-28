@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useCallback, useMemo } from "react";
-import { View } from "react-native";
+import { useCallback, useMemo, useRef } from "react";
+import { ScrollView, View } from "react-native";
 
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { CompleteButton, useSongDetail } from "@/features/songs";
@@ -12,10 +12,21 @@ import { ChordsSection } from "@/features/songs/components/chords-section";
 import { SchemesSection } from "@/features/songs/components/schemes-section";
 import { SongToolbar } from "@/features/songs/components/song-toolbar";
 import { TextSection } from "@/features/songs/components/text-section";
+import { useAutoScroll } from "@/features/songs/use-auto-scroll";
 
 export default function SongScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: songDetail } = useSongDetail(id);
+  const scrollRef = useRef<ScrollView>(null);
+  const {
+    speedIndex,
+    cycleSpeed,
+    onScroll,
+    onScrollBeginDrag,
+    onScrollEndDrag,
+    onMomentumScrollBegin,
+    onMomentumScrollEnd,
+  } = useAutoScroll(scrollRef);
 
   const headerRight = useCallback(
     () =>
@@ -33,7 +44,17 @@ export default function SongScreen() {
     <>
       <Stack.Screen options={screenOptions} />
       <View className="flex-1 bg-background">
-        <ScreenScrollView className="flex-1" contentContainerClassName="px-4 pb-6 pt-4">
+        <ScreenScrollView
+          ref={scrollRef}
+          className="flex-1"
+          contentContainerClassName="px-4 pb-6 pt-4"
+          onScroll={onScroll}
+          onScrollBeginDrag={onScrollBeginDrag}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollBegin={onMomentumScrollBegin}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={16}
+        >
           {songDetail && (
             <View>
               {songDetail.chords.length > 0 && (
@@ -46,7 +67,13 @@ export default function SongScreen() {
             </View>
           )}
         </ScreenScrollView>
-        {songDetail && <SongToolbar songBpm={songDetail.metronome} />}
+        {songDetail && (
+          <SongToolbar
+            songBpm={songDetail.metronome}
+            autoScrollSpeedIndex={speedIndex}
+            onAutoScrollCycle={cycleSpeed}
+          />
+        )}
       </View>
     </>
   );
