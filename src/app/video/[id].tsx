@@ -12,14 +12,12 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { Text } from "@/components/ui/text";
 import { fetchLessonVideoPath, videoStreamUrl } from "@/features/lessons";
-import { useProgress } from "@/features/settings";
 import { useColors } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
 export default function VideoScreen() {
   const router = useRouter();
   const { id, source } = useLocalSearchParams<{ id: string; source: string }>();
-  const { setVideoViewed } = useProgress();
   const colors = useColors();
   const [hasError, setHasError] = useState(false);
 
@@ -36,10 +34,6 @@ export default function VideoScreen() {
   useEffect(() => {
     if (videoUri) player.play();
   }, [videoUri, player]);
-
-  useEffect(() => {
-    setVideoViewed(id, true);
-  }, [id, setVideoViewed]);
 
   useEffect(() => {
     void ScreenOrientation.unlockAsync();
