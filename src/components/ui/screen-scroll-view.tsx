@@ -2,14 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { forwardRef } from "react";
 import { ScrollView, type ScrollViewProps } from "react-native";
 
-export function ScreenScrollView(props: ScrollViewProps) {
-  return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentInsetAdjustmentBehavior="automatic"
-      {...props}
-    />
-  );
-}
+export const ScreenScrollView = forwardRef<ScrollView, ScrollViewProps>(
+  function ScreenScrollView(props, ref) {
+    return (
+      <ScrollView
+        ref={ref}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        {...props}
+      />
+    );
+  },
+);
