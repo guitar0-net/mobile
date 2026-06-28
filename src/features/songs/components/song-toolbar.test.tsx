@@ -62,13 +62,27 @@ beforeEach(() => {
 describe("SongToolbar", () => {
   test("shows BPM from store", () => {
     useMetronomeStore.setState({ bpm: 110 });
-    const { getAllByText } = render(<SongToolbar songBpm={90} />, { wrapper });
+    const { getAllByText } = render(
+      <SongToolbar
+        songBpm={90}
+        autoScrollSpeedIndex={0}
+        onAutoScrollCycle={jest.fn()}
+      />,
+      { wrapper },
+    );
     expect(getAllByText("110").length).toBeGreaterThan(0);
     expect(getAllByText("BPM").length).toBeGreaterThan(0);
   });
 
   test("pressing play starts the metronome and sets isPlaying", async () => {
-    const { getAllByRole } = render(<SongToolbar songBpm={90} />, { wrapper });
+    const { getAllByRole } = render(
+      <SongToolbar
+        songBpm={90}
+        autoScrollSpeedIndex={0}
+        onAutoScrollCycle={jest.fn()}
+      />,
+      { wrapper },
+    );
     const [playButton] = getAllByRole("button");
     await act(async () => {
       fireEvent.press(playButton);
@@ -79,7 +93,14 @@ describe("SongToolbar", () => {
 
   test("pressing play while playing stops the metronome and clears isPlaying", async () => {
     useMetronomeStore.setState({ isPlaying: true });
-    const { getAllByRole } = render(<SongToolbar songBpm={90} />, { wrapper });
+    const { getAllByRole } = render(
+      <SongToolbar
+        songBpm={90}
+        autoScrollSpeedIndex={0}
+        onAutoScrollCycle={jest.fn()}
+      />,
+      { wrapper },
+    );
     const [playButton] = getAllByRole("button");
     await act(async () => {
       fireEvent.press(playButton);
@@ -98,7 +119,14 @@ describe("SongToolbar", () => {
     );
 
     useMetronomeStore.setState({ isPlaying: true });
-    render(<SongToolbar songBpm={90} />, { wrapper });
+    render(
+      <SongToolbar
+        songBpm={90}
+        autoScrollSpeedIndex={0}
+        onAutoScrollCycle={jest.fn()}
+      />,
+      { wrapper },
+    );
 
     act(() => {
       onStopCallback?.({ reason: "interruption" });
@@ -111,7 +139,14 @@ describe("SongToolbar", () => {
     // handleBpmChange is passed down to the sheet (always rendered)
     // Trigger it via the sheet's −10 button when bpm is near BPM_MIN
     useMetronomeStore.setState({ bpm: 25 });
-    const { getByText } = render(<SongToolbar songBpm={90} />, { wrapper });
+    const { getByText } = render(
+      <SongToolbar
+        songBpm={90}
+        autoScrollSpeedIndex={0}
+        onAutoScrollCycle={jest.fn()}
+      />,
+      { wrapper },
+    );
     await act(async () => {
       fireEvent.press(getByText("−10"));
     });

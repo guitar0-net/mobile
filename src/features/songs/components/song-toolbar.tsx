@@ -24,15 +24,23 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { BPM_MAX, BPM_MIN, useMetronomeStore } from "@/features/metronome";
 import { useColors } from "@/lib/themes";
-import { withAlpha } from "@/lib/utils";
+import { cn, withAlpha } from "@/lib/utils";
 
 import { SongMetronomeSheet } from "./song-metronome-sheet";
 
+const SPEED_LABELS = ["", "1×", "2×", "3×"];
+
 type Props = {
   songBpm: number;
+  autoScrollSpeedIndex: number;
+  onAutoScrollCycle: () => void;
 };
 
-export function SongToolbar({ songBpm }: Props) {
+export function SongToolbar({
+  songBpm,
+  autoScrollSpeedIndex,
+  onAutoScrollCycle,
+}: Props) {
   const {
     bpm,
     beatPattern,
@@ -162,13 +170,28 @@ export function SongToolbar({ songBpm }: Props) {
             />
           </View>
 
-          <Pressable disabled className="items-center gap-1 opacity-40">
+          <Pressable
+            onPress={onAutoScrollCycle}
+            accessibilityLabel={
+              autoScrollSpeedIndex > 0
+                ? `Автопрокрутка ${SPEED_LABELS[autoScrollSpeedIndex]}`
+                : "Автопрокрутка"
+            }
+            className={cn(
+              "min-w-16 flex-row items-center justify-center gap-2 rounded-full border px-3 py-2.5",
+              autoScrollSpeedIndex > 0 ? "border-primary" : "border-border",
+            )}
+          >
             <SymbolView
               name={{ ios: "arrow.up.and.down", android: "swap_vert" }}
-              size={22}
-              tintColor={colors.foreground}
+              size={18}
+              tintColor={autoScrollSpeedIndex > 0 ? colors.primary : colors.foreground}
             />
-            <Text className="text-[10px] text-foreground">Прокрутка</Text>
+            {autoScrollSpeedIndex > 0 && (
+              <Text className="font-sans-semibold text-base text-primary">
+                {SPEED_LABELS[autoScrollSpeedIndex]}
+              </Text>
+            )}
           </Pressable>
 
           <Pressable disabled className="items-center gap-1 opacity-40">
