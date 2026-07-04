@@ -17,3 +17,13 @@ export async function apiFetch<T>(path: string): Promise<T> {
     throw new Error(`Failed to parse JSON response for ${path}`, { cause });
   }
 }
+
+export async function apiPostBinary(path: string, body: unknown): Promise<ArrayBuffer> {
+  const response = await fetch(`${getBaseUrl()}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+  return response.arrayBuffer();
+}

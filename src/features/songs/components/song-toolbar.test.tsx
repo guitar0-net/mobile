@@ -12,6 +12,10 @@ import { ThemeProvider } from "@/lib/themes";
 
 import { SongToolbar } from "./song-toolbar";
 
+jest.mock("./song-print-sheet", () => ({
+  SongPrintSheet: () => null,
+}));
+
 jest.mock("react-native-reanimated", () => {
   const { View } = jest.requireActual<typeof import("react-native")>("react-native");
   return {
@@ -67,6 +71,9 @@ describe("SongToolbar", () => {
         songBpm={90}
         autoScrollSpeedIndex={0}
         onAutoScrollCycle={jest.fn()}
+        songUuid="song-test"
+        hasChords={true}
+        hasSchemes={true}
       />,
       { wrapper },
     );
@@ -80,6 +87,9 @@ describe("SongToolbar", () => {
         songBpm={90}
         autoScrollSpeedIndex={0}
         onAutoScrollCycle={jest.fn()}
+        songUuid="song-test"
+        hasChords={true}
+        hasSchemes={true}
       />,
       { wrapper },
     );
@@ -98,6 +108,9 @@ describe("SongToolbar", () => {
         songBpm={90}
         autoScrollSpeedIndex={0}
         onAutoScrollCycle={jest.fn()}
+        songUuid="song-test"
+        hasChords={true}
+        hasSchemes={true}
       />,
       { wrapper },
     );
@@ -124,6 +137,9 @@ describe("SongToolbar", () => {
         songBpm={90}
         autoScrollSpeedIndex={0}
         onAutoScrollCycle={jest.fn()}
+        songUuid="song-test"
+        hasChords={true}
+        hasSchemes={true}
       />,
       { wrapper },
     );
@@ -144,6 +160,9 @@ describe("SongToolbar", () => {
         songBpm={90}
         autoScrollSpeedIndex={0}
         onAutoScrollCycle={jest.fn()}
+        songUuid="song-test"
+        hasChords={true}
+        hasSchemes={true}
       />,
       { wrapper },
     );

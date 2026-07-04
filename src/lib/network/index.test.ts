@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { apiFetch } from "./index";
+import { apiFetch, apiPostBinary } from "./index";
 
 const BASE_URL = "https://test.example.com";
 
@@ -80,6 +80,46 @@ describe("apiFetch", () => {
     );
     await expect(apiFetch("/api/v1/broken/")).rejects.toThrow(
       "Failed to parse JSON response for /api/v1/broken/",
+    );
+  });
+});
+
+describe("apiPostBinary", () => {
+  test("sends POST with Content-Type application/json", async () => {
+    jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(new ArrayBuffer(4), { status: 200 }));
+    await apiPostBinary("/api/v1/songs/uuid/print/", { show_text: true });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${BASE_URL}/api/v1/songs/uuid/print/`,
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ show_text: true }),
+      }),
+    );
+  });
+
+  test("returns ArrayBuffer on success", async () => {
+    const buffer = new ArrayBuffer(8);
+    jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(buffer, { status: 200 }));
+    const result = await apiPostBinary("/api/v1/songs/uuid/print/", {});
+    expect(result).toBeInstanceOf(ArrayBuffer);
+  });
+
+  test("throws on non-OK HTTP status", async () => {
+    jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(null, { status: 422 }));
+    await expect(apiPostBinary("/any", {})).rejects.toThrow("HTTP error: 422");
+  });
+
+  test("throws when EXPO_PUBLIC_API_URL is not set", async () => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+    await expect(apiPostBinary("/any", {})).rejects.toThrow(
+      "EXPO_PUBLIC_API_URL is not configured",
     );
   });
 });
