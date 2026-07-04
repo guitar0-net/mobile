@@ -35,9 +35,10 @@ export default function SongScreen() {
       ) : null,
     [id, songDetail?.lessonUuid],
   );
+  const headerTitle = songDetail?.title ?? "Песня";
   const screenOptions = useMemo(
-    () => ({ title: songDetail?.title, headerBackTitle: "К уроку", headerRight }),
-    [songDetail, headerRight],
+    () => ({ title: headerTitle, headerBackTitle: "К уроку", headerRight }),
+    [headerTitle, headerRight],
   );
 
   return (
