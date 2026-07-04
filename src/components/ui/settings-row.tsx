@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { Pressable, Switch, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/text";
+import { Toggle } from "@/components/ui/toggle";
 import { useColors } from "@/lib/themes";
 
 type BaseProps = {
@@ -48,12 +49,7 @@ export function SettingsRow(props: Props) {
         />
       )}
       {props.type === "toggle" && (
-        <Switch
-          value={props.value}
-          onValueChange={props.onChange}
-          trackColor={{ false: colors.border, true: colors.primary }}
-          ios_backgroundColor={colors.border}
-        />
+        <Toggle value={props.value} onValueChange={props.onChange} />
       )}
     </View>
   );
