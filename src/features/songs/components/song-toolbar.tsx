@@ -27,6 +27,7 @@ import { useColors } from "@/lib/themes";
 import { cn, withAlpha } from "@/lib/utils";
 
 import { SongMetronomeSheet } from "./song-metronome-sheet";
+import { SongPrintSheet } from "./song-print-sheet";
 
 const SPEED_LABELS = ["", "1×", "2×", "3×"];
 
@@ -34,12 +35,18 @@ type Props = {
   songBpm: number;
   autoScrollSpeedIndex: number;
   onAutoScrollCycle: () => void;
+  songUuid: string;
+  hasChords: boolean;
+  hasSchemes: boolean;
 };
 
 export function SongToolbar({
   songBpm,
   autoScrollSpeedIndex,
   onAutoScrollCycle,
+  songUuid,
+  hasChords,
+  hasSchemes,
 }: Props) {
   const {
     bpm,
@@ -55,6 +62,7 @@ export function SongToolbar({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [printSheetVisible, setPrintSheetVisible] = useState(false);
 
   const beatPatternRef = useRef(beatPattern);
   useEffect(() => {
@@ -178,32 +186,44 @@ export function SongToolbar({
                 : "Автопрокрутка"
             }
             className={cn(
-              "min-w-16 flex-row items-center justify-center gap-2 rounded-full border px-3 py-2.5",
+              "h-14 w-14 items-center justify-center rounded-full border",
               autoScrollSpeedIndex > 0 ? "border-primary" : "border-border",
             )}
           >
-            <SymbolView
-              name={{ ios: "arrow.up.and.down", android: "swap_vert" }}
-              size={18}
-              tintColor={autoScrollSpeedIndex > 0 ? colors.primary : colors.foreground}
-            />
-            {autoScrollSpeedIndex > 0 && (
+            {autoScrollSpeedIndex === 0 ? (
+              <SymbolView
+                name={{ ios: "arrow.down", android: "arrow_downward" }}
+                size={20}
+                tintColor={colors.foreground}
+              />
+            ) : (
               <Text className="font-sans-semibold text-base text-primary">
                 {SPEED_LABELS[autoScrollSpeedIndex]}
               </Text>
             )}
           </Pressable>
 
-          <Pressable disabled className="items-center gap-1 opacity-40">
+          <Pressable
+            onPress={() => setPrintSheetVisible(true)}
+            accessibilityLabel="Печать"
+            className="h-14 w-14 items-center justify-center rounded-full border border-border"
+          >
             <SymbolView
               name={{ ios: "printer", android: "print" }}
               size={22}
               tintColor={colors.foreground}
             />
-            <Text className="text-[10px] text-foreground">Печать</Text>
           </Pressable>
         </View>
       </View>
+
+      <SongPrintSheet
+        visible={printSheetVisible}
+        onClose={() => setPrintSheetVisible(false)}
+        songUuid={songUuid}
+        hasChords={hasChords}
+        hasSchemes={hasSchemes}
+      />
 
       <SongMetronomeSheet
         visible={sheetVisible}

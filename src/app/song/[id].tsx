@@ -72,6 +72,9 @@ export default function SongScreen() {
             songBpm={songDetail.metronome}
             autoScrollSpeedIndex={speedIndex}
             onAutoScrollCycle={cycleSpeed}
+            songUuid={songDetail.uuid}
+            hasChords={songDetail.chords.length > 0}
+            hasSchemes={songDetail.schemes.length > 0}
           />
         )}
       </View>
