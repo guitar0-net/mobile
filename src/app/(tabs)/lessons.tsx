@@ -151,7 +151,9 @@ export default function LessonsScreen() {
                 state={state}
                 completedSongIds={progress[lesson.lessonUuid]?.completedSongIds ?? []}
                 onPress={() =>
-                  router.push(`/lesson/${lesson.lessonUuid}?courseId=${selectedCourse}`)
+                  router.push(
+                    `/lesson/${lesson.lessonUuid}?courseId=${selectedCourse}&order=${lesson.order}&total=${allLessons.length}`,
+                  )
                 }
               />
             ))}

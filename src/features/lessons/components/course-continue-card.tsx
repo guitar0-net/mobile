@@ -31,10 +31,10 @@ export function CourseContinueCard({
   variant = "compact",
 }: Props) {
   const router = useRouter();
-  const { lesson: row } = useContinueLesson(courseUuid);
+  const { lesson: row, data } = useContinueLesson(courseUuid);
   const { progress } = useProgress();
 
-  if (!row) return null;
+  if (!row || !data) return null;
 
   const lessonProgress = progress[row.lessonUuid];
   const completedSongs = lessonProgress?.completedSongIds.length ?? 0;
@@ -51,7 +51,9 @@ export function CourseContinueCard({
   };
 
   const handlePress = () =>
-    router.push(`/lesson/${row.lessonUuid}?courseId=${courseUuid}`);
+    router.push(
+      `/lesson/${row.lessonUuid}?courseId=${courseUuid}&order=${row.order}&total=${data.length}`,
+    );
 
   return variant === "featured" ? (
     <FeaturedCourseCard
