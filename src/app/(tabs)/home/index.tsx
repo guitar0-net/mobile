@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
+import { useActivityStreak } from "@/features/activity";
 import { AnnouncementsPreview } from "@/features/announcements";
 import { fetchChordsCount } from "@/features/chords";
 import { CourseContinueCard, fetchCourses, MAIN_COURSE_ID } from "@/features/lessons";
@@ -54,6 +55,7 @@ function ToolCard({ icon, label, subtitle, onPress, color }: ToolCardProps) {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { currentStreak, todaySeconds } = useActivityStreak();
   const metronomeBpm = useMetronomeStore((s) => s.bpm);
   const tunerTuningId = useTunerStore((s) => s.tuningId);
   const tunerShortLabel = (TUNINGS.find((t) => t.id === tunerTuningId) ?? TUNINGS[0])
@@ -94,12 +96,15 @@ export default function HomeScreen() {
               Привет!
             </Text>
             <View className="flex-row items-center gap-2">
-              <Badge variant="outline">1 день подряд</Badge>
+              <Badge variant="outline">
+                {pluralRu(currentStreak, "день", "дня", "дней")} подряд
+              </Badge>
               <Badge
                 variant="secondary"
                 icon={{ ios: "clock", android: "clock_arrow_up" }}
               >
-                18 минут сегодня
+                {pluralRu(Math.floor(todaySeconds / 60), "минута", "минуты", "минут")}{" "}
+                сегодня
               </Badge>
             </View>
           </View>

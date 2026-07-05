@@ -23,6 +23,9 @@ const config = {
     // Replace expo-sqlite with a better-sqlite3-backed in-memory mock so
     // tests never touch native TurboModule code.
     "^expo-sqlite$": "<rootDir>/__mocks__/expo-sqlite.js",
+    // Replace expo-crypto with a Node crypto-backed mock — jest-expo's
+    // generic native-module auto-mock returns undefined from randomUUID().
+    "^expo-crypto$": "<rootDir>/__mocks__/expo-crypto.js",
     // Replace @gorhom/bottom-sheet with a pure JS mock — the real package
     // requires native Worklets/Reanimated initialization unavailable in Jest.
     "^@gorhom/bottom-sheet$": "<rootDir>/__mocks__/@gorhom/bottom-sheet.js",
@@ -41,6 +44,9 @@ const config = {
     "!src/components/app-tabs.tsx",
     "!src/lib/dev/**",
     "!src/features/lessons/schema.ts",
+    // Thin pass-through wrapper — its only job is calling useAppSession(),
+    // which is already covered behaviorally by use-app-session.test.tsx.
+    "!src/features/activity/components/session-tracker.tsx",
     "!src/features/lessons/components/download-button.tsx",
     "!src/features/metronome/components/beat-indicator.tsx",
     "!src/features/metronome/components/pattern-dots.tsx",

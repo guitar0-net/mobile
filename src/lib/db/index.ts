@@ -51,7 +51,10 @@ export {
   songChords,
   schemes,
   songSchemes,
+  activityEvents,
+  activityDaily,
   VIDEO_DOWNLOAD_STATUSES,
+  ACTIVITY_EVENT_TYPES,
 } from "./schema";
 
 export type {
@@ -75,5 +78,10 @@ export type {
   NewScheme,
   SongScheme,
   NewSongScheme,
+  ActivityEvent,
+  NewActivityEvent,
+  ActivityDaily,
+  NewActivityDaily,
   VideoDownloadStatus,
+  ActivityEventType,
 } from "./schema";
