@@ -20,6 +20,7 @@ export function BookmarkButton({ lessonId }: BookmarkButtonProps) {
           ? { ios: "bookmark.fill", android: "bookmark" }
           : { ios: "bookmark", android: "bookmark_border" }
       }
+      active={isBookmarked}
       onPress={() => (isBookmarked ? removeFavorite(lessonId) : addFavorite(lessonId))}
     />
   );

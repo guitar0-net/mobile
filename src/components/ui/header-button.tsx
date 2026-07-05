@@ -11,19 +11,22 @@ type HeaderButtonProps = Omit<PressableProps, "style"> & {
   icon: SymbolViewProps["name"];
   size?: number;
   tintColor?: string;
+  active?: boolean;
 };
 
 export function HeaderButton({
   icon,
   size = 22,
   tintColor,
+  active = false,
   onPress,
   ...rest
 }: HeaderButtonProps) {
   const colors = useColors();
+  const resolvedTint = tintColor ?? (active ? colors.primary : colors.foreground);
   return (
     <Pressable hitSlop={8} onPress={onPress} {...rest}>
-      <SymbolView name={icon} size={size} tintColor={tintColor ?? colors.foreground} />
+      <SymbolView name={icon} size={size} tintColor={resolvedTint} />
     </Pressable>
   );
 }

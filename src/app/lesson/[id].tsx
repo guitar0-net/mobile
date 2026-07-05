@@ -20,15 +20,23 @@ function formatDuration(seconds: number): string {
 }
 
 export default function LessonScreen() {
-  const { id, courseId } = useLocalSearchParams<{ id: string; courseId: string }>();
+  const { id, courseId, order, total } = useLocalSearchParams<{
+    id: string;
+    courseId: string;
+    order?: string;
+    total?: string;
+  }>();
   const { data: lessonDetail } = useLessonDetail(id, courseId);
   const { progress } = useProgress();
 
   const router = useRouter();
   const completedSongIds = progress[id]?.completedSongIds ?? [];
-  const headerTitle = lessonDetail
-    ? `Урок ${lessonDetail.lessonOrder} / ${lessonDetail.totalLessonsInCourse}`
-    : "Урок";
+  let headerTitle = "Урок";
+  if (lessonDetail) {
+    headerTitle = `Урок ${lessonDetail.lessonOrder} / ${lessonDetail.totalLessonsInCourse}`;
+  } else if (order && total) {
+    headerTitle = `Урок ${order} / ${total}`;
+  }
   const headerRight = useCallback(() => <BookmarkButton lessonId={id} />, [id]);
   const screenOptions = useMemo(
     () => ({ title: headerTitle, headerRight }),

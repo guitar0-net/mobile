@@ -52,7 +52,7 @@ describe("CourseContinueCard", () => {
   });
 
   test("renders compact card by default", () => {
-    mockUseContinueLesson.mockReturnValue({ lesson: mockLesson });
+    mockUseContinueLesson.mockReturnValue({ lesson: mockLesson, data: [mockLesson] });
     render(<CourseContinueCard courseUuid="course-1" courseTitle="Основы гитары" />, {
       wrapper,
     });
@@ -61,7 +61,7 @@ describe("CourseContinueCard", () => {
   });
 
   test("renders featured card when variant is featured", () => {
-    mockUseContinueLesson.mockReturnValue({ lesson: mockLesson });
+    mockUseContinueLesson.mockReturnValue({ lesson: mockLesson, data: [mockLesson] });
     render(
       <CourseContinueCard
         courseUuid="course-1"
@@ -74,11 +74,13 @@ describe("CourseContinueCard", () => {
   });
 
   test("calls router.push with correct path when card is pressed", () => {
-    mockUseContinueLesson.mockReturnValue({ lesson: mockLesson });
+    mockUseContinueLesson.mockReturnValue({ lesson: mockLesson, data: [mockLesson] });
     render(<CourseContinueCard courseUuid="course-1" courseTitle="Курс" />, {
       wrapper,
     });
     fireEvent.press(screen.getByText("Начать"));
-    expect(mockPush).toHaveBeenCalledWith("/lesson/lesson-1?courseId=course-1");
+    expect(mockPush).toHaveBeenCalledWith(
+      "/lesson/lesson-1?courseId=course-1&order=1&total=1",
+    );
   });
 });
