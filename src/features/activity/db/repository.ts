@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 import * as Crypto from "expo-crypto";
 
 import { activityDaily, activityEvents, type AppDb } from "@/lib/db";
+
+import { type ActivityDayBucket } from "../logic";
 
 export type SessionEventInput = {
   deviceId: string;
@@ -44,6 +46,17 @@ export async function upsertDailyTotal(
         updatedAt,
       },
     });
+}
+
+export async function getDailyTotals(
+  db: AppDb,
+  startDate: string,
+  endDate: string,
+): Promise<ActivityDayBucket[]> {
+  return db
+    .select({ date: activityDaily.date, totalSeconds: activityDaily.totalSeconds })
+    .from(activityDaily)
+    .where(and(gte(activityDaily.date, startDate), lte(activityDaily.date, endDate)));
 }
 
 export async function getDailyTotal(db: AppDb, date: string): Promise<number> {

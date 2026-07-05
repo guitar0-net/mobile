@@ -4,7 +4,12 @@
 
 import { _resetDbForTesting, activityDaily, activityEvents, initDb } from "@/lib/db";
 
-import { getDailyTotal, insertSessionEvent, upsertDailyTotal } from "./repository";
+import {
+  getDailyTotal,
+  getDailyTotals,
+  insertSessionEvent,
+  upsertDailyTotal,
+} from "./repository";
 
 beforeEach(() => {
   _resetDbForTesting();
@@ -63,6 +68,34 @@ describe("upsertDailyTotal", () => {
     expect(rows).toHaveLength(2);
     expect(rows.find((r) => r.date === "2026-01-05")?.totalSeconds).toBe(300);
     expect(rows.find((r) => r.date === "2026-01-06")?.totalSeconds).toBe(60);
+  });
+});
+
+describe("getDailyTotals", () => {
+  test("returns only the rows within the requested date range, inclusive", async () => {
+    const db = await initDb();
+    await upsertDailyTotal(db, "2026-01-04", 100);
+    await upsertDailyTotal(db, "2026-01-05", 200);
+    await upsertDailyTotal(db, "2026-01-06", 300);
+    await upsertDailyTotal(db, "2026-01-10", 999);
+
+    const rows = await getDailyTotals(db, "2026-01-04", "2026-01-06");
+
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        { date: "2026-01-04", totalSeconds: 100 },
+        { date: "2026-01-05", totalSeconds: 200 },
+        { date: "2026-01-06", totalSeconds: 300 },
+      ]),
+    );
+    expect(rows).toHaveLength(3);
+  });
+
+  test("returns an empty array when nothing falls in range", async () => {
+    const db = await initDb();
+    await upsertDailyTotal(db, "2026-01-10", 999);
+
+    expect(await getDailyTotals(db, "2026-01-04", "2026-01-06")).toEqual([]);
   });
 });
 

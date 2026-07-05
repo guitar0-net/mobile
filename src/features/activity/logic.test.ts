@@ -4,7 +4,11 @@
 
 import {
   advanceStreak,
+  buildGridColumns,
+  enumerateLocalDayKeys,
+  intensityBucket,
   localDayKey,
+  monthsBackDayKey,
   resolveDisplayedStreak,
   splitSessionAcrossMidnight,
 } from "./logic";
@@ -159,6 +163,147 @@ describe("advanceStreak", () => {
       longestStreak: 2,
       lastActiveDate: "2026-02-01",
     });
+  });
+});
+
+describe("intensityBucket", () => {
+  test.each([
+    [0, 0],
+    [1, 1],
+    [299, 1],
+    [300, 2],
+    [899, 2],
+    [900, 3],
+    [1799, 3],
+    [1800, 4],
+    [3599, 4],
+    [3600, 5],
+    [7200, 5],
+  ])("%i seconds maps to bucket %i", (seconds, expected) => {
+    expect(intensityBucket(seconds)).toBe(expected);
+  });
+});
+
+describe("enumerateLocalDayKeys", () => {
+  test("a single-day range returns just that day", () => {
+    expect(enumerateLocalDayKeys("2026-01-05", "2026-01-05")).toEqual(["2026-01-05"]);
+  });
+
+  test("returns every day inclusive, in chronological order", () => {
+    expect(enumerateLocalDayKeys("2026-01-05", "2026-01-08")).toEqual([
+      "2026-01-05",
+      "2026-01-06",
+      "2026-01-07",
+      "2026-01-08",
+    ]);
+  });
+
+  test("crosses a month boundary", () => {
+    expect(enumerateLocalDayKeys("2026-01-30", "2026-02-02")).toEqual([
+      "2026-01-30",
+      "2026-01-31",
+      "2026-02-01",
+      "2026-02-02",
+    ]);
+  });
+
+  test("crosses a year boundary", () => {
+    expect(enumerateLocalDayKeys("2025-12-30", "2026-01-02")).toEqual([
+      "2025-12-30",
+      "2025-12-31",
+      "2026-01-01",
+      "2026-01-02",
+    ]);
+  });
+});
+
+describe("monthsBackDayKey", () => {
+  test("one month back within the same year", () => {
+    expect(monthsBackDayKey(new Date("2026-03-15T10:00:00"), 1)).toBe("2026-02-15");
+  });
+
+  test("twelve months back crosses a year boundary", () => {
+    expect(monthsBackDayKey(new Date("2026-06-10T10:00:00"), 12)).toBe("2025-06-10");
+  });
+
+  test("zero months back returns the same day", () => {
+    expect(monthsBackDayKey(new Date("2026-06-10T10:00:00"), 0)).toBe("2026-06-10");
+  });
+
+  test("clamps into a shorter target month instead of overflowing into the next one", () => {
+    expect(monthsBackDayKey(new Date("2026-03-31T10:00:00"), 1)).toBe("2026-02-28");
+  });
+
+  test("clamps a leap day onto the last day of February in a non-leap year", () => {
+    expect(monthsBackDayKey(new Date("2028-02-29T10:00:00"), 12)).toBe("2027-02-28");
+  });
+});
+
+describe("buildGridColumns", () => {
+  test("an empty history produces no columns", () => {
+    expect(buildGridColumns([])).toEqual([]);
+  });
+
+  test("a history starting on Sunday fills one column with no padding", () => {
+    const history = enumerateLocalDayKeys("2026-01-04", "2026-01-10").map((date) => ({
+      date,
+      totalSeconds: 0,
+    }));
+
+    const columns = buildGridColumns(history);
+
+    expect(columns).toHaveLength(1);
+    expect(columns[0].map((cell) => cell?.date ?? null)).toEqual([
+      "2026-01-04",
+      "2026-01-05",
+      "2026-01-06",
+      "2026-01-07",
+      "2026-01-08",
+      "2026-01-09",
+      "2026-01-10",
+    ]);
+  });
+
+  test("a history starting mid-week pads the front of the first column and the back of the last", () => {
+    // 2026-01-07 is a Wednesday; 7 days spills one row into a second column.
+    const history = enumerateLocalDayKeys("2026-01-07", "2026-01-13").map((date) => ({
+      date,
+      totalSeconds: 0,
+    }));
+
+    const columns = buildGridColumns(history);
+
+    expect(columns).toHaveLength(2);
+    expect(columns[0].map((cell) => cell?.date ?? null)).toEqual([
+      null,
+      null,
+      null,
+      "2026-01-07",
+      "2026-01-08",
+      "2026-01-09",
+      "2026-01-10",
+    ]);
+    expect(columns[1].map((cell) => cell?.date ?? null)).toEqual([
+      "2026-01-11",
+      "2026-01-12",
+      "2026-01-13",
+      null,
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  test("each cell carries the intensity bucket for its totalSeconds", () => {
+    const history = [
+      { date: "2026-01-04", totalSeconds: 0 },
+      { date: "2026-01-05", totalSeconds: 1800 },
+      { date: "2026-01-06", totalSeconds: 3600 },
+    ];
+
+    const columns = buildGridColumns(history);
+
+    expect(columns[0].slice(0, 3).map((cell) => cell?.bucket)).toEqual([0, 4, 5]);
   });
 });
 

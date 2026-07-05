@@ -22,6 +22,11 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf="music.note.list" md="library_music" />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="progress" contentStyle={contentStyle}>
+        <NativeTabs.Trigger.Label>Progress</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="flame.fill" md="local_fire_department" />
+      </NativeTabs.Trigger>
+
       {__DEV__ && (
         <NativeTabs.Trigger name="dev" contentStyle={contentStyle}>
           <NativeTabs.Trigger.Label>Dev</NativeTabs.Trigger.Label>

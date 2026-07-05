@@ -7,8 +7,14 @@ import { useShallow } from "zustand/react/shallow";
 
 import { getDb } from "@/lib/db";
 
-import { getDailyTotal } from "./db/repository";
-import { localDayKey, resolveDisplayedStreak } from "./logic";
+import { getDailyTotal, getDailyTotals } from "./db/repository";
+import {
+  enumerateLocalDayKeys,
+  localDayKey,
+  monthsBackDayKey,
+  resolveDisplayedStreak,
+  type ActivityDayBucket,
+} from "./logic";
 import { useActivityStatsStore } from "./stats-store";
 
 export function useActivityStreak() {
@@ -31,4 +37,23 @@ export function useActivityStreak() {
     longestStreak,
     todaySeconds: dailyTotalQuery.data ?? 0,
   };
+}
+
+export function useActivityHistory(monthsBack: number): ActivityDayBucket[] {
+  const today = localDayKey(new Date());
+  const startDate = monthsBackDayKey(new Date(), monthsBack);
+
+  const historyQuery = useQuery({
+    queryKey: ["activity", "history", startDate, today],
+    queryFn: () => getDailyTotals(getDb(), startDate, today),
+  });
+
+  const totalsByDate = new Map(
+    (historyQuery.data ?? []).map((row) => [row.date, row.totalSeconds]),
+  );
+
+  return enumerateLocalDayKeys(startDate, today).map((date) => ({
+    date,
+    totalSeconds: totalsByDate.get(date) ?? 0,
+  }));
 }

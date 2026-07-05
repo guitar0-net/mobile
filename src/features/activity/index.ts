@@ -3,4 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 export { ActivitySessionTracker } from "./components/session-tracker";
-export { useActivityStreak } from "./queries";
+export { ActivityGrid } from "./components/activity-grid";
+export { useActivityHistory, useActivityStreak } from "./queries";
+export type { ActivityDayBucket } from "./logic";

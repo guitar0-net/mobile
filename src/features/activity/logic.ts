@@ -47,6 +47,83 @@ function dayBefore(dateKey: string): string {
   return `${y}-${m}-${d}`;
 }
 
+export function monthsBackDayKey(from: Date, monthsBack: number): string {
+  const year = from.getFullYear();
+  const month = from.getMonth() - monthsBack;
+  // Clamp instead of letting Date roll overflow days into the next month
+  // (e.g. Mar 31 minus 1 month must land on Feb 28/29, not Mar 3).
+  const lastDayOfTargetMonth = new Date(year, month + 1, 0).getDate();
+  const day = Math.min(from.getDate(), lastDayOfTargetMonth);
+  return localDayKey(new Date(year, month, day));
+}
+
+export function enumerateLocalDayKeys(startDate: string, endDate: string): string[] {
+  const [sy, sm, sd] = startDate.split("-").map(Number);
+  const [ey, em, ed] = endDate.split("-").map(Number);
+  const start = Date.UTC(sy, sm - 1, sd);
+  const end = Date.UTC(ey, em - 1, ed);
+
+  const keys: string[] = [];
+  for (let t = start; t <= end; t += 24 * 60 * 60 * 1000) {
+    const d = new Date(t);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    keys.push(`${y}-${m}-${day}`);
+  }
+  return keys;
+}
+
+export function intensityBucket(totalSeconds: number): 0 | 1 | 2 | 3 | 4 | 5 {
+  if (totalSeconds <= 0) return 0;
+  if (totalSeconds < 300) return 1;
+  if (totalSeconds < 900) return 2;
+  if (totalSeconds < 1800) return 3;
+  if (totalSeconds < 3600) return 4;
+  return 5;
+}
+
+export type ActivityDayBucket = { date: string; totalSeconds: number };
+
+export type GridCell = {
+  date: string;
+  totalSeconds: number;
+  bucket: 0 | 1 | 2 | 3 | 4 | 5;
+} | null;
+
+// The date key carries no timezone, so day-of-week is derived in UTC —
+// consistent with enumerateLocalDayKeys/dayBefore's key-only date math.
+function dayOfWeek(dateKey: string): number {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+}
+
+// Groups a contiguous, chronological run of days into GitHub-style
+// Sun-Sat week columns, padding the front of the first and back of the
+// last column with null so every column is exactly 7 cells tall.
+export function buildGridColumns(history: ActivityDayBucket[]): GridCell[][] {
+  if (history.length === 0) return [];
+
+  const columns: GridCell[][] = [];
+  let column: GridCell[] = new Array(dayOfWeek(history[0].date)).fill(null);
+
+  for (const day of history) {
+    column.push({
+      date: day.date,
+      totalSeconds: day.totalSeconds,
+      bucket: intensityBucket(day.totalSeconds),
+    });
+    if (column.length === 7) {
+      columns.push(column);
+      column = [];
+    }
+  }
+  if (column.length > 0) {
+    columns.push([...column, ...new Array(7 - column.length).fill(null)]);
+  }
+  return columns;
+}
+
 export type StreakState = {
   currentStreak: number;
   longestStreak: number;
