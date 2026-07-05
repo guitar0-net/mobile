@@ -18,6 +18,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import { ActivitySessionTracker } from "@/features/activity";
 import { queryClient } from "@/lib/network/query-client";
 import { ThemeProvider, useTheme, useThemedScreenOptions } from "@/lib/themes";
 
@@ -89,6 +90,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
+        <ActivitySessionTracker />
         <ThemeProvider>
           <BottomSheetModalProvider>
             <ThemedStack />
