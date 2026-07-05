@@ -18,7 +18,7 @@ function makeWrapper() {
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return Wrapper;
+  return { Wrapper, client };
 }
 
 type Listener = (state: AppStateStatus) => void;
@@ -62,7 +62,7 @@ describe("useAppSession", () => {
     const getListener = captureAppStateListener();
     await initDb();
 
-    renderHook(() => useAppSession(), { wrapper: makeWrapper() });
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
     jest.setSystemTime(new Date("2026-01-05T10:05:00"));
     getListener()("background");
 
@@ -76,12 +76,55 @@ describe("useAppSession", () => {
     expect(useActivityStatsStore.getState().currentStreak).toBe(1);
   });
 
+  test("credits today's streak as soon as the app is active, before backgrounding", async () => {
+    setAppState("active");
+    captureAppStateListener();
+    await initDb();
+
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
+
+    expect(useActivityStatsStore.getState().currentStreak).toBe(1);
+    expect(useActivityStatsStore.getState().lastActiveDate).toBe("2026-01-05");
+  });
+
+  test("credits today's streak on transition to 'active', not just at mount", async () => {
+    setAppState("background");
+    const getListener = captureAppStateListener();
+    await initDb();
+
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
+    expect(useActivityStatsStore.getState().lastActiveDate).toBeNull();
+
+    getListener()("active");
+
+    expect(useActivityStatsStore.getState().currentStreak).toBe(1);
+    expect(useActivityStatsStore.getState().lastActiveDate).toBe("2026-01-05");
+  });
+
+  test("invalidates the activity history query so the progress grid refreshes", async () => {
+    setAppState("active");
+    const getListener = captureAppStateListener();
+    await initDb();
+
+    const { Wrapper, client } = makeWrapper();
+    const invalidateSpy = jest.spyOn(client, "invalidateQueries");
+    renderHook(() => useAppSession(), { wrapper: Wrapper });
+    jest.setSystemTime(new Date("2026-01-05T10:05:00"));
+    getListener()("background");
+
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["activity", "history"],
+      });
+    });
+  });
+
   test("also records the session when transitioning to 'inactive'", async () => {
     setAppState("active");
     const getListener = captureAppStateListener();
     await initDb();
 
-    renderHook(() => useAppSession(), { wrapper: makeWrapper() });
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
     jest.setSystemTime(new Date("2026-01-05T10:02:00"));
     getListener()("inactive");
 
@@ -96,7 +139,7 @@ describe("useAppSession", () => {
     const getListener = captureAppStateListener();
     await initDb();
 
-    renderHook(() => useAppSession(), { wrapper: makeWrapper() });
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
     getListener()("background");
 
     // Give any accidental async work a chance to run before asserting absence.
@@ -113,7 +156,7 @@ describe("useAppSession", () => {
     const getListener = captureAppStateListener();
     await initDb();
 
-    renderHook(() => useAppSession(), { wrapper: makeWrapper() });
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
     getListener()("extension" as AppStateStatus);
     jest.setSystemTime(new Date("2026-01-05T10:05:00"));
     getListener()("background");
@@ -134,7 +177,7 @@ describe("useAppSession", () => {
     const getListener = captureAppStateListener();
     await initDb();
 
-    renderHook(() => useAppSession(), { wrapper: makeWrapper() });
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
     jest.setSystemTime(new Date("2026-01-05T10:01:00"));
     getListener()("background");
     await waitFor(async () => {

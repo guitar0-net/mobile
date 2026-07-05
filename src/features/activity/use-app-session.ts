@@ -9,7 +9,9 @@ import { AppState, type AppStateStatus } from "react-native";
 import { initDb } from "@/lib/db";
 
 import { getDeviceId } from "./device-id";
+import { localDayKey } from "./logic";
 import { recordSession } from "./session-recorder";
+import { useActivityStatsStore } from "./stats-store";
 
 const BACKGROUNDED_STATES = new Set<AppStateStatus>(["background", "inactive"]);
 
@@ -20,9 +22,20 @@ export function useAppSession(): void {
   );
 
   useEffect(() => {
+    // Credit today's streak as soon as a session starts, not only once it ends —
+    // otherwise the streak still reads as yesterday's until the user backgrounds
+    // the app, even though they're already using it.
+    if (sessionStartRef.current) {
+      useActivityStatsStore
+        .getState()
+        .advanceStreakForDay(localDayKey(sessionStartRef.current));
+    }
+
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
-        sessionStartRef.current = new Date();
+        const startedAt = new Date();
+        sessionStartRef.current = startedAt;
+        useActivityStatsStore.getState().advanceStreakForDay(localDayKey(startedAt));
         return;
       }
 
@@ -42,6 +55,9 @@ export function useAppSession(): void {
           void queryClient.invalidateQueries({
             queryKey: ["activity", "dailyTotal", chunk.date],
           });
+        }
+        if (chunks.length > 0) {
+          void queryClient.invalidateQueries({ queryKey: ["activity", "history"] });
         }
       })();
     });
