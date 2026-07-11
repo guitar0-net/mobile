@@ -27,7 +27,7 @@ export function withAlpha(hex: string, opacity: number): string {
   );
 }
 
-export function pluralRu(
+export function pluralFormRu(
   n: number,
   form1: string,
   form2: string,
@@ -35,10 +35,19 @@ export function pluralRu(
 ): string {
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 14) return `${n} ${form5}`;
-  if (mod10 === 1) return `${n} ${form1}`;
-  if (mod10 >= 2 && mod10 <= 4) return `${n} ${form2}`;
-  return `${n} ${form5}`;
+  if (mod100 >= 11 && mod100 <= 14) return form5;
+  if (mod10 === 1) return form1;
+  if (mod10 >= 2 && mod10 <= 4) return form2;
+  return form5;
+}
+
+export function pluralRu(
+  n: number,
+  form1: string,
+  form2: string,
+  form5: string,
+): string {
+  return `${n} ${pluralFormRu(n, form1, form2, form5)}`;
 }
 
 export function describeRemainingItems(songs: number, videoRemaining: boolean): string {
@@ -63,6 +72,22 @@ export function formatDateRu(iso: string): string {
     month: "long",
     year: "numeric",
   });
+}
+
+export function formatTimeRu(iso: string): string {
+  return new Date(iso).toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// "73ч 35м" for an hour or more, "35м" below an hour — matches how the app
+// reports lifetime play time, where seconds add no useful precision.
+export function formatHoursMinutesRu(totalSeconds: number): string {
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours === 0 ? `${minutes}м` : `${hours}ч ${minutes}м`;
 }
 
 export function formatTodayRu(date: Date = new Date()): string {
