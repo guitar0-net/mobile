@@ -9,9 +9,18 @@ import React from "react";
 import { _resetDbForTesting, initDb } from "@/lib/db";
 
 import { resetActivityStatsForTesting } from "./__tests__/testing";
-import { upsertDailyTotal } from "./db/repository";
+import {
+  insertLessonViewedEvent,
+  insertSongCompletionEvent,
+  upsertDailyTotal,
+} from "./db/repository";
 import { enumerateLocalDayKeys, localDayKey, monthsBackDayKey } from "./logic";
-import { useActivityHistory, useActivityStreak } from "./queries";
+import {
+  useActivityHistory,
+  useActivityStreak,
+  useActivityTimeline,
+  useActivityTotalTime,
+} from "./queries";
 import { useActivityStatsStore } from "./stats-store";
 
 function makeWrapper() {
@@ -99,5 +108,106 @@ describe("useActivityHistory", () => {
     expect(
       result.current.filter((d) => d.date !== recordedDate).map((d) => d.totalSeconds),
     ).toEqual(expectedDays.filter((d) => d !== recordedDate).map(() => 0));
+  });
+});
+
+describe("useActivityTotalTime", () => {
+  test("defaults to 0 when nothing recorded", async () => {
+    const { result } = renderHook(() => useActivityTotalTime(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current).toBe(0));
+  });
+
+  test("sums totals across every recorded day, not just today", async () => {
+    const db = await initDb();
+    await upsertDailyTotal(db, "2026-01-01", 300);
+    await upsertDailyTotal(db, localDayKey(new Date()), 120);
+
+    const { result } = renderHook(() => useActivityTotalTime(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current).toBe(420));
+  });
+});
+
+describe("useActivityTimeline", () => {
+  test("returns completion events with their snapshotted titles, most recent first", async () => {
+    const db = await initDb();
+    await insertLessonViewedEvent(db, {
+      deviceId: "device-1",
+      lessonId: "lesson-1",
+      title: "Первые аккорды",
+      occurredAt: "2026-01-05T10:00:00.000Z",
+    });
+    await insertSongCompletionEvent(db, {
+      deviceId: "device-1",
+      songId: "song-1",
+      songTitle: "Кукушка",
+      lessonTitle: "Урок 3",
+      completed: true,
+      occurredAt: "2026-01-06T10:00:00.000Z",
+    });
+
+    const { result } = renderHook(() => useActivityTimeline(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+    expect(result.current.entries[0]).toMatchObject({
+      type: "song_completed",
+      title: "Кукушка",
+      lessonTitle: "Урок 3",
+      value: true,
+    });
+    expect(result.current.entries[1]).toMatchObject({
+      type: "lesson_video_viewed",
+      title: "Первые аккорды",
+    });
+  });
+
+  test("reports no next page when everything fits on the first page", async () => {
+    const db = await initDb();
+    await insertLessonViewedEvent(db, {
+      deviceId: "device-1",
+      lessonId: "lesson-1",
+      title: "Первые аккорды",
+      occurredAt: "2026-01-05T10:00:00.000Z",
+    });
+
+    const { result } = renderHook(() => useActivityTimeline(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.entries).toHaveLength(1));
+    expect(result.current.hasNextPage).toBe(false);
+  });
+
+  test("fetchNextPage appends the next page of older entries", async () => {
+    const db = await initDb();
+    for (let i = 0; i < 25; i++) {
+      await insertLessonViewedEvent(db, {
+        deviceId: "device-1",
+        lessonId: `lesson-${i}`,
+        title: `Урок ${i}`,
+        occurredAt: `2026-01-${String(i + 1).padStart(2, "0")}T10:00:00.000Z`,
+      });
+    }
+
+    const { result } = renderHook(() => useActivityTimeline(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.entries).toHaveLength(20));
+    expect(result.current.hasNextPage).toBe(true);
+
+    result.current.fetchNextPage();
+
+    await waitFor(() => expect(result.current.entries).toHaveLength(25));
+    expect(result.current.hasNextPage).toBe(false);
+    const ids = result.current.entries.map((e) => e.entityId);
+    expect(new Set(ids).size).toBe(25);
   });
 });

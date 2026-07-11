@@ -124,6 +124,77 @@ export function buildGridColumns(history: ActivityDayBucket[]): GridCell[][] {
   return columns;
 }
 
+const MONTH_ABBR_RU = [
+  "Янв",
+  "Фев",
+  "Мар",
+  "Апр",
+  "Май",
+  "Июн",
+  "Июл",
+  "Авг",
+  "Сен",
+  "Окт",
+  "Ноя",
+  "Дек",
+];
+
+export type MonthLabel = { columnIndex: number; label: string };
+
+// One label per month, anchored to the first grid column that contains a
+// day from that month — mirrors the GitHub-style contribution graph.
+export function buildMonthLabels(columns: GridCell[][]): MonthLabel[] {
+  const labels: MonthLabel[] = [];
+  let lastMonth = -1;
+
+  columns.forEach((column, columnIndex) => {
+    const firstCell = column.find((cell) => cell !== null);
+    if (!firstCell) return;
+    const month = Number(firstCell.date.slice(5, 7)) - 1;
+    if (month !== lastMonth) {
+      labels.push({ columnIndex, label: MONTH_ABBR_RU[month] });
+      lastMonth = month;
+    }
+  });
+
+  return labels;
+}
+
+export function groupByLocalDay<T extends { occurredAt: string }>(
+  entries: T[],
+): { dayKey: string; entries: T[] }[] {
+  const groups: { dayKey: string; entries: T[] }[] = [];
+
+  for (const entry of entries) {
+    const dayKey = localDayKey(new Date(entry.occurredAt));
+    const lastGroup = groups.at(-1);
+    if (lastGroup && lastGroup.dayKey === dayKey) {
+      lastGroup.entries.push(entry);
+    } else {
+      groups.push({ dayKey, entries: [entry] });
+    }
+  }
+
+  return groups;
+}
+
+// Assumes entries are already sorted so same-day entries are contiguous
+// (getTimelineEvents orders by occurredAt descending).
+export function journalDayHeading(dayKey: string, todayKey: string): string {
+  if (dayKey === todayKey) return "Сегодня";
+  if (dayKey === dayBefore(todayKey)) return "Вчера";
+
+  const [, month, day] = dayKey.split("-").map(Number);
+  return `${day} ${MONTH_ABBR_RU[month - 1].toLowerCase()}`;
+}
+
+// Includes the year, unlike journalDayHeading — the activity grid spans a
+// full year back, so cells can cross a year boundary and need disambiguation.
+export function formatCellDateRu(dayKey: string): string {
+  const [year, month, day] = dayKey.split("-").map(Number);
+  return `${day} ${MONTH_ABBR_RU[month - 1].toLowerCase()} ${year}`;
+}
+
 export type StreakState = {
   currentStreak: number;
   longestStreak: number;
