@@ -5,8 +5,13 @@
 import {
   advanceStreak,
   buildGridColumns,
+  buildMonthLabels,
+  collapseConsecutiveViews,
   enumerateLocalDayKeys,
+  formatCellDateRu,
+  groupByLocalDay,
   intensityBucket,
+  journalDayHeading,
   localDayKey,
   monthsBackDayKey,
   resolveDisplayedStreak,
@@ -304,6 +309,168 @@ describe("buildGridColumns", () => {
     const columns = buildGridColumns(history);
 
     expect(columns[0].slice(0, 3).map((cell) => cell?.bucket)).toEqual([0, 4, 5]);
+  });
+});
+
+describe("buildMonthLabels", () => {
+  test("an empty grid has no labels", () => {
+    expect(buildMonthLabels([])).toEqual([]);
+  });
+
+  test("labels the first column with its month", () => {
+    const history = enumerateLocalDayKeys("2026-01-04", "2026-01-10").map((date) => ({
+      date,
+      totalSeconds: 0,
+    }));
+    const columns = buildGridColumns(history);
+
+    expect(buildMonthLabels(columns)).toEqual([{ columnIndex: 0, label: "Янв" }]);
+  });
+
+  test("adds one label per month boundary crossed, not per column", () => {
+    const history = enumerateLocalDayKeys("2026-01-25", "2026-03-05").map((date) => ({
+      date,
+      totalSeconds: 0,
+    }));
+    const columns = buildGridColumns(history);
+
+    const labels = buildMonthLabels(columns);
+    expect(labels.map((l) => l.label)).toEqual(["Янв", "Фев", "Мар"]);
+    expect(labels[0].columnIndex).toBeLessThan(labels[1].columnIndex);
+    expect(labels[1].columnIndex).toBeLessThan(labels[2].columnIndex);
+  });
+
+  test("columns with only null padding cells get no label", () => {
+    // A single day starting mid-week pads the rest of that column with null.
+    const columns = buildGridColumns([{ date: "2026-01-07", totalSeconds: 0 }]);
+    expect(buildMonthLabels(columns)).toEqual([{ columnIndex: 0, label: "Янв" }]);
+  });
+});
+
+describe("groupByLocalDay", () => {
+  test("groups consecutive same-day entries together", () => {
+    const entries = [
+      { id: "1", occurredAt: "2026-01-05T18:00:00" },
+      { id: "2", occurredAt: "2026-01-05T10:00:00" },
+      { id: "3", occurredAt: "2026-01-04T10:00:00" },
+    ];
+
+    expect(groupByLocalDay(entries)).toEqual([
+      { dayKey: "2026-01-05", entries: [entries[0], entries[1]] },
+      { dayKey: "2026-01-04", entries: [entries[2]] },
+    ]);
+  });
+
+  test("an empty list produces no groups", () => {
+    expect(groupByLocalDay([])).toEqual([]);
+  });
+
+  test("does not merge two same-day runs separated by a different day", () => {
+    const entries = [
+      { id: "1", occurredAt: "2026-01-05T10:00:00" },
+      { id: "2", occurredAt: "2026-01-04T10:00:00" },
+      { id: "3", occurredAt: "2026-01-05T09:00:00" },
+    ];
+
+    expect(groupByLocalDay(entries).map((g) => g.dayKey)).toEqual([
+      "2026-01-05",
+      "2026-01-04",
+      "2026-01-05",
+    ]);
+  });
+});
+
+describe("collapseConsecutiveViews", () => {
+  function view(id: string, entityId: string) {
+    return { id, type: "lesson_video_viewed" as const, entityId };
+  }
+  function completion(id: string, entityId: string) {
+    return { id, type: "song_completed" as const, entityId };
+  }
+
+  test("an empty list produces no rows", () => {
+    expect(collapseConsecutiveViews([])).toEqual([]);
+  });
+
+  test("a single view is not counted as a repeat", () => {
+    const entries = [view("1", "lesson-1")];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 1 },
+    ]);
+  });
+
+  test("back-to-back views of the same lesson collapse into one row with a count", () => {
+    const entries = [
+      view("1", "lesson-1"),
+      view("2", "lesson-1"),
+      view("3", "lesson-1"),
+    ];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 3 },
+    ]);
+  });
+
+  test("keeps the first entry of the run as the representative row", () => {
+    const entries = [view("1", "lesson-1"), view("2", "lesson-1")];
+    const [row] = collapseConsecutiveViews(entries);
+    expect(row.entry.id).toBe("1");
+  });
+
+  test("does not merge views of different lessons even when adjacent", () => {
+    const entries = [view("1", "lesson-1"), view("2", "lesson-2")];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 1 },
+      { entry: entries[1], repeatCount: 1 },
+    ]);
+  });
+
+  test("a song_completed entry between two views breaks the run", () => {
+    const entries = [
+      view("1", "lesson-1"),
+      completion("2", "song-1"),
+      view("3", "lesson-1"),
+    ];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 1 },
+      { entry: entries[1], repeatCount: 1 },
+      { entry: entries[2], repeatCount: 1 },
+    ]);
+  });
+
+  test("consecutive song_completed entries are never collapsed", () => {
+    const entries = [completion("1", "song-1"), completion("2", "song-1")];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 1 },
+      { entry: entries[1], repeatCount: 1 },
+    ]);
+  });
+});
+
+describe("journalDayHeading", () => {
+  test("today's day key reads as Сегодня", () => {
+    expect(journalDayHeading("2026-01-05", "2026-01-05")).toBe("Сегодня");
+  });
+
+  test("yesterday's day key reads as Вчера", () => {
+    expect(journalDayHeading("2026-01-04", "2026-01-05")).toBe("Вчера");
+  });
+
+  test("older days show as day + abbreviated month", () => {
+    expect(journalDayHeading("2026-01-03", "2026-01-05")).toBe("3 янв");
+  });
+
+  test("crosses a month boundary correctly", () => {
+    expect(journalDayHeading("2025-12-31", "2026-01-05")).toBe("31 дек");
+  });
+});
+
+describe("formatCellDateRu", () => {
+  test("formats a day key as day + abbreviated month + year", () => {
+    expect(formatCellDateRu("2026-01-03")).toBe("3 янв 2026");
+  });
+
+  test("disambiguates cells from a year ago, unlike journalDayHeading", () => {
+    expect(formatCellDateRu("2025-01-03")).toBe("3 янв 2025");
   });
 });
 

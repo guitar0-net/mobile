@@ -58,6 +58,7 @@ export function useAppSession(): void {
         }
         if (chunks.length > 0) {
           void queryClient.invalidateQueries({ queryKey: ["activity", "history"] });
+          void queryClient.invalidateQueries({ queryKey: ["activity", "totalTime"] });
         }
       })();
     });

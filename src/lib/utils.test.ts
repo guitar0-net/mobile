@@ -6,7 +6,10 @@ import {
   cn,
   describeRemainingItems,
   formatDateRu,
+  formatHoursMinutesRu,
+  formatTimeRu,
   formatTodayRu,
+  pluralFormRu,
   pluralRu,
   stripMarkdown,
   withAlpha,
@@ -57,6 +60,14 @@ describe("pluralRu", () => {
   test("11 → нажатий (исключение)", () => expect(tap(11)).toBe("11 нажатий"));
   test("21 → нажатие", () => expect(tap(21)).toBe("21 нажатие"));
   test("114 → нажатий (исключение)", () => expect(tap(114)).toBe("114 нажатий"));
+});
+
+describe("pluralFormRu", () => {
+  const form = (n: number) => pluralFormRu(n, "урок", "урока", "уроков");
+  test("1 → урок", () => expect(form(1)).toBe("урок"));
+  test("2 → урока", () => expect(form(2)).toBe("урока"));
+  test("5 → уроков", () => expect(form(5)).toBe("уроков"));
+  test("11 → уроков (исключение)", () => expect(form(11)).toBe("уроков"));
 });
 
 describe("describeRemainingItems", () => {
@@ -111,6 +122,36 @@ describe("formatDateRu", () => {
   test("does not capitalize the result", () => {
     const result = formatDateRu("2026-01-01T00:00:00Z");
     expect(result[0]).toBe(result[0].toLowerCase());
+  });
+});
+
+describe("formatTimeRu", () => {
+  test("formats a morning time zero-padded", () => {
+    const iso = new Date(2026, 0, 15, 9, 5).toISOString();
+    expect(formatTimeRu(iso)).toBe("09:05");
+  });
+
+  test("formats an evening time in 24-hour form", () => {
+    const iso = new Date(2026, 0, 15, 18, 20).toISOString();
+    expect(formatTimeRu(iso)).toBe("18:20");
+  });
+});
+
+describe("formatHoursMinutesRu", () => {
+  test("under an hour shows only minutes", () => {
+    expect(formatHoursMinutesRu(35 * 60)).toBe("35м");
+  });
+
+  test("an exact hour shows zero minutes", () => {
+    expect(formatHoursMinutesRu(3600)).toBe("1ч 0м");
+  });
+
+  test("hours and minutes both shown", () => {
+    expect(formatHoursMinutesRu(73 * 3600 + 35 * 60)).toBe("73ч 35м");
+  });
+
+  test("zero seconds", () => {
+    expect(formatHoursMinutesRu(0)).toBe("0м");
   });
 });
 

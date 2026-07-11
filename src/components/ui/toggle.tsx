@@ -17,8 +17,9 @@ export function Toggle({ value, onValueChange }: Props) {
     <Switch
       value={value}
       onValueChange={onValueChange}
-      trackColor={{ false: colors.border, true: colors.primary }}
-      ios_backgroundColor={colors.border}
+      trackColor={{ false: colors.surface, true: colors.primary }}
+      thumbColor={value ? colors.primaryFg : colors.foreground}
+      ios_backgroundColor={colors.surface}
     />
   );
 }

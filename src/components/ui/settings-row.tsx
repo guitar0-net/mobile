@@ -35,7 +35,7 @@ export function SettingsRow(props: Props) {
         className="h-9 w-9 items-center justify-center rounded-lg"
         style={{ backgroundColor: iconBgColor }}
       >
-        <SymbolView name={icon} size={18} tintColor="#FFFFFF" />
+        <SymbolView name={icon} size={18} tintColor={colors.primaryFg} />
       </View>
       <View className="flex-1">
         <Text>{label}</Text>

@@ -136,9 +136,16 @@ describe("useThemedScreenOptions", () => {
 });
 
 describe("resolveIconColor", () => {
-  test('returns #FFFFFF for "white"', () => {
-    expect(resolveIconColor("white", "light")).toBe("#FFFFFF");
-    expect(resolveIconColor("white", "dark")).toBe("#FFFFFF");
+  test('returns #FFFFFF for "primaryFg" in light and dark', () => {
+    expect(resolveIconColor("primaryFg", "light")).toBe("#FFFFFF");
+    expect(resolveIconColor("primaryFg", "dark")).toBe("#FFFFFF");
+  });
+
+  test('"primaryFg" flips to stay readable against primary in contrast themes', () => {
+    // contrast-dark's --color-primary flips to white, so an icon drawn on a
+    // primary-colored background must flip to black too, or it disappears.
+    expect(resolveIconColor("primaryFg", "contrast-light")).toBe("#FFFFFF");
+    expect(resolveIconColor("primaryFg", "contrast-dark")).toBe("#000000");
   });
 
   test('returns theme foreground hex for "foreground"', () => {

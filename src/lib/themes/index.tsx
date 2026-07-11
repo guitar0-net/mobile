@@ -24,15 +24,19 @@ export type { ThemeName };
  * Resolves an icon color token to a real hex string for use with SymbolView's
  * tintColor prop (which cannot accept CSS variables or Tailwind classes).
  *
- * Use "white" for icons on solid colored backgrounds (e.g. primary, destructive),
- * "foreground" for icons on transparent or neutral backgrounds,
+ * Use "primaryFg" for icons on solid colored backgrounds (primary, destructive,
+ * brand-*) — those tokens all collapse to the same black/white pair as primary
+ * in the contrast themes, so primary-fg is guaranteed to stay readable against
+ * them. A hardcoded "#FFFFFF" would go invisible in contrast-dark, where
+ * primary (and brand-*) become white.
+ * Use "foreground" for icons on transparent or neutral backgrounds,
  * and "primary" for icons on primary-fg (inverse) backgrounds.
  */
 export function resolveIconColor(
-  color: "white" | "foreground" | "primary",
+  color: "primaryFg" | "foreground" | "primary",
   theme: ThemeName,
 ): string {
-  if (color === "white") return "#FFFFFF";
+  if (color === "primaryFg") return THEME_DEFINITIONS[theme]["--color-primary-fg"];
   if (color === "primary") return THEME_DEFINITIONS[theme]["--color-primary"];
   return THEME_DEFINITIONS[theme]["--color-foreground"];
 }

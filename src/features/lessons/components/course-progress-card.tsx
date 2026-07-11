@@ -23,7 +23,7 @@ export function CourseProgressCard({ courseTitle, completed, total, pct }: Props
         </Text>
         <Text variant="caption">{pct}%</Text>
       </View>
-      <View className="h-1.5 overflow-hidden rounded-full bg-border">
+      <View className="h-1.5 overflow-hidden rounded-full border border-border">
         <View className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
       </View>
     </View>

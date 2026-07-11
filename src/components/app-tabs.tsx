@@ -13,23 +13,23 @@ export default function AppTabs() {
   return (
     <NativeTabs backgroundColor={colors.surface} disableTransparentOnScrollEdge>
       <NativeTabs.Trigger name="home" contentStyle={contentStyle}>
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Главная</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="house" md="home" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="lessons" contentStyle={contentStyle}>
-        <NativeTabs.Trigger.Label>Lessons</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Уроки</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="music.note.list" md="library_music" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="progress" contentStyle={contentStyle}>
-        <NativeTabs.Trigger.Label>Progress</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="flame.fill" md="local_fire_department" />
+        <NativeTabs.Trigger.Label>Профиль</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="person.fill" md="person" />
       </NativeTabs.Trigger>
 
       {__DEV__ && (
         <NativeTabs.Trigger name="dev" contentStyle={contentStyle}>
-          <NativeTabs.Trigger.Label>Dev</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Label>Разработка</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf="wrench.and.screwdriver.fill" md="build" />
         </NativeTabs.Trigger>
       )}

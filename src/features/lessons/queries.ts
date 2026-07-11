@@ -10,6 +10,8 @@ import { useProgress } from "@/features/settings";
 import { getDb, courseLessons, courses, lessons, lessonSongs, songs } from "@/lib/db";
 import type { VideoDownloadStatus } from "@/lib/db";
 
+import { isLessonCompleted } from "./logic";
+
 export type CourseLessonRow = {
   lessonUuid: string;
   title: string;
@@ -162,6 +164,33 @@ export function useLessonDetail(lessonUuid: string, courseUuid: string) {
     queryFn: () => fetchLessonDetail(lessonUuid, courseUuid),
     enabled: lessonUuid.length > 0 && courseUuid.length > 0,
   });
+}
+
+export type LessonSongCount = { lessonUuid: string; songCount: number };
+
+// Every lesson exactly once regardless of how many courses it belongs to —
+// courseLessons is deliberately not joined here.
+export async function fetchAllLessonSongCounts(): Promise<LessonSongCount[]> {
+  return getDb()
+    .select({ lessonUuid: lessons.uuid, songCount: count(lessonSongs.songUuid) })
+    .from(lessons)
+    .leftJoin(lessonSongs, eq(lessonSongs.lessonUuid, lessons.uuid))
+    .groupBy(lessons.uuid);
+}
+
+export function useCompletedLessonsCount(): number {
+  const { progress } = useProgress();
+  const query = useQuery({
+    queryKey: ["lessons", "all-song-counts"],
+    queryFn: fetchAllLessonSongCounts,
+  });
+
+  return useMemo(() => {
+    if (!query.data) return 0;
+    return query.data.filter((lesson) =>
+      isLessonCompleted(lesson, progress[lesson.lessonUuid]),
+    ).length;
+  }, [query.data, progress]);
 }
 
 export function useContinueLesson(courseUuid: string) {

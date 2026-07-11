@@ -7,6 +7,7 @@ import { Alert, Linking, View } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
+import { recordLessonViewed } from "@/features/activity";
 import { useProgress } from "@/features/settings";
 import type { VideoDownloadStatus } from "@/lib/db";
 import { cn } from "@/lib/utils";
@@ -16,11 +17,17 @@ import { DownloadButton } from "./download-button";
 
 type VideoCardProps = {
   lessonId: string;
+  title: string;
   youtubeUrl: string;
   dbDownloadStatus: VideoDownloadStatus;
 };
 
-export function VideoCard({ lessonId, youtubeUrl, dbDownloadStatus }: VideoCardProps) {
+export function VideoCard({
+  lessonId,
+  title,
+  youtubeUrl,
+  dbDownloadStatus,
+}: VideoCardProps) {
   const router = useRouter();
   const { setVideoViewed } = useProgress();
   const { status, progress, startDownload, cancelDownload, deleteDownload } =
@@ -58,6 +65,7 @@ export function VideoCard({ lessonId, youtubeUrl, dbDownloadStatus }: VideoCardP
             disabled={!youtubeUrl}
             onPress={() => {
               setVideoViewed(lessonId, true);
+              recordLessonViewed(lessonId, title);
               Linking.openURL(youtubeUrl).catch(() => {});
             }}
             icon={{ ios: "play.fill", android: "play_arrow" }}
@@ -73,6 +81,7 @@ export function VideoCard({ lessonId, youtubeUrl, dbDownloadStatus }: VideoCardP
             disabled={status === "downloading"}
             onPress={() => {
               setVideoViewed(lessonId, true);
+              recordLessonViewed(lessonId, title);
               router.push(
                 `/video/${lessonId}?source=${isDownloaded ? "offline" : "online"}`,
               );

@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import {
   chords,
   getDb,
+  lessons,
   lessonSongs,
   schemes,
   songChords,
@@ -41,6 +42,7 @@ export type SongDetailRow = {
   text: string;
   metronome: number;
   lessonUuid: string | null;
+  lessonTitle: string | null;
   chords: SongDetailChord[];
   schemes: SongDetailScheme[];
 };
@@ -55,9 +57,11 @@ export async function fetchSongDetail(songUuid: string): Promise<SongDetailRow |
       text: songs.text,
       metronome: songs.metronome,
       lessonUuid: lessonSongs.lessonUuid,
+      lessonTitle: lessons.title,
     })
     .from(songs)
     .leftJoin(lessonSongs, eq(lessonSongs.songUuid, songs.uuid))
+    .leftJoin(lessons, eq(lessons.uuid, lessonSongs.lessonUuid))
     .where(eq(songs.uuid, songUuid));
 
   if (!song) return null;

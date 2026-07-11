@@ -49,7 +49,7 @@ export default function LoadingScreen() {
           <View className="w-full items-center gap-3">
             {status === "loading" && isFirstLaunch && (
               <>
-                <View className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+                <View className="h-1.5 w-full overflow-hidden rounded-full border border-border">
                   <View
                     className="h-full rounded-full bg-primary"
                     style={{ width: `${percentage}%` }}

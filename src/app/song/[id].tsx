@@ -31,9 +31,14 @@ export default function SongScreen() {
   const headerRight = useCallback(
     () =>
       songDetail?.lessonUuid ? (
-        <CompleteButton lessonId={songDetail.lessonUuid} songId={id} />
+        <CompleteButton
+          lessonId={songDetail.lessonUuid}
+          lessonTitle={songDetail.lessonTitle ?? ""}
+          songId={id}
+          songTitle={songDetail.title}
+        />
       ) : null,
-    [id, songDetail?.lessonUuid],
+    [id, songDetail?.lessonUuid, songDetail?.lessonTitle, songDetail?.title],
   );
   const headerTitle = songDetail?.title ?? "Песня";
   const screenOptions = useMemo(

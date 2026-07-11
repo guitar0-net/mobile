@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
@@ -45,5 +45,52 @@ describe("ActivityGrid", () => {
   test("renders no cells for an empty history", () => {
     render(<ActivityGrid history={[]} />, { wrapper });
     expect(screen.queryAllByTestId(/^activity-cell-/)).toHaveLength(0);
+  });
+
+  test("labels the first column with its month", () => {
+    render(<ActivityGrid history={history} />, { wrapper });
+    expect(screen.getByText("Янв")).toBeTruthy();
+  });
+
+  test("renders the intensity legend from less to more", () => {
+    render(<ActivityGrid history={history} />, { wrapper });
+    expect(screen.getByText("Меньше")).toBeTruthy();
+    expect(screen.getByText("Больше")).toBeTruthy();
+  });
+
+  test("renders no month labels for an empty history", () => {
+    render(<ActivityGrid history={[]} />, { wrapper });
+    expect(screen.queryByText("Янв")).toBeNull();
+  });
+
+  test("shows no selected-day text before any cell is pressed", () => {
+    render(<ActivityGrid history={history} />, { wrapper });
+    expect(screen.queryByText(/2026/)).toBeNull();
+  });
+
+  test("pressing a cell shows its date and time practiced next to the heading", () => {
+    render(<ActivityGrid history={history} />, { wrapper });
+
+    fireEvent(screen.getByTestId("activity-cell-2026-01-08"), "press");
+
+    expect(screen.getByText("8 янв 2026 · 40м")).toBeTruthy();
+  });
+
+  test("pressing a day with no activity shows that nothing happened", () => {
+    render(<ActivityGrid history={history} />, { wrapper });
+
+    fireEvent(screen.getByTestId("activity-cell-2026-01-04"), "press");
+
+    expect(screen.getByText("4 янв 2026 · нет занятий")).toBeTruthy();
+  });
+
+  test("pressing another cell replaces the previously selected day", () => {
+    render(<ActivityGrid history={history} />, { wrapper });
+
+    fireEvent(screen.getByTestId("activity-cell-2026-01-08"), "press");
+    fireEvent(screen.getByTestId("activity-cell-2026-01-09"), "press");
+
+    expect(screen.queryByText("8 янв 2026 · 40м")).toBeNull();
+    expect(screen.getByText(/9 янв 2026/)).toBeTruthy();
   });
 });
