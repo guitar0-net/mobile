@@ -4,5 +4,15 @@
 
 export { ActivitySessionTracker } from "./components/session-tracker";
 export { ActivityGrid } from "./components/activity-grid";
-export { useActivityHistory, useActivityStreak } from "./queries";
+export { ActivityStatCards } from "./components/activity-stat-cards";
+export { LessonTimeline } from "./components/lesson-timeline";
+export { ProfileHeader } from "./components/profile-header";
+export { recordLessonViewed, recordSongCompletion } from "./completion-recorder";
+export {
+  useActivityHistory,
+  useActivityStreak,
+  useActivityTimeline,
+  useActivityTotalTime,
+} from "./queries";
+export type { ActivityTimelineEntry } from "./queries";
 export type { ActivityDayBucket } from "./logic";
