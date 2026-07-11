@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 import { syncAll as defaultSyncAll } from "@/features/lessons/sync";
@@ -43,13 +43,11 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
       })),
     );
 
-  const isFirstLaunch = useRef(!isInitialSyncDone).current;
+  const [isFirstLaunch] = useState(() => !isInitialSyncDone);
   const [status, setStatus] = useState<SyncStatus>("loading");
   const [progress, setProgress] = useState<SyncProgress | null>(null);
 
-  const run = useCallback(async () => {
-    setStatus("loading");
-    setProgress(null);
+  const sync = useCallback(async () => {
     try {
       const db = await initDb();
       const onProgress = isFirstLaunch
@@ -71,11 +69,18 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
     setIsInitialSyncDone,
   ]);
 
+  const retry = useCallback(() => {
+    setStatus("loading");
+    setProgress(null);
+    void sync();
+  }, [sync]);
+
   useEffect(() => {
-    void run();
-    // run intentionally excluded: sync runs once on mount, retry exposes re-run
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync() only sets state after its first await (initDb), so no synchronous cascading render occurs; this is the standard fetch-on-mount pattern
+    void sync();
+    // sync intentionally excluded: runs once on mount, retry exposes re-run
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { status, progress, isFirstLaunch, retry: run };
+  return { status, progress, isFirstLaunch, retry };
 }

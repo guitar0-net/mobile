@@ -49,6 +49,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-image",
     "expo-sqlite",
     "expo-video",
+    "expo-sharing",
+    "expo-status-bar",
     [
       "react-native-audio-api",
       {

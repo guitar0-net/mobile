@@ -14,7 +14,7 @@ const config = {
   transformIgnorePatterns: [
     // jest-expo sets a broad transformIgnorePatterns; override it to also
     // transform drizzle's ESM migration bundle (drizzle/migrations.js).
-    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/(?!vector-icons)|@expo-google-fonts|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|drizzle-orm)",
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/(?!vector-icons)|@expo-google-fonts|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|drizzle-orm|standard-navigation)",
   ],
   moduleNameMapper: {
     // Replace react-native-mmkv with a pure in-memory mock so tests never

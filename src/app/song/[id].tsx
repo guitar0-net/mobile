@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useCallback, useMemo, useRef } from "react";
+import { useRef } from "react";
 import { ScrollView, View } from "react-native";
 
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
@@ -28,23 +28,21 @@ export default function SongScreen() {
     onMomentumScrollEnd,
   } = useAutoScroll(scrollRef);
 
-  const headerRight = useCallback(
-    () =>
-      songDetail?.lessonUuid ? (
-        <CompleteButton
-          lessonId={songDetail.lessonUuid}
-          lessonTitle={songDetail.lessonTitle ?? ""}
-          songId={id}
-          songTitle={songDetail.title}
-        />
-      ) : null,
-    [id, songDetail?.lessonUuid, songDetail?.lessonTitle, songDetail?.title],
-  );
+  const headerRight = () =>
+    songDetail?.lessonUuid ? (
+      <CompleteButton
+        lessonId={songDetail.lessonUuid}
+        lessonTitle={songDetail.lessonTitle ?? ""}
+        songId={id}
+        songTitle={songDetail.title}
+      />
+    ) : null;
   const headerTitle = songDetail?.title ?? "Песня";
-  const screenOptions = useMemo(
-    () => ({ title: headerTitle, headerBackTitle: "К уроку", headerRight }),
-    [headerTitle, headerRight],
-  );
+  const screenOptions = {
+    title: headerTitle,
+    headerBackTitle: "К уроку",
+    headerRight,
+  };
 
   return (
     <>
