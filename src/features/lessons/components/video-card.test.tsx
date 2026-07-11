@@ -4,7 +4,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import type { ReactNode } from "react";
-import { Alert } from "react-native";
+import { Alert, Linking } from "react-native";
 
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { ThemeProvider } from "@/lib/themes";
@@ -31,6 +31,12 @@ const mockUseVideoDownload = useVideoDownload as jest.MockedFunction<
   typeof useVideoDownload
 >;
 
+const mockRecordLessonViewed = jest.fn();
+
+jest.mock("@/features/activity", () => ({
+  recordLessonViewed: (...args: unknown[]) => mockRecordLessonViewed(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -55,6 +61,7 @@ function renderCard(hookOverrides: Partial<VideoDownloadHook> = {}) {
   return render(
     <VideoCard
       lessonId="lesson-1"
+      title="Первые аккорды"
       youtubeUrl="https://youtube.com/watch?v=test"
       dbDownloadStatus="idle"
     />,
@@ -65,7 +72,9 @@ function renderCard(hookOverrides: Partial<VideoDownloadHook> = {}) {
 beforeEach(() => {
   resetSettingsForTesting();
   mockPush.mockReset();
+  mockRecordLessonViewed.mockReset();
   jest.spyOn(Alert, "alert").mockImplementation(() => {});
+  jest.spyOn(Linking, "openURL").mockResolvedValue(true);
 });
 
 // ---------------------------------------------------------------------------
@@ -114,6 +123,18 @@ describe("VideoCard", () => {
     renderCard({ status: "idle" });
     fireEvent.press(screen.getByText("Онлайн"));
     expect(mockPush).toHaveBeenCalledWith("/video/lesson-1?source=online");
+  });
+
+  test("pressing the YouTube button records the lesson as viewed", () => {
+    renderCard({ status: "idle" });
+    fireEvent.press(screen.getByText("YouTube"));
+    expect(mockRecordLessonViewed).toHaveBeenCalledWith("lesson-1", "Первые аккорды");
+  });
+
+  test("pressing the online/offline button records the lesson as viewed", () => {
+    renderCard({ status: "idle" });
+    fireEvent.press(screen.getByText("Онлайн"));
+    expect(mockRecordLessonViewed).toHaveBeenCalledWith("lesson-1", "Первые аккорды");
   });
 
   test("pressing delete button shows confirmation alert", () => {

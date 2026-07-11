@@ -84,6 +84,7 @@ export default function LessonScreen() {
 
             <VideoCard
               lessonId={id}
+              title={lessonDetail.title}
               youtubeUrl={lessonDetail.videoUrl}
               dbDownloadStatus={lessonDetail.videoDownloadStatus}
             />
