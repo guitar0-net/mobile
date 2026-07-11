@@ -12,9 +12,11 @@ import { courseLessons, courses, initDb, lessons, lessonSongs, songs } from "@/l
 
 import { resetDbForTesting } from "./__tests__/testing";
 import {
+  fetchAllLessonSongCounts,
   fetchCourses,
   fetchCourseLessons,
   fetchLessonDetail,
+  useCompletedLessonsCount,
   useContinueLesson,
   useLessonDetail,
 } from "./queries";
@@ -239,6 +241,110 @@ describe("fetchCourseLessons", () => {
 
     const rows = await fetchCourseLessons("course-1");
     expect(rows.every((r) => r.lessonUuid !== "lesson-x")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchAllLessonSongCounts
+// ---------------------------------------------------------------------------
+
+describe("fetchAllLessonSongCounts", () => {
+  test("returns every lesson's song count regardless of course", async () => {
+    await seedCourse();
+
+    const rows = await fetchAllLessonSongCounts();
+
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        { lessonUuid: "lesson-1", songCount: 2 },
+        { lessonUuid: "lesson-2", songCount: 0 },
+      ]),
+    );
+    expect(rows).toHaveLength(2);
+  });
+
+  test("counts a lesson only once even when it belongs to two courses", async () => {
+    await seedCourse();
+    const db = await initDb();
+    await db.insert(courses).values({
+      uuid: "course-2",
+      title: "Advanced",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(courseLessons).values({
+      courseUuid: "course-2",
+      lessonUuid: "lesson-1",
+      order: 1,
+    });
+
+    const rows = await fetchAllLessonSongCounts();
+    expect(rows.filter((r) => r.lessonUuid === "lesson-1")).toHaveLength(1);
+  });
+
+  test("includes a lesson that belongs to no course", async () => {
+    const db = await initDb();
+    await db.insert(lessons).values({
+      uuid: "orphan-lesson",
+      title: "Orphan",
+      videoUrl: "https://example.com/v.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+
+    const rows = await fetchAllLessonSongCounts();
+    expect(rows).toEqual([{ lessonUuid: "orphan-lesson", songCount: 0 }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useCompletedLessonsCount
+// ---------------------------------------------------------------------------
+
+describe("useCompletedLessonsCount", () => {
+  test("is 0 before the query resolves and when nothing is completed", async () => {
+    await seedCourse();
+    const { result } = renderHook(() => useCompletedLessonsCount(), {
+      wrapper: makeWrapper(),
+    });
+
+    expect(result.current).toBe(0);
+    await waitFor(() => expect(result.current).toBe(0));
+  });
+
+  test("counts only fully completed lessons across all courses", async () => {
+    await seedCourse();
+    useSettingsStore.setState((s) => ({
+      progress: {
+        ...s.progress,
+        "lesson-1": { videoViewed: true, completedSongIds: ["song-1", "song-2"] },
+        "lesson-2": { videoViewed: false, completedSongIds: [] },
+      },
+    }));
+
+    const { result } = renderHook(() => useCompletedLessonsCount(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current).toBe(1));
+  });
+
+  test("updates reactively as progress changes", async () => {
+    await seedCourse();
+    const { result } = renderHook(() => useCompletedLessonsCount(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current).toBe(0));
+
+    act(() => {
+      useSettingsStore.setState((s) => ({
+        progress: {
+          ...s.progress,
+          "lesson-2": { videoViewed: true, completedSongIds: [] },
+        },
+      }));
+    });
+
+    await waitFor(() => expect(result.current).toBe(1));
   });
 });
 
