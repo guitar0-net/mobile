@@ -3,8 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { SymbolView } from "expo-symbols";
+import type { ReactNode } from "react";
+
+import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
+import { useSettingsStore } from "@/features/settings/store";
+import { ThemeProvider } from "@/lib/themes";
+import { THEME_DEFINITIONS } from "@/lib/themes/definitions";
 
 import { Button } from "./button";
+
+function wrapper({ children }: { children: ReactNode }) {
+  return <ThemeProvider>{children}</ThemeProvider>;
+}
+
+beforeEach(() => {
+  resetSettingsForTesting();
+});
 
 describe("Button", () => {
   test("renders children as text", () => {
@@ -53,5 +68,19 @@ describe("Button", () => {
     );
     fireEvent.press(screen.getByRole("button"));
     expect(onPress).not.toHaveBeenCalled();
+  });
+
+  test("default variant icon stays readable against its own background in contrast-dark", () => {
+    // Regression test: contrast-dark flips --color-primary to white. The
+    // default variant's background is bg-primary, so a hardcoded white icon
+    // tint would disappear on it — the icon must track --color-primary-fg instead.
+    useSettingsStore.setState({ theme: "contrast-dark" });
+    render(
+      <Button icon={{ ios: "play.fill", android: "play_arrow" }}>YouTube</Button>,
+      { wrapper },
+    );
+    expect(screen.UNSAFE_getByType(SymbolView).props.tintColor).toBe(
+      THEME_DEFINITIONS["contrast-dark"]["--color-primary-fg"],
+    );
   });
 });

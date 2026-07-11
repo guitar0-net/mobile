@@ -34,15 +34,17 @@ const VARIANT_WRAPPER: Record<BadgeVariant, string> = {
 const VARIANT_TEXT: Record<BadgeVariant, string> = {
   default: "text-primary-fg",
   secondary: "text-foreground",
-  destructive: "text-white",
+  destructive: "text-primary-fg",
   outline: "text-foreground",
 };
 
-// default/destructive have solid colored backgrounds → white icon; secondary/outline are neutral → theme foreground.
-const VARIANT_ICON_COLOR: Record<BadgeVariant, "white" | "foreground"> = {
-  default: "white",
+// default/destructive have solid colored backgrounds → primary-fg icon (stays
+// readable in contrast themes, where those backgrounds can flip to white);
+// secondary/outline are neutral → theme foreground.
+const VARIANT_ICON_COLOR: Record<BadgeVariant, "primaryFg" | "foreground"> = {
+  default: "primaryFg",
   secondary: "foreground",
-  destructive: "white",
+  destructive: "primaryFg",
   outline: "foreground",
 };
 

@@ -76,8 +76,11 @@ const ICON_SIZE: Record<ButtonSize, number> = {
   "icon-sm": 18,
 };
 
-const VARIANT_ICON_COLOR: Record<ButtonVariant, "white" | "foreground" | "primary"> = {
-  default: "white",
+const VARIANT_ICON_COLOR: Record<
+  ButtonVariant,
+  "primaryFg" | "foreground" | "primary"
+> = {
+  default: "primaryFg",
   outline: "foreground",
   ghost: "foreground",
   inverse: "primary",
