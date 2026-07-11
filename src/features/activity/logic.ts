@@ -178,6 +178,36 @@ export function groupByLocalDay<T extends { occurredAt: string }>(
   return groups;
 }
 
+export type CollapsedViewEntry<T> = { entry: T; repeatCount: number };
+
+// Collapses a back-to-back run of lesson_video_viewed entries for the same
+// lesson into a single row with a repeat count — repeated presses of "play"
+// stay visible as one event instead of flooding the journal. Runs broken up
+// by a different lesson or a song_completed entry are not merged: the log
+// itself still keeps every view, only this display step folds it.
+export function collapseConsecutiveViews<
+  T extends { type: string; entityId: string | null },
+>(entries: T[]): CollapsedViewEntry<T>[] {
+  const collapsed: CollapsedViewEntry<T>[] = [];
+
+  for (const entry of entries) {
+    const last = collapsed.at(-1);
+    const continuesRun =
+      last !== undefined &&
+      entry.type === "lesson_video_viewed" &&
+      last.entry.type === "lesson_video_viewed" &&
+      last.entry.entityId === entry.entityId;
+
+    if (continuesRun && last) {
+      last.repeatCount += 1;
+    } else {
+      collapsed.push({ entry, repeatCount: 1 });
+    }
+  }
+
+  return collapsed;
+}
+
 // Assumes entries are already sorted so same-day entries are contiguous
 // (getTimelineEvents orders by occurredAt descending).
 export function journalDayHeading(dayKey: string, todayKey: string): string {

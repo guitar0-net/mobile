@@ -9,7 +9,12 @@ import { Text } from "@/components/ui/text";
 import { useColors } from "@/lib/themes";
 import { formatTimeRu } from "@/lib/utils";
 
-import { groupByLocalDay, journalDayHeading, localDayKey } from "../logic";
+import {
+  collapseConsecutiveViews,
+  groupByLocalDay,
+  journalDayHeading,
+  localDayKey,
+} from "../logic";
 import type { ActivityTimelineEntry } from "../queries";
 
 type LessonTimelineProps = {
@@ -17,13 +22,22 @@ type LessonTimelineProps = {
   isLoadingMore?: boolean;
 };
 
-function entryLabel(entry: ActivityTimelineEntry): string {
-  if (entry.type === "lesson_video_viewed") return `Просмотрено: «${entry.title}»`;
+function entryLabel(entry: ActivityTimelineEntry, repeatCount: number): string {
+  if (entry.type === "lesson_video_viewed") {
+    const suffix = repeatCount > 1 ? ` ×${repeatCount}` : "";
+    return `Просмотрено: «${entry.title}»${suffix}`;
+  }
   if (entry.value) return `Завершена песня «${entry.title}»`;
-  return `Отменено: «${entry.title}» — ${entry.lessonTitle}`;
+  return `Отменено: «${entry.title}»`;
 }
 
-function TimelineRow({ entry }: { entry: ActivityTimelineEntry }) {
+function TimelineRow({
+  entry,
+  repeatCount,
+}: {
+  entry: ActivityTimelineEntry;
+  repeatCount: number;
+}) {
   const colors = useColors();
   const isUndone = entry.type === "song_completed" && !entry.value;
 
@@ -44,7 +58,7 @@ function TimelineRow({ entry }: { entry: ActivityTimelineEntry }) {
         tintColor={isUndone ? colors.mutedFg : colors.primary}
       />
       <Text variant="body" className={isUndone ? "flex-1 text-muted-fg" : "flex-1"}>
-        {entryLabel(entry)}
+        {entryLabel(entry, repeatCount)}
       </Text>
       <Text variant="caption">{formatTimeRu(entry.occurredAt)}</Text>
     </View>
@@ -65,8 +79,8 @@ export function LessonTimeline({ entries, isLoadingMore }: LessonTimelineProps) 
           >
             {journalDayHeading(group.dayKey, todayKey)}
           </Text>
-          {group.entries.map((entry) => (
-            <TimelineRow key={entry.id} entry={entry} />
+          {collapseConsecutiveViews(group.entries).map(({ entry, repeatCount }) => (
+            <TimelineRow key={entry.id} entry={entry} repeatCount={repeatCount} />
           ))}
         </View>
       ))}

@@ -78,7 +78,12 @@ describe("LessonTimeline", () => {
 
   test("distinguishes an un-completed song from a completed one", () => {
     render(<LessonTimeline entries={entries} />, { wrapper });
-    expect(screen.getByText("Отменено: «Аллилуйя» — Урок 5")).toBeTruthy();
+    expect(screen.getByText("Отменено: «Аллилуйя»")).toBeTruthy();
+  });
+
+  test("does not mention the lesson title for an un-completed song", () => {
+    render(<LessonTimeline entries={entries} />, { wrapper });
+    expect(screen.queryByText(/Отменено.*Урок/)).toBeNull();
   });
 
   test("shows each entry's time, not a full date", () => {
@@ -100,5 +105,74 @@ describe("LessonTimeline", () => {
   test("hides the loading indicator when not fetching the next page", () => {
     render(<LessonTimeline entries={entries} />, { wrapper });
     expect(screen.queryByText("Загрузка…")).toBeNull();
+  });
+});
+
+describe("LessonTimeline repeat views", () => {
+  const repeatedViews: ActivityTimelineEntry[] = [
+    {
+      id: "1",
+      type: "lesson_video_viewed",
+      entityId: "lesson-1",
+      title: "Первые аккорды",
+      lessonTitle: null,
+      value: true,
+      occurredAt: isoAt(now, 18, 20),
+    },
+    {
+      id: "2",
+      type: "lesson_video_viewed",
+      entityId: "lesson-1",
+      title: "Первые аккорды",
+      lessonTitle: null,
+      value: true,
+      occurredAt: isoAt(now, 18, 5),
+    },
+    {
+      id: "3",
+      type: "lesson_video_viewed",
+      entityId: "lesson-1",
+      title: "Первые аккорды",
+      lessonTitle: null,
+      value: true,
+      occurredAt: isoAt(now, 18, 0),
+    },
+  ];
+
+  test("collapses back-to-back views of the same lesson into one row with a count", () => {
+    render(<LessonTimeline entries={repeatedViews} />, { wrapper });
+    expect(screen.getByText("Просмотрено: «Первые аккорды» ×3")).toBeTruthy();
+  });
+
+  test("shows the most recent view's time for the collapsed row", () => {
+    render(<LessonTimeline entries={repeatedViews} />, { wrapper });
+    expect(screen.getByText("18:20")).toBeTruthy();
+    expect(screen.queryByText("18:05")).toBeNull();
+    expect(screen.queryByText("18:00")).toBeNull();
+  });
+
+  test("does not add a count suffix for a single view", () => {
+    render(<LessonTimeline entries={[repeatedViews[0]]} />, { wrapper });
+    expect(screen.getByText("Просмотрено: «Первые аккорды»")).toBeTruthy();
+  });
+
+  test("does not collapse two views of the same lesson separated by a song completion", () => {
+    const interrupted: ActivityTimelineEntry[] = [
+      repeatedViews[0],
+      {
+        id: "4",
+        type: "song_completed",
+        entityId: "song-1",
+        title: "Мама",
+        lessonTitle: "Урок 3",
+        value: true,
+        occurredAt: isoAt(now, 18, 10),
+      },
+      repeatedViews[2],
+    ];
+
+    render(<LessonTimeline entries={interrupted} />, { wrapper });
+    expect(screen.queryByText(/×\d/)).toBeNull();
+    expect(screen.getAllByText("Просмотрено: «Первые аккорды»")).toHaveLength(2);
   });
 });

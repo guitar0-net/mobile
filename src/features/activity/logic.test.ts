@@ -6,6 +6,7 @@ import {
   advanceStreak,
   buildGridColumns,
   buildMonthLabels,
+  collapseConsecutiveViews,
   enumerateLocalDayKeys,
   formatCellDateRu,
   groupByLocalDay,
@@ -375,6 +376,72 @@ describe("groupByLocalDay", () => {
       "2026-01-05",
       "2026-01-04",
       "2026-01-05",
+    ]);
+  });
+});
+
+describe("collapseConsecutiveViews", () => {
+  function view(id: string, entityId: string) {
+    return { id, type: "lesson_video_viewed" as const, entityId };
+  }
+  function completion(id: string, entityId: string) {
+    return { id, type: "song_completed" as const, entityId };
+  }
+
+  test("an empty list produces no rows", () => {
+    expect(collapseConsecutiveViews([])).toEqual([]);
+  });
+
+  test("a single view is not counted as a repeat", () => {
+    const entries = [view("1", "lesson-1")];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 1 },
+    ]);
+  });
+
+  test("back-to-back views of the same lesson collapse into one row with a count", () => {
+    const entries = [
+      view("1", "lesson-1"),
+      view("2", "lesson-1"),
+      view("3", "lesson-1"),
+    ];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 3 },
+    ]);
+  });
+
+  test("keeps the first entry of the run as the representative row", () => {
+    const entries = [view("1", "lesson-1"), view("2", "lesson-1")];
+    const [row] = collapseConsecutiveViews(entries);
+    expect(row.entry.id).toBe("1");
+  });
+
+  test("does not merge views of different lessons even when adjacent", () => {
+    const entries = [view("1", "lesson-1"), view("2", "lesson-2")];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 1 },
+      { entry: entries[1], repeatCount: 1 },
+    ]);
+  });
+
+  test("a song_completed entry between two views breaks the run", () => {
+    const entries = [
+      view("1", "lesson-1"),
+      completion("2", "song-1"),
+      view("3", "lesson-1"),
+    ];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 1 },
+      { entry: entries[1], repeatCount: 1 },
+      { entry: entries[2], repeatCount: 1 },
+    ]);
+  });
+
+  test("consecutive song_completed entries are never collapsed", () => {
+    const entries = [completion("1", "song-1"), completion("2", "song-1")];
+    expect(collapseConsecutiveViews(entries)).toEqual([
+      { entry: entries[0], repeatCount: 1 },
+      { entry: entries[1], repeatCount: 1 },
     ]);
   });
 });
