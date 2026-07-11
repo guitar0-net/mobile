@@ -211,6 +211,31 @@ describe("fetchSongDetail", () => {
     expect(result?.lessonUuid).toBe("lesson-1");
   });
 
+  test("returns lessonTitle when song is linked to a lesson", async () => {
+    await seedSong();
+    const db = await initDb();
+    await db.insert(lessons).values({
+      uuid: "lesson-1",
+      title: "Lesson 1",
+      videoUrl: "https://example.com/video.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(lessonSongs).values({ lessonUuid: "lesson-1", songUuid: "song-1" });
+
+    const result = await fetchSongDetail("song-1");
+    expect(result?.lessonTitle).toBe("Lesson 1");
+  });
+
+  test("returns null lessonTitle when song has no lesson", async () => {
+    const db = await initDb();
+    await db
+      .insert(songs)
+      .values({ uuid: "song-solo2", title: "Solo2", text: "...", metronome: 0 });
+
+    const result = await fetchSongDetail("song-solo2");
+    expect(result?.lessonTitle).toBeNull();
+  });
+
   test("returns null lessonUuid when song has no lesson", async () => {
     const db = await initDb();
     await db
