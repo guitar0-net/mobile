@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useQuery } from "@tanstack/react-query";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { SymbolView } from "expo-symbols";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 export default function VideoScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { id, source } = useLocalSearchParams<{ id: string; source: string }>();
   const colors = useColors();
   const [hasError, setHasError] = useState(false);
@@ -34,6 +35,14 @@ export default function VideoScreen() {
   useEffect(() => {
     if (videoUri) player.play();
   }, [videoUri, player]);
+
+  useEffect(() => {
+    // beforeRemove fires before the screen is actually torn down — including for the
+    // iOS swipe-back gesture — so the player is reliably paused before navigating away.
+    return navigation.addListener("beforeRemove", () => {
+      player.pause();
+    });
+  }, [navigation, player]);
 
   useEffect(() => {
     void ScreenOrientation.unlockAsync();
