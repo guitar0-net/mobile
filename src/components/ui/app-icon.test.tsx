@@ -9,7 +9,7 @@ import { AppIcon } from "./app-icon";
 describe("AppIcon", () => {
   test("renders with default size of 100", () => {
     const { toJSON } = render(<AppIcon />);
-    const tree = toJSON() as Record<string, unknown>;
+    const tree = toJSON() as unknown as Record<string, unknown>;
     expect(
       (tree.props as { style: { width: number; height: number } }).style,
     ).toMatchObject({
@@ -20,7 +20,7 @@ describe("AppIcon", () => {
 
   test("renders with custom size", () => {
     const { toJSON } = render(<AppIcon size={60} />);
-    const tree = toJSON() as Record<string, unknown>;
+    const tree = toJSON() as unknown as Record<string, unknown>;
     expect(
       (tree.props as { style: { width: number; height: number } }).style,
     ).toMatchObject({

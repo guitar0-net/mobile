@@ -5,14 +5,14 @@
 import "@/global.css";
 
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useFonts } from "expo-font";
 import {
   DarkTheme,
   DefaultTheme,
+  Stack,
   ThemeProvider as NavThemeProvider,
-} from "@react-navigation/native";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+} from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";

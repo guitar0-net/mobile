@@ -76,6 +76,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Expo TypeScript environment
+        run: npx expo customize tsconfig.json
+
       - name: Run TypeScript
         run: npm run type:check
 
