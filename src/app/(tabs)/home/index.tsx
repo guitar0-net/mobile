@@ -87,6 +87,7 @@ export default function HomeScreen() {
               variant="ghost"
               size="lg"
               icon={{ ios: "gearshape", android: "settings" }}
+              onPress={() => router.push("/settings")}
             />
           </View>
 
