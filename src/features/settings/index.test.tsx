@@ -25,23 +25,35 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("useThemePreference", () => {
-  test("theme defaults to undefined (no stored preference)", () => {
+  test('themeMode defaults to "system" and highContrast defaults to false', () => {
     const { result } = renderHook(() => useThemePreference());
-    expect(result.current.theme).toBeUndefined();
+    expect(result.current.themeMode).toBe("system");
+    expect(result.current.highContrast).toBe(false);
   });
 
-  test("setTheme write-read roundtrip", () => {
+  test("setThemeMode write-read roundtrip", () => {
     const { result } = renderHook(() => useThemePreference());
 
     act(() => {
-      result.current.setTheme("dark");
+      result.current.setThemeMode("dark");
     });
-    expect(result.current.theme).toBe("dark");
+    expect(result.current.themeMode).toBe("dark");
 
     act(() => {
-      result.current.setTheme("contrast-light");
+      result.current.setThemeMode("light");
     });
-    expect(result.current.theme).toBe("contrast-light");
+    expect(result.current.themeMode).toBe("light");
+  });
+
+  test("setHighContrast write-read roundtrip, independent of themeMode", () => {
+    const { result } = renderHook(() => useThemePreference());
+
+    act(() => {
+      result.current.setThemeMode("dark");
+      result.current.setHighContrast(true);
+    });
+    expect(result.current.highContrast).toBe(true);
+    expect(result.current.themeMode).toBe("dark");
   });
 });
 
@@ -349,14 +361,19 @@ describe("readDefaults — invalid JSON in storage", () => {
 // ---------------------------------------------------------------------------
 
 describe("readDefaults — valid stored values", () => {
-  test("returns stored theme when a valid theme name is stored", () => {
-    storage.set("settings.theme", "dark");
-    expect(readDefaults().theme).toBe("dark");
+  test("returns stored themeMode when a valid mode is stored", () => {
+    storage.set("settings.themeMode", "dark");
+    expect(readDefaults().themeMode).toBe("dark");
   });
 
-  test("returns undefined when stored theme is unrecognized", () => {
-    storage.set("settings.theme", "not-a-theme");
-    expect(readDefaults().theme).toBeUndefined();
+  test('returns default themeMode ("system") when stored value is unrecognized', () => {
+    storage.set("settings.themeMode", "not-a-mode");
+    expect(readDefaults().themeMode).toBe("system");
+  });
+
+  test("returns stored highContrast when a valid boolean is stored", () => {
+    storage.set("settings.highContrast", true);
+    expect(readDefaults().highContrast).toBe(true);
   });
 
   test("returns stored fontSize when a valid size is stored", () => {

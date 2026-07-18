@@ -74,7 +74,7 @@ describe("Button", () => {
     // Regression test: contrast-dark flips --color-primary to white. The
     // default variant's background is bg-primary, so a hardcoded white icon
     // tint would disappear on it — the icon must track --color-primary-fg instead.
-    useSettingsStore.setState({ theme: "contrast-dark" });
+    useSettingsStore.setState({ themeMode: "dark", highContrast: true });
     render(
       <Button icon={{ ios: "play.fill", android: "play_arrow" }}>YouTube</Button>,
       { wrapper },
