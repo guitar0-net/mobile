@@ -78,7 +78,7 @@
     "babel-preset-expo": "~57.0.0",
     "better-sqlite3": "^12.10.0",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^9",
+    "eslint": "^10.0.0",
     "eslint-config-expo": "~57.0.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-import": "^2.0.0",
