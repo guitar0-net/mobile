@@ -22,8 +22,9 @@ type ToggleRowProps = BaseProps & {
   value: boolean;
   onChange: (value: boolean) => void;
 };
+type ExternalRowProps = BaseProps & { type: "external"; onPress?: () => void };
 
-type Props = NavRowProps | ToggleRowProps;
+type Props = NavRowProps | ToggleRowProps | ExternalRowProps;
 
 export function SettingsRow(props: Props) {
   const { icon, iconBgColor, label, sublabel } = props;
@@ -48,13 +49,20 @@ export function SettingsRow(props: Props) {
           tintColor={colors.mutedFg}
         />
       )}
+      {props.type === "external" && (
+        <SymbolView
+          name={{ ios: "arrow.up.right", android: "open_in_new" }}
+          size={16}
+          tintColor={colors.mutedFg}
+        />
+      )}
       {props.type === "toggle" && (
         <Toggle value={props.value} onValueChange={props.onChange} />
       )}
     </View>
   );
 
-  if (props.type === "nav") {
+  if (props.type === "nav" || props.type === "external") {
     return (
       <Pressable onPress={props.onPress} className="active:opacity-70">
         {inner}
