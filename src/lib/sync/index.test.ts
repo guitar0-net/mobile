@@ -61,6 +61,36 @@ describe("useSyncState", () => {
     expect(result.current.contentVersion).toBe("v2.1");
   });
 
+  test("lastSyncedAt defaults to null", () => {
+    const { result } = renderHook(() => useSyncState());
+    expect(result.current.lastSyncedAt).toBeNull();
+  });
+
+  test("setLastSyncedAt write-read roundtrip", () => {
+    const { result } = renderHook(() => useSyncState());
+
+    act(() => {
+      result.current.setLastSyncedAt(1700000000000);
+    });
+
+    expect(result.current.lastSyncedAt).toBe(1700000000000);
+  });
+
+  test("setLastSyncedAt survives a store reset (MMKV roundtrip)", () => {
+    const { result: writer } = renderHook(() => useSyncState());
+
+    act(() => {
+      writer.current.setLastSyncedAt(1700000000000);
+    });
+
+    act(() => {
+      useSyncStore.setState(readDefaults());
+    });
+
+    const { result: reader } = renderHook(() => useSyncState());
+    expect(reader.current.lastSyncedAt).toBe(1700000000000);
+  });
+
   test("useSyncState does not re-render when unrelated settings change", () => {
     let renderCount = 0;
     const { result } = renderHook(() => {
