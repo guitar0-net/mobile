@@ -8,6 +8,7 @@ export { ActivityStatCards } from "./components/activity-stat-cards";
 export { LessonTimeline } from "./components/lesson-timeline";
 export { ProfileHeader } from "./components/profile-header";
 export { recordLessonViewed, recordSongCompletion } from "./completion-recorder";
+export { resetActivity } from "./reset";
 export {
   useActivityHistory,
   useActivityStreak,
