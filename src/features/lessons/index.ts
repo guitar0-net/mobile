@@ -12,12 +12,15 @@ export {
   fetchCourseLessons,
   fetchLessonDetail,
   fetchLessonVideoPath,
+  listDownloadedVideos,
   useCompletedLessonsCount,
   useContinueLesson,
+  useDownloadedVideos,
   useLessonDetail,
 } from "./queries";
 export type {
   CourseLessonRow,
+  DownloadedVideo,
   LessonDetailRow,
   LessonDetailSong,
   LessonSongCount,
@@ -27,5 +30,6 @@ export type { LessonState } from "./logic";
 
 export { videoStreamUrl } from "./use-video-download";
 export { CourseContinueCard } from "./components/course-continue-card";
+export { DownloadedVideosList } from "./components/downloaded-videos-list";
 export { SongRow } from "./components/song-row";
 export { VideoCard } from "./components/video-card";

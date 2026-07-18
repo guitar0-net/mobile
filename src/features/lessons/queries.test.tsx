@@ -16,10 +16,22 @@ import {
   fetchCourses,
   fetchCourseLessons,
   fetchLessonDetail,
+  listDownloadedVideos,
   useCompletedLessonsCount,
   useContinueLesson,
+  useDownloadedVideos,
   useLessonDetail,
 } from "./queries";
+
+// ---------------------------------------------------------------------------
+// Mocks
+// ---------------------------------------------------------------------------
+
+const mockGetInfoAsync = jest.fn();
+
+jest.mock("expo-file-system/legacy", () => ({
+  getInfoAsync: (...args: unknown[]) => mockGetInfoAsync(...args),
+}));
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,6 +87,7 @@ async function seedCourse() {
 beforeEach(() => {
   resetDbForTesting();
   resetSettingsForTesting();
+  mockGetInfoAsync.mockReset();
 });
 
 // ---------------------------------------------------------------------------
@@ -598,5 +611,136 @@ describe("useLessonDetail", () => {
       wrapper: makeWrapper(),
     });
     expect(result.current.fetchStatus).toBe("idle");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// listDownloadedVideos
+// ---------------------------------------------------------------------------
+
+describe("listDownloadedVideos", () => {
+  async function seedLessons() {
+    const db = await initDb();
+    await db.insert(lessons).values([
+      {
+        uuid: "lesson-downloaded-1",
+        title: "Open chords",
+        videoUrl: "https://example.com/v1.mp4",
+        updatedAt: "2026-01-01T00:00:00Z",
+        videoDownloadStatus: "downloaded",
+        localVideoPath: "/mock/documents/videos/lesson-downloaded-1.mp4",
+      },
+      {
+        uuid: "lesson-downloaded-2",
+        title: "Barre chords",
+        videoUrl: "https://example.com/v2.mp4",
+        updatedAt: "2026-01-01T00:00:00Z",
+        videoDownloadStatus: "downloaded",
+        localVideoPath: "/mock/documents/videos/lesson-downloaded-2.mp4",
+      },
+      {
+        uuid: "lesson-idle",
+        title: "Not downloaded",
+        videoUrl: "https://example.com/v3.mp4",
+        updatedAt: "2026-01-01T00:00:00Z",
+        videoDownloadStatus: "idle",
+      },
+      {
+        uuid: "lesson-failed",
+        title: "Failed download",
+        videoUrl: "https://example.com/v4.mp4",
+        updatedAt: "2026-01-01T00:00:00Z",
+        videoDownloadStatus: "failed",
+      },
+      {
+        uuid: "lesson-downloading",
+        title: "In progress",
+        videoUrl: "https://example.com/v5.mp4",
+        updatedAt: "2026-01-01T00:00:00Z",
+        videoDownloadStatus: "downloading",
+      },
+    ]);
+  }
+
+  test("returns only lessons with videoDownloadStatus 'downloaded', with title and size", async () => {
+    await seedLessons();
+    mockGetInfoAsync.mockImplementation(async (uri: string) => ({
+      exists: true,
+      uri,
+      size: uri.includes("lesson-downloaded-1") ? 1_000_000 : 2_000_000,
+    }));
+
+    const result = await listDownloadedVideos();
+
+    expect(result).toHaveLength(2);
+    expect(result).toEqual(
+      expect.arrayContaining([
+        {
+          lessonUuid: "lesson-downloaded-1",
+          title: "Open chords",
+          sizeBytes: 1_000_000,
+        },
+        {
+          lessonUuid: "lesson-downloaded-2",
+          title: "Barre chords",
+          sizeBytes: 2_000_000,
+        },
+      ]),
+    );
+  });
+
+  test("omits a downloaded row whose file no longer exists on disk", async () => {
+    await seedLessons();
+    mockGetInfoAsync.mockImplementation(async (uri: string) => ({
+      exists: !uri.includes("lesson-downloaded-2"),
+      uri,
+      size: 1_000_000,
+    }));
+
+    const result = await listDownloadedVideos();
+
+    expect(result.map((r) => r.lessonUuid)).toEqual(["lesson-downloaded-1"]);
+  });
+
+  test("returns an empty array when no lessons are downloaded", async () => {
+    const db = await initDb();
+    await db.insert(lessons).values({
+      uuid: "lesson-idle",
+      title: "Not downloaded",
+      videoUrl: "https://example.com/v.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+      videoDownloadStatus: "idle",
+    });
+
+    expect(await listDownloadedVideos()).toEqual([]);
+    expect(mockGetInfoAsync).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useDownloadedVideos
+// ---------------------------------------------------------------------------
+
+describe("useDownloadedVideos", () => {
+  test("exposes the aggregated list once the query resolves", async () => {
+    const db = await initDb();
+    await db.insert(lessons).values({
+      uuid: "lesson-downloaded-1",
+      title: "Open chords",
+      videoUrl: "https://example.com/v1.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+      videoDownloadStatus: "downloaded",
+      localVideoPath: "/mock/documents/videos/lesson-downloaded-1.mp4",
+    });
+    mockGetInfoAsync.mockResolvedValue({ exists: true, size: 5_000_000 });
+
+    const { result } = renderHook(() => useDownloadedVideos(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([
+      { lessonUuid: "lesson-downloaded-1", title: "Open chords", sizeBytes: 5_000_000 },
+    ]);
   });
 });

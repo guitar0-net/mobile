@@ -7,6 +7,7 @@ import {
   describeRemainingItems,
   formatDateRu,
   formatHoursMinutesRu,
+  formatMegabytesRu,
   formatTimeRu,
   formatTodayRu,
   pluralFormRu,
@@ -152,6 +153,20 @@ describe("formatHoursMinutesRu", () => {
 
   test("zero seconds", () => {
     expect(formatHoursMinutesRu(0)).toBe("0м");
+  });
+});
+
+describe("formatMegabytesRu", () => {
+  test("formats bytes as megabytes with one decimal", () => {
+    expect(formatMegabytesRu(4_000_000)).toBe("3.8 МБ");
+  });
+
+  test("formats zero bytes", () => {
+    expect(formatMegabytesRu(0)).toBe("0.0 МБ");
+  });
+
+  test("formats a whole number of megabytes", () => {
+    expect(formatMegabytesRu(1024 * 1024 * 10)).toBe("10.0 МБ");
   });
 });
 
