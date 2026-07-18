@@ -15,7 +15,7 @@ import { getDb, initDb, lessons } from "@/lib/db";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { useDownloadStore } from "./download-store";
-import { useVideoDownload } from "./use-video-download";
+import { deleteAllDownloadedVideos, useVideoDownload } from "./use-video-download";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -298,4 +298,81 @@ test("starts download on a cellular connection when wifi-only is disabled", asyn
   });
 
   await waitFor(() => expect(mockDownloadAsync).toHaveBeenCalledTimes(1));
+});
+
+describe("deleteAllDownloadedVideos", () => {
+  test("deletes every downloaded video's file and resets its DB status, leaving other statuses untouched", async () => {
+    const db = getDb();
+    await db.insert(lessons).values([
+      {
+        uuid: "lesson-2",
+        title: "Баррэ аккорды",
+        videoUrl: "https://youtube.com/watch?v=test2",
+        updatedAt: "2026-01-01T00:00:00Z",
+        localVideoPath: "/mock/documents/videos/lesson-2.mp4",
+        videoDownloadStatus: "downloaded",
+      },
+      {
+        uuid: "lesson-3",
+        title: "Перебор",
+        videoUrl: "https://youtube.com/watch?v=test3",
+        updatedAt: "2026-01-01T00:00:00Z",
+        videoDownloadStatus: "failed",
+      },
+    ]);
+    await db
+      .update(lessons)
+      .set({
+        localVideoPath: "/mock/documents/videos/lesson-1.mp4",
+        videoDownloadStatus: "downloaded",
+      })
+      .where(eq(lessons.uuid, "lesson-1"));
+
+    await deleteAllDownloadedVideos();
+
+    const rows = await db
+      .select({
+        uuid: lessons.uuid,
+        videoDownloadStatus: lessons.videoDownloadStatus,
+        localVideoPath: lessons.localVideoPath,
+      })
+      .from(lessons);
+
+    const byId = Object.fromEntries(rows.map((r) => [r.uuid, r]));
+    expect(byId["lesson-1"]).toMatchObject({
+      videoDownloadStatus: "idle",
+      localVideoPath: null,
+    });
+    expect(byId["lesson-2"]).toMatchObject({
+      videoDownloadStatus: "idle",
+      localVideoPath: null,
+    });
+    expect(byId["lesson-3"]).toMatchObject({ videoDownloadStatus: "failed" });
+
+    const FileSystem = jest.requireMock("expo-file-system/legacy") as {
+      deleteAsync: jest.Mock;
+    };
+    expect(FileSystem.deleteAsync).toHaveBeenCalledWith(
+      "/mock/documents/videos/lesson-1.mp4",
+    );
+    expect(FileSystem.deleteAsync).toHaveBeenCalledWith(
+      "/mock/documents/videos/lesson-2.mp4",
+    );
+    expect(FileSystem.deleteAsync).toHaveBeenCalledTimes(2);
+  });
+
+  test("does nothing when there are no downloaded videos", async () => {
+    await deleteAllDownloadedVideos();
+
+    const [row] = await getDb()
+      .select({ videoDownloadStatus: lessons.videoDownloadStatus })
+      .from(lessons)
+      .where(eq(lessons.uuid, "lesson-1"));
+    expect(row.videoDownloadStatus).toBe("idle");
+
+    const FileSystem = jest.requireMock("expo-file-system/legacy") as {
+      deleteAsync: jest.Mock;
+    };
+    expect(FileSystem.deleteAsync).not.toHaveBeenCalled();
+  });
 });
