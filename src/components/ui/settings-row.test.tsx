@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { fireEvent, render } from "@testing-library/react-native";
+import { SymbolView } from "expo-symbols";
 import type { ReactNode } from "react";
 import { Switch } from "react-native";
 
@@ -110,5 +111,39 @@ describe("SettingsRow — toggle type", () => {
     );
     fireEvent(UNSAFE_getByType(Switch), "valueChange", true);
     expect(onChange).toHaveBeenCalledWith(true);
+  });
+});
+
+describe("SettingsRow — external type", () => {
+  test("renders the external-link icon, not the nav chevron", () => {
+    const { UNSAFE_getAllByType } = render(
+      <SettingsRow type="external" icon={icon} iconBgColor="#3366FF" label="GitHub" />,
+      { wrapper },
+    );
+    const symbolNames = UNSAFE_getAllByType(SymbolView).map((el) => el.props.name);
+    expect(symbolNames).toContainEqual({
+      ios: "arrow.up.right",
+      android: "open_in_new",
+    });
+    expect(symbolNames).not.toContainEqual({
+      ios: "chevron.right",
+      android: "chevron_right",
+    });
+  });
+
+  test("calls onPress when pressed", () => {
+    const onPress = jest.fn();
+    const { getByText } = render(
+      <SettingsRow
+        type="external"
+        icon={icon}
+        iconBgColor="#3366FF"
+        label="GitHub"
+        onPress={onPress}
+      />,
+      { wrapper },
+    );
+    fireEvent.press(getByText("GitHub"));
+    expect(onPress).toHaveBeenCalled();
   });
 });
