@@ -33,15 +33,21 @@ export type AppSyncDeps = {
 export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
   const { initDb = defaultInitDb, syncAll = defaultSyncAll } = deps ?? {};
 
-  const { isInitialSyncDone, contentVersion, setIsInitialSyncDone, setContentVersion } =
-    useSyncStore(
-      useShallow((s) => ({
-        isInitialSyncDone: s.isInitialSyncDone,
-        contentVersion: s.contentVersion,
-        setIsInitialSyncDone: s.setIsInitialSyncDone,
-        setContentVersion: s.setContentVersion,
-      })),
-    );
+  const {
+    isInitialSyncDone,
+    contentVersion,
+    setIsInitialSyncDone,
+    setContentVersion,
+    setLastSyncedAt,
+  } = useSyncStore(
+    useShallow((s) => ({
+      isInitialSyncDone: s.isInitialSyncDone,
+      contentVersion: s.contentVersion,
+      setIsInitialSyncDone: s.setIsInitialSyncDone,
+      setContentVersion: s.setContentVersion,
+      setLastSyncedAt: s.setLastSyncedAt,
+    })),
+  );
 
   const [isFirstLaunch] = useState(() => !isInitialSyncDone);
   const [status, setStatus] = useState<SyncStatus>("loading");
@@ -56,6 +62,7 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
       const version = await syncAll(db, contentVersion || null, onProgress);
       if (version != null) setContentVersion(version);
       setIsInitialSyncDone(true);
+      setLastSyncedAt(Date.now());
       setStatus("success");
     } catch {
       setStatus(isFirstLaunch ? "error" : "offline");
@@ -67,6 +74,7 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
     isFirstLaunch,
     setContentVersion,
     setIsInitialSyncDone,
+    setLastSyncedAt,
   ]);
 
   const retry = useCallback(() => {
