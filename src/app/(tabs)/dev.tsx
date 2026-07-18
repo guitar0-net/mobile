@@ -11,10 +11,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
+import { useThemePreference } from "@/features/settings";
 import { chords, courses, getDb, lessons, schemes, songs } from "@/lib/db";
 import { resetAllData, resetSyncState } from "@/lib/dev";
 import { useSyncState } from "@/lib/sync";
 import { useTheme, type ThemeName } from "@/lib/themes";
+import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
 type DbCounts = {
   courses: number;
@@ -24,17 +26,28 @@ type DbCounts = {
   schemes: number;
 };
 
-const THEMES: { name: ThemeName; label: string }[] = [
-  { name: "light", label: "Light" },
-  { name: "dark", label: "Dark" },
-  { name: "contrast-light", label: "Contrast Light" },
-  { name: "contrast-dark", label: "Contrast Dark" },
+const THEMES: {
+  name: ThemeName;
+  label: string;
+  mode: ThemeMode;
+  highContrast: boolean;
+}[] = [
+  { name: "light", label: "Light", mode: "light", highContrast: false },
+  { name: "dark", label: "Dark", mode: "dark", highContrast: false },
+  {
+    name: "contrast-light",
+    label: "Contrast Light",
+    mode: "light",
+    highContrast: true,
+  },
+  { name: "contrast-dark", label: "Contrast Dark", mode: "dark", highContrast: true },
 ];
 
 export default function DevToolsScreen() {
   const router = useRouter();
   const { isInitialSyncDone, contentVersion } = useSyncState();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
+  const { setThemeMode, setHighContrast } = useThemePreference();
   const [counts, setCounts] = useState<DbCounts | null>(null);
 
   useEffect(() => {
@@ -131,7 +144,7 @@ export default function DevToolsScreen() {
               Тема
             </Text>
             <View className="overflow-hidden rounded-xl bg-surface">
-              {THEMES.map(({ name, label }, i) => (
+              {THEMES.map(({ name, label, mode, highContrast }, i) => (
                 <View
                   key={name}
                   className={`flex-row items-center justify-between px-4 py-3 ${i < THEMES.length - 1 ? "border-b border-border" : ""}`}
@@ -140,7 +153,14 @@ export default function DevToolsScreen() {
                   {theme === name ? (
                     <Text className="text-sm font-medium text-primary">Активна</Text>
                   ) : (
-                    <Button variant="outline" size="sm" onPress={() => setTheme(name)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onPress={() => {
+                        setThemeMode(mode);
+                        setHighContrast(highContrast);
+                      }}
+                    >
                       Выбрать
                     </Button>
                   )}

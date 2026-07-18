@@ -37,7 +37,10 @@ describe("Toggle", () => {
   test.each<ThemeName>(["contrast-light", "contrast-dark"])(
     "keeps on/off states visually distinct in %s",
     (theme) => {
-      useSettingsStore.setState({ theme });
+      useSettingsStore.setState({
+        themeMode: theme === "contrast-dark" ? "dark" : "light",
+        highContrast: true,
+      });
 
       const { rerender } = render(<Toggle value={false} onValueChange={jest.fn()} />, {
         wrapper,

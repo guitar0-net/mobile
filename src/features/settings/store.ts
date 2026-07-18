@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 
-import { THEME_DEFINITIONS, type ThemeName } from "@/lib/themes/definitions";
+import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
 import { storage } from "./storage";
 
@@ -27,7 +27,8 @@ export type LessonProgress = {
 
 type SettingsData = {
   // UI Preferences
-  theme: ThemeName | undefined;
+  themeMode: ThemeMode;
+  highContrast: boolean;
   fontSize: FontSize;
   chordSize: DiagramSize;
   chordOrientation: DiagramOrientation;
@@ -43,7 +44,8 @@ type SettingsData = {
 
 type SettingsActions = {
   // UI Preferences
-  setTheme: (theme: ThemeName) => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setHighContrast: (value: boolean) => void;
   setFontSize: (size: FontSize) => void;
   setChordSize: (size: DiagramSize) => void;
   setChordOrientation: (orientation: DiagramOrientation) => void;
@@ -66,7 +68,8 @@ export type SettingsState = SettingsData & SettingsActions;
 // ---------------------------------------------------------------------------
 
 const KEYS = {
-  THEME: "settings.theme",
+  THEME_MODE: "settings.themeMode",
+  HIGH_CONTRAST: "settings.highContrast",
   FONT_SIZE: "settings.fontSize",
   CHORD_SIZE: "settings.chordSize",
   CHORD_ORIENTATION: "settings.chordOrientation",
@@ -91,10 +94,12 @@ function tryParse<T>(raw: string | undefined, fallback: T): T {
   }
 }
 
-const VALID_THEMES = new Set<string>(Object.keys(THEME_DEFINITIONS));
+const VALID_THEME_MODES = new Set<string>(["light", "dark", "system"]);
 
-function parseTheme(raw: string | undefined): ThemeName | undefined {
-  return raw !== undefined && VALID_THEMES.has(raw) ? (raw as ThemeName) : undefined;
+function parseThemeMode(raw: string | undefined): ThemeMode {
+  return raw !== undefined && VALID_THEME_MODES.has(raw)
+    ? (raw as ThemeMode)
+    : "system";
 }
 
 const VALID_SIZES = new Set<number>([1, 2, 3, 4, 5]);
@@ -122,7 +127,8 @@ function parseDiagramOrientation(raw: string | undefined): DiagramOrientation {
 
 export function readDefaults(): SettingsData {
   return {
-    theme: parseTheme(storage.getString(KEYS.THEME)),
+    themeMode: parseThemeMode(storage.getString(KEYS.THEME_MODE)),
+    highContrast: storage.getBoolean(KEYS.HIGH_CONTRAST) ?? false,
     fontSize: parseFontSize(storage.getNumber(KEYS.FONT_SIZE)),
     chordSize: parseDiagramSize(storage.getNumber(KEYS.CHORD_SIZE), 3),
     chordOrientation: parseDiagramOrientation(
@@ -149,9 +155,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // UI Preferences
 
-  setTheme: (theme) => {
-    storage.set(KEYS.THEME, theme);
-    set({ theme });
+  setThemeMode: (themeMode) => {
+    storage.set(KEYS.THEME_MODE, themeMode);
+    set({ themeMode });
+  },
+
+  setHighContrast: (highContrast) => {
+    storage.set(KEYS.HIGH_CONTRAST, highContrast);
+    set({ highContrast });
   },
 
   setFontSize: (fontSize) => {

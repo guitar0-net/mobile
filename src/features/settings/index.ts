@@ -17,8 +17,10 @@ export type {
 export function useThemePreference() {
   return useSettingsStore(
     useShallow((s) => ({
-      theme: s.theme,
-      setTheme: s.setTheme,
+      themeMode: s.themeMode,
+      highContrast: s.highContrast,
+      setThemeMode: s.setThemeMode,
+      setHighContrast: s.setHighContrast,
     })),
   );
 }

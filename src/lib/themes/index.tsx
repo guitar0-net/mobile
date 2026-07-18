@@ -17,6 +17,7 @@ import { Appearance, useColorScheme, View } from "react-native";
 import { useThemePreference } from "@/features/settings";
 
 import { THEME_DEFINITIONS, type ThemeName } from "./definitions";
+import { resolveTheme } from "./resolve-theme";
 
 export type { ThemeName };
 
@@ -44,13 +45,11 @@ export function resolveIconColor(
 type ThemeContextValue = {
   theme: ThemeName;
   colors: Colors;
-  setTheme: (theme: ThemeName) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: "light",
   colors: colorsFromTheme("light"),
-  setTheme: () => {},
 });
 
 export function useTheme() {
@@ -115,15 +114,15 @@ type ThemeProviderProps = {
 };
 
 export function ThemeProvider({ children }: ThemeProviderProps): ReactElement {
-  const { theme: storedTheme, setTheme } = useThemePreference();
+  const { themeMode, highContrast } = useThemePreference();
   const systemScheme = useColorScheme();
 
   const theme = useMemo<ThemeName>(
-    () => storedTheme ?? (systemScheme === "dark" ? "dark" : "light"),
-    [storedTheme, systemScheme],
+    () => resolveTheme(themeMode, highContrast, systemScheme),
+    [themeMode, highContrast, systemScheme],
   );
   const colors = useMemo(() => colorsFromTheme(theme), [theme]);
-  const ctx = useMemo(() => ({ theme, colors, setTheme }), [theme, colors, setTheme]);
+  const ctx = useMemo(() => ({ theme, colors }), [theme, colors]);
   const viewStyle = useMemo(
     () => [
       { flex: 1, backgroundColor: colors.background },
