@@ -8,6 +8,8 @@ import { eq } from "drizzle-orm";
 import type { ReactNode } from "react";
 import { createElement } from "react";
 
+import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
+import { useSettingsStore } from "@/features/settings/store";
 import { getDb, initDb, lessons } from "@/lib/db";
 
 import { resetDbForTesting } from "./__tests__/testing";
@@ -35,6 +37,13 @@ jest.mock("expo-file-system/legacy", () => ({
   }),
 }));
 
+const mockGetNetworkStateAsync = jest.fn();
+
+jest.mock("expo-network", () => ({
+  getNetworkStateAsync: (...args: unknown[]) => mockGetNetworkStateAsync(...args),
+  NetworkStateType: { WIFI: "WIFI", CELLULAR: "CELLULAR", NONE: "NONE" },
+}));
+
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
@@ -51,9 +60,11 @@ function createWrapper() {
 
 beforeEach(async () => {
   resetDbForTesting();
+  resetSettingsForTesting();
   useDownloadStore.setState({ activeDownloads: {} });
   capturedProgressCallback = undefined;
   jest.clearAllMocks();
+  mockGetNetworkStateAsync.mockResolvedValue({ type: "WIFI" });
 
   const db = await initDb();
   await db.insert(lessons).values({
@@ -226,4 +237,59 @@ test("treats stale downloading DB status as idle", () => {
     wrapper: createWrapper(),
   });
   expect(result.current.status).toBe("idle");
+});
+
+test("does not start download when wifi-only is enabled on a cellular connection", async () => {
+  useSettingsStore.getState().setWifiOnlyDownloads(true);
+  mockGetNetworkStateAsync.mockResolvedValue({ type: "CELLULAR" });
+
+  const { result } = renderHook(() => useVideoDownload("lesson-1", "idle"), {
+    wrapper: createWrapper(),
+  });
+
+  await act(async () => {
+    await result.current.startDownload();
+  });
+
+  expect(mockDownloadAsync).not.toHaveBeenCalled();
+  expect(result.current.status).toBe("idle");
+});
+
+test("starts download when wifi-only is enabled on a Wi-Fi connection", async () => {
+  useSettingsStore.getState().setWifiOnlyDownloads(true);
+  mockGetNetworkStateAsync.mockResolvedValue({ type: "WIFI" });
+  mockDownloadAsync.mockReturnValue(
+    new Promise(() => {
+      // never resolves — only needs to have been called
+    }),
+  );
+
+  const { result } = renderHook(() => useVideoDownload("lesson-1", "idle"), {
+    wrapper: createWrapper(),
+  });
+
+  act(() => {
+    void result.current.startDownload();
+  });
+
+  await waitFor(() => expect(mockDownloadAsync).toHaveBeenCalledTimes(1));
+});
+
+test("starts download on a cellular connection when wifi-only is disabled", async () => {
+  mockGetNetworkStateAsync.mockResolvedValue({ type: "CELLULAR" });
+  mockDownloadAsync.mockReturnValue(
+    new Promise(() => {
+      // never resolves — only needs to have been called
+    }),
+  );
+
+  const { result } = renderHook(() => useVideoDownload("lesson-1", "idle"), {
+    wrapper: createWrapper(),
+  });
+
+  act(() => {
+    void result.current.startDownload();
+  });
+
+  await waitFor(() => expect(mockDownloadAsync).toHaveBeenCalledTimes(1));
 });

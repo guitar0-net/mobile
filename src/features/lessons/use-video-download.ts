@@ -5,8 +5,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { eq } from "drizzle-orm";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Network from "expo-network";
 import { useEffect } from "react";
 
+import { useWifiOnlyDownloads } from "@/features/settings";
 import { getDb, lessons } from "@/lib/db";
 import type { VideoDownloadStatus } from "@/lib/db";
 
@@ -34,6 +36,7 @@ export function useVideoDownload(
 ): VideoDownloadHook {
   const { activeDownloads, setActive, updateProgress, clearActive } =
     useDownloadStore();
+  const { wifiOnlyDownloads } = useWifiOnlyDownloads();
   const queryClient = useQueryClient();
 
   const activeEntry = activeDownloads[lessonId];
@@ -58,11 +61,19 @@ export function useVideoDownload(
         .set({ videoDownloadStatus: "idle" })
         .where(eq(lessons.uuid, lessonId));
       void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["lessons", "downloaded-videos"],
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup stale download state on mount only
   }, [lessonId]);
 
   async function startDownload() {
+    if (wifiOnlyDownloads) {
+      const networkState = await Network.getNetworkStateAsync();
+      if (networkState.type !== Network.NetworkStateType.WIFI) return;
+    }
+
     const url = videoStreamUrl(lessonId);
     const dest = videoDestPath(lessonId);
 
@@ -105,6 +116,9 @@ export function useVideoDownload(
           .where(eq(lessons.uuid, lessonId));
         clearActive(lessonId);
         void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
+        void queryClient.invalidateQueries({
+          queryKey: ["lessons", "downloaded-videos"],
+        });
       } else if (result) {
         await FileSystem.deleteAsync(result.uri, { idempotent: true });
         throw new Error(`HTTP ${result.status}`);
@@ -119,6 +133,9 @@ export function useVideoDownload(
         .set({ videoDownloadStatus: "failed" })
         .where(eq(lessons.uuid, lessonId));
       void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["lessons", "downloaded-videos"],
+      });
     }
   }
 
@@ -131,6 +148,7 @@ export function useVideoDownload(
       .set({ videoDownloadStatus: "idle" })
       .where(eq(lessons.uuid, lessonId));
     void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
+    void queryClient.invalidateQueries({ queryKey: ["lessons", "downloaded-videos"] });
   }
 
   async function deleteDownload() {
@@ -151,6 +169,9 @@ export function useVideoDownload(
         .set({ localVideoPath: null, videoDownloadStatus: "idle" })
         .where(eq(lessons.uuid, lessonId));
       void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["lessons", "downloaded-videos"],
+      });
     }
   }
 
