@@ -12,6 +12,7 @@ import {
   useHideCompletedLessons,
   useProgress,
   useThemePreference,
+  useWifiOnlyDownloads,
 } from "./index";
 import { storage } from "./storage";
 import { readDefaults } from "./store";
@@ -335,6 +336,41 @@ describe("useHideCompletedLessons", () => {
     });
 
     expect(readDefaults().hideCompletedLessons).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useWifiOnlyDownloads
+// ---------------------------------------------------------------------------
+
+describe("useWifiOnlyDownloads", () => {
+  test("defaults to false", () => {
+    const { result } = renderHook(() => useWifiOnlyDownloads());
+    expect(result.current.wifiOnlyDownloads).toBe(false);
+  });
+
+  test("setWifiOnlyDownloads write-read roundtrip", () => {
+    const { result } = renderHook(() => useWifiOnlyDownloads());
+
+    act(() => {
+      result.current.setWifiOnlyDownloads(true);
+    });
+    expect(result.current.wifiOnlyDownloads).toBe(true);
+
+    act(() => {
+      result.current.setWifiOnlyDownloads(false);
+    });
+    expect(result.current.wifiOnlyDownloads).toBe(false);
+  });
+
+  test("persists to MMKV under settings.wifiOnlyDownloads", () => {
+    const { result } = renderHook(() => useWifiOnlyDownloads());
+
+    act(() => {
+      result.current.setWifiOnlyDownloads(true);
+    });
+
+    expect(storage.getBoolean("settings.wifiOnlyDownloads")).toBe(true);
   });
 });
 

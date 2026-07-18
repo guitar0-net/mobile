@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { create } from "zustand";
+import type { StoreApi, UseBoundStore } from "zustand";
 
 import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
@@ -61,7 +62,15 @@ type SettingsActions = {
   setHideCompletedLessons: (value: boolean) => void;
 };
 
-export type SettingsState = SettingsData & SettingsActions;
+// Video downloads — kept as its own type (rather than folded into
+// SettingsData/SettingsActions above) so the store creation below never has
+// to be touched when this section changes. See the bottom of this file.
+type VideoDownloadSettings = {
+  wifiOnlyDownloads: boolean;
+  setWifiOnlyDownloads: (value: boolean) => void;
+};
+
+export type SettingsState = SettingsData & SettingsActions & VideoDownloadSettings;
 
 // ---------------------------------------------------------------------------
 // MMKV storage key names
@@ -150,7 +159,10 @@ export function readDefaults(): SettingsData {
 // Zustand store
 // ---------------------------------------------------------------------------
 
-export const useSettingsStore = create<SettingsState>((set, get) => ({
+// Parametrized with the pre-video-downloads shape so this call — and every
+// line inside it — never needs to change when VideoDownloadSettings changes.
+// The wider, publicly exported `useSettingsStore` type is applied below.
+export const useSettingsStore = create<SettingsData & SettingsActions>((set, get) => ({
   ...readDefaults(),
 
   // UI Preferences
@@ -244,4 +256,17 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     storage.set(KEYS.PROGRESS, JSON.stringify(progress));
     set({ progress });
   },
-}));
+})) as unknown as UseBoundStore<StoreApi<SettingsState>>;
+
+// Video downloads — wifi-only gating. Appended here (rather than interleaved
+// into the KEYS/readDefaults/actions sections above) to minimize merge
+// conflicts with sibling PRs also touching this store.
+const WIFI_ONLY_DOWNLOADS_KEY = "settings.wifiOnlyDownloads";
+
+useSettingsStore.setState({
+  wifiOnlyDownloads: storage.getBoolean(WIFI_ONLY_DOWNLOADS_KEY) ?? false,
+  setWifiOnlyDownloads: (wifiOnlyDownloads: boolean) => {
+    storage.set(WIFI_ONLY_DOWNLOADS_KEY, wifiOnlyDownloads);
+    useSettingsStore.setState({ wifiOnlyDownloads });
+  },
+});
