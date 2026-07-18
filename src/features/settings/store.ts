@@ -258,3 +258,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ wifiOnlyDownloads });
   },
 }));
+
+// Appended as a standalone function (rather than a SettingsActions method) to
+// minimize merge conflicts with sibling PRs also editing this file's
+// type/KEYS/readDefaults/create() blocks.
+export function resetProgress(): void {
+  storage.remove(KEYS.FAVORITES);
+  storage.remove(KEYS.PROGRESS);
+  useSettingsStore.setState({ favorites: [], progress: {} });
+}
