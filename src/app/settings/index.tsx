@@ -12,6 +12,7 @@ import { SettingsRow } from "@/components/ui/settings-row";
 import { Text } from "@/components/ui/text";
 import { useThemePreference } from "@/features/settings";
 import { AboutGroup } from "@/features/settings/components/about-group";
+import { DataGroup } from "@/features/settings/components/data-group";
 import { useColors } from "@/lib/themes";
 import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
@@ -61,7 +62,7 @@ export default function SettingsScreen() {
             onChange={setHighContrast}
           />
         </View>
-
+        <DataGroup />
         <AboutGroup />
       </ScreenScrollView>
     </>

@@ -104,6 +104,13 @@ describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
     await waitFor(() => expect(result.current.status).toBe("error"));
   });
 
+  test("sets lastSyncedAt on successful sync", async () => {
+    const deps = makeDeps();
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.status).toBe("success"));
+    expect(useSyncStore.getState().lastSyncedAt).not.toBeNull();
+  });
+
   test("does not update contentVersion when syncAll returns null", async () => {
     const deps = makeDeps({
       syncAll: jest.fn().mockResolvedValue(null),
@@ -180,5 +187,14 @@ describe("useAppSync — returning user (isInitialSyncDone=true)", () => {
     const { result } = renderHook(() => useAppSync(deps));
     await waitFor(() => expect(result.current.status).toBe("offline"));
     expect(useSyncStore.getState().isInitialSyncDone).toBe(true);
+  });
+
+  test("lastSyncedAt stays unset after a failed sync", async () => {
+    const deps = makeDeps({
+      syncAll: jest.fn().mockRejectedValue(new Error("Network")),
+    });
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.status).toBe("offline"));
+    expect(useSyncStore.getState().lastSyncedAt).toBeNull();
   });
 });

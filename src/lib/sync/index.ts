@@ -16,8 +16,10 @@ export function useSyncState() {
     useShallow((s) => ({
       isInitialSyncDone: s.isInitialSyncDone,
       contentVersion: s.contentVersion,
+      lastSyncedAt: s.lastSyncedAt,
       setIsInitialSyncDone: s.setIsInitialSyncDone,
       setContentVersion: s.setContentVersion,
+      setLastSyncedAt: s.setLastSyncedAt,
     })),
   );
 }
