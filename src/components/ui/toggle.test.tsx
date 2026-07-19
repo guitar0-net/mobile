@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 import { Switch } from "react-native";
 
@@ -59,4 +59,35 @@ describe("Toggle", () => {
       expect(onProps.thumbColor).not.toBe(onProps.trackColor.true);
     },
   );
+
+  test("defers applying new colors by a frame so a same-tick native redraw can't clobber them", () => {
+    jest.useFakeTimers();
+    try {
+      useSettingsStore.setState({ themeMode: "light", highContrast: true });
+      const { rerender } = render(<Toggle value={true} onValueChange={jest.fn()} />, {
+        wrapper,
+      });
+      const before = screen.UNSAFE_getByType(Switch).props.trackColor;
+
+      useSettingsStore.setState({ themeMode: "dark" });
+      rerender(<Toggle value={true} onValueChange={jest.fn()} />);
+
+      // Right after the theme change, the switch must still show the
+      // previous colors. iOS 26 resets UISwitch's thumbTintColor to white on
+      // the next redraw after it's set (facebook/react-native#53856), and
+      // ThemeProvider's Appearance.setColorScheme() triggers exactly that
+      // kind of redraw on every theme change. Applying colors in the same
+      // tick would mean the redraw wins and wipes them.
+      expect(screen.UNSAFE_getByType(Switch).props.trackColor).toEqual(before);
+
+      act(() => {
+        jest.runOnlyPendingTimers();
+      });
+
+      // One frame later, the deferred colors land.
+      expect(screen.UNSAFE_getByType(Switch).props.trackColor).not.toEqual(before);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
