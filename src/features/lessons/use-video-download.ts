@@ -211,4 +211,5 @@ export async function deleteAllDownloadedVideos(): Promise<void> {
       ),
     );
   void appQueryClient.invalidateQueries({ queryKey: ["lesson-detail"] });
+  void appQueryClient.invalidateQueries({ queryKey: ["lessons", "downloaded-videos"] });
 }
