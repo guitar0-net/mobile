@@ -56,16 +56,41 @@ export function useVideoDownload(
 
   const progress = activeEntry?.progress ?? 0;
 
+  function invalidateDownloadQueries() {
+    void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
+    void queryClient.invalidateQueries({ queryKey: ["lessons", "downloaded-videos"] });
+  }
+
   useEffect(() => {
     if (dbStatus === "downloading" && !activeDownloads[lessonId]) {
       void getDb()
         .update(lessons)
         .set({ videoDownloadStatus: "idle" })
         .where(eq(lessons.uuid, lessonId));
-      void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
-      void queryClient.invalidateQueries({
-        queryKey: ["lessons", "downloaded-videos"],
-      });
+      invalidateDownloadQueries();
+    }
+
+    if (dbStatus === "downloaded") {
+      // The DB can claim "downloaded" while the file is gone — e.g. a backup
+      // restore brought back the DB row but not the (larger, possibly
+      // backup-excluded) video file, or the download was interrupted after
+      // the file write but before cleanup ran.
+      void (async () => {
+        const [lesson] = await getDb()
+          .select({ localVideoPath: lessons.localVideoPath })
+          .from(lessons)
+          .where(eq(lessons.uuid, lessonId));
+        const info = lesson?.localVideoPath
+          ? await FileSystem.getInfoAsync(lesson.localVideoPath)
+          : null;
+        if (!info?.exists) {
+          await getDb()
+            .update(lessons)
+            .set({ localVideoPath: null, videoDownloadStatus: "idle" })
+            .where(eq(lessons.uuid, lessonId));
+          invalidateDownloadQueries();
+        }
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup stale download state on mount only
   }, [lessonId]);

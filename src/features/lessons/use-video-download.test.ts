@@ -241,6 +241,36 @@ test("treats stale downloading DB status as idle", () => {
   expect(result.current.status).toBe("idle");
 });
 
+test("resets stale downloaded status when the local file is missing", async () => {
+  // e.g. a backup restore brought back the DB row but not the video file.
+  await getDb()
+    .update(lessons)
+    .set({
+      videoDownloadStatus: "downloaded",
+      localVideoPath: "/mock/documents/videos/lesson-1.mp4",
+    })
+    .where(eq(lessons.uuid, "lesson-1"));
+  const fileSystem = jest.requireMock<{
+    getInfoAsync: jest.Mock;
+  }>("expo-file-system/legacy");
+  fileSystem.getInfoAsync.mockResolvedValueOnce({ exists: false });
+
+  renderHook(() => useVideoDownload("lesson-1", "downloaded"), {
+    wrapper: createWrapper(),
+  });
+
+  await waitFor(async () => {
+    const [row] = await getDb()
+      .select({
+        videoDownloadStatus: lessons.videoDownloadStatus,
+        localVideoPath: lessons.localVideoPath,
+      })
+      .from(lessons)
+      .where(eq(lessons.uuid, "lesson-1"));
+    expect(row).toMatchObject({ videoDownloadStatus: "idle", localVideoPath: null });
+  });
+});
+
 test("does not start download when wifi-only is enabled on a cellular connection", async () => {
   useSettingsStore.getState().setWifiOnlyDownloads(true);
   mockGetNetworkStateAsync.mockResolvedValue({ type: "CELLULAR" });
