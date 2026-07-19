@@ -27,12 +27,24 @@ export function Toggle({ value, onValueChange }: Props) {
     return () => cancelAnimationFrame(id);
   }, [colors]);
 
+  const trackColor = value ? appliedColors.primary : appliedColors.surface;
+  // A custom thumbColor loses the native drop shadow, so only override it
+  // when the track itself is white (the high-contrast themes) — otherwise a
+  // white thumb disappears into a white track. Everywhere else, leaving
+  // thumbColor unset keeps the native white-with-shadow look.
+  const thumbColor =
+    trackColor === "#FFFFFF"
+      ? value
+        ? appliedColors.primaryFg
+        : appliedColors.foreground
+      : undefined;
+
   return (
     <Switch
       value={value}
       onValueChange={onValueChange}
       trackColor={{ false: appliedColors.surface, true: appliedColors.primary }}
-      thumbColor={value ? appliedColors.primaryFg : appliedColors.foreground}
+      thumbColor={thumbColor}
       ios_backgroundColor={appliedColors.surface}
     />
   );

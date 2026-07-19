@@ -10,6 +10,7 @@ import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { useSettingsStore } from "@/features/settings/store";
 import { ThemeProvider } from "@/lib/themes";
 import type { ThemeName } from "@/lib/themes";
+import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
 import { Toggle } from "./toggle";
 
@@ -57,6 +58,27 @@ describe("Toggle", () => {
       // disappears entirely (e.g. white thumb on white track).
       expect(offProps.thumbColor).not.toBe(offProps.trackColor.false);
       expect(onProps.thumbColor).not.toBe(onProps.trackColor.true);
+    },
+  );
+
+  test.each<ThemeMode>(["light", "dark"])(
+    "leaves the native thumb color (with its drop shadow) alone in %s",
+    (theme) => {
+      useSettingsStore.setState({
+        themeMode: theme,
+        highContrast: false,
+      });
+
+      const { rerender } = render(<Toggle value={false} onValueChange={jest.fn()} />, {
+        wrapper,
+      });
+      // Track colors are never white outside the contrast themes, so a
+      // forced thumbColor would only strip the native drop shadow for no
+      // reason — leaving it unset keeps the standard platform look.
+      expect(screen.UNSAFE_getByType(Switch).props.thumbColor).toBeUndefined();
+
+      rerender(<Toggle value={true} onValueChange={jest.fn()} />);
+      expect(screen.UNSAFE_getByType(Switch).props.thumbColor).toBeUndefined();
     },
   );
 
