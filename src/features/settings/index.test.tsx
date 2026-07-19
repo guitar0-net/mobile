@@ -15,7 +15,7 @@ import {
   useWifiOnlyDownloads,
 } from "./index";
 import { storage } from "./storage";
-import { readDefaults } from "./store";
+import { readDefaults, resetProgress, useSettingsStore } from "./store";
 
 beforeEach(() => {
   resetSettingsForTesting();
@@ -445,5 +445,50 @@ describe("readDefaults — valid stored values", () => {
   test("returns stored imageSchemeSize when a valid size is stored", () => {
     storage.set("settings.imageSchemeSize", 5);
     expect(readDefaults().imageSchemeSize).toBe(5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resetProgress
+// ---------------------------------------------------------------------------
+
+describe("resetProgress", () => {
+  test("clears favorites and progress, both in the store and in MMKV", () => {
+    const { result } = renderHook(() => useProgress());
+    const { result: favoritesResult } = renderHook(() => useFavorites());
+
+    act(() => {
+      favoritesResult.current.addFavorite("lesson-uuid-1");
+      result.current.setVideoViewed("lesson-uuid-1", true);
+      result.current.setSongCompleted("lesson-uuid-1", "song-uuid-a", true);
+    });
+    expect(useSettingsStore.getState().favorites).toEqual(["lesson-uuid-1"]);
+    expect(useSettingsStore.getState().progress).not.toEqual({});
+
+    act(() => {
+      resetProgress();
+    });
+
+    expect(useSettingsStore.getState().favorites).toEqual([]);
+    expect(useSettingsStore.getState().progress).toEqual({});
+    expect(readDefaults().favorites).toEqual([]);
+    expect(readDefaults().progress).toEqual({});
+  });
+
+  test("does not touch hideCompletedLessons, themeMode, or other preferences", () => {
+    act(() => {
+      useSettingsStore.getState().setHideCompletedLessons(true);
+      useSettingsStore.getState().setThemeMode("dark");
+      useSettingsStore.getState().setFontSize(5);
+      useSettingsStore.getState().addFavorite("lesson-uuid-1");
+    });
+
+    act(() => {
+      resetProgress();
+    });
+
+    expect(useSettingsStore.getState().hideCompletedLessons).toBe(true);
+    expect(useSettingsStore.getState().themeMode).toBe("dark");
+    expect(useSettingsStore.getState().fontSize).toBe(5);
   });
 });

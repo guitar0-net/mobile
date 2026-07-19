@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useQueryClient } from "@tanstack/react-query";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Network from "expo-network";
 import { useEffect } from "react";
@@ -12,6 +12,7 @@ import { Alert } from "react-native";
 import { useWifiOnlyDownloads } from "@/features/settings";
 import { getDb, lessons } from "@/lib/db";
 import type { VideoDownloadStatus } from "@/lib/db";
+import { queryClient as appQueryClient } from "@/lib/network/query-client";
 
 import { useDownloadStore } from "./download-store";
 
@@ -55,16 +56,41 @@ export function useVideoDownload(
 
   const progress = activeEntry?.progress ?? 0;
 
+  function invalidateDownloadQueries() {
+    void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
+    void queryClient.invalidateQueries({ queryKey: ["lessons", "downloaded-videos"] });
+  }
+
   useEffect(() => {
     if (dbStatus === "downloading" && !activeDownloads[lessonId]) {
       void getDb()
         .update(lessons)
         .set({ videoDownloadStatus: "idle" })
         .where(eq(lessons.uuid, lessonId));
-      void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
-      void queryClient.invalidateQueries({
-        queryKey: ["lessons", "downloaded-videos"],
-      });
+      invalidateDownloadQueries();
+    }
+
+    if (dbStatus === "downloaded") {
+      // The DB can claim "downloaded" while the file is gone — e.g. a backup
+      // restore brought back the DB row but not the (larger, possibly
+      // backup-excluded) video file, or the download was interrupted after
+      // the file write but before cleanup ran.
+      void (async () => {
+        const [lesson] = await getDb()
+          .select({ localVideoPath: lessons.localVideoPath })
+          .from(lessons)
+          .where(eq(lessons.uuid, lessonId));
+        const info = lesson?.localVideoPath
+          ? await FileSystem.getInfoAsync(lesson.localVideoPath)
+          : null;
+        if (!info?.exists) {
+          await getDb()
+            .update(lessons)
+            .set({ localVideoPath: null, videoDownloadStatus: "idle" })
+            .where(eq(lessons.uuid, lessonId));
+          invalidateDownloadQueries();
+        }
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup stale download state on mount only
   }, [lessonId]);
@@ -183,4 +209,32 @@ export function useVideoDownload(
   }
 
   return { status, progress, startDownload, cancelDownload, deleteDownload };
+}
+
+export async function deleteAllDownloadedVideos(): Promise<void> {
+  const db = getDb();
+  const downloaded = await db
+    .select({ uuid: lessons.uuid, localVideoPath: lessons.localVideoPath })
+    .from(lessons)
+    .where(eq(lessons.videoDownloadStatus, "downloaded"));
+
+  if (downloaded.length === 0) return;
+
+  for (const lesson of downloaded) {
+    if (!lesson.localVideoPath) continue;
+    const info = await FileSystem.getInfoAsync(lesson.localVideoPath);
+    if (info.exists) await FileSystem.deleteAsync(lesson.localVideoPath);
+  }
+
+  await db
+    .update(lessons)
+    .set({ localVideoPath: null, videoDownloadStatus: "idle" })
+    .where(
+      inArray(
+        lessons.uuid,
+        downloaded.map((lesson) => lesson.uuid),
+      ),
+    );
+  void appQueryClient.invalidateQueries({ queryKey: ["lesson-detail"] });
+  void appQueryClient.invalidateQueries({ queryKey: ["lessons", "downloaded-videos"] });
 }

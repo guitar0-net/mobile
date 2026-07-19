@@ -12,6 +12,7 @@ import { SettingsRow } from "@/components/ui/settings-row";
 import { Text } from "@/components/ui/text";
 import { useThemePreference } from "@/features/settings";
 import { AboutGroup } from "@/features/settings/components/about-group";
+import { DangerZoneGroup } from "@/features/settings/components/danger-zone-group";
 import { DataGroup } from "@/features/settings/components/data-group";
 import { VideoGroup } from "@/features/settings/components/video-group";
 import { useColors } from "@/lib/themes";
@@ -66,6 +67,7 @@ export default function SettingsScreen() {
         <DataGroup />
         <VideoGroup />
         <AboutGroup />
+        <DangerZoneGroup />
       </ScreenScrollView>
     </>
   );

@@ -28,7 +28,7 @@ export type {
 export { deriveLessonState, computeCourseProgress, isLessonCompleted } from "./logic";
 export type { LessonState } from "./logic";
 
-export { videoStreamUrl } from "./use-video-download";
+export { deleteAllDownloadedVideos, videoStreamUrl } from "./use-video-download";
 export { CourseContinueCard } from "./components/course-continue-card";
 export { DownloadedVideosList } from "./components/downloaded-videos-list";
 export { SongRow } from "./components/song-row";
