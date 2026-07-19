@@ -7,7 +7,5 @@ import { readDefaults, useSettingsStore } from "../store";
 
 export function resetSettingsForTesting(): void {
   storage.clearAll();
-  // wifiOnlyDownloads lives outside readDefaults() (see bottom of store.ts),
-  // so setState's shallow merge won't clear it on its own — reset explicitly.
-  useSettingsStore.setState({ ...readDefaults(), wifiOnlyDownloads: false });
+  useSettingsStore.setState(readDefaults());
 }

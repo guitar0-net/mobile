@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { create } from "zustand";
-import type { StoreApi, UseBoundStore } from "zustand";
 
 import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
@@ -41,6 +40,9 @@ type SettingsData = {
   favorites: string[];
   progress: Record<string, LessonProgress>;
   hideCompletedLessons: boolean;
+
+  // Video downloads
+  wifiOnlyDownloads: boolean;
 };
 
 type SettingsActions = {
@@ -60,17 +62,12 @@ type SettingsActions = {
   setVideoViewed: (lessonId: string, viewed: boolean) => void;
   setSongCompleted: (lessonId: string, songId: string, completed: boolean) => void;
   setHideCompletedLessons: (value: boolean) => void;
-};
 
-// Video downloads — kept as its own type (rather than folded into
-// SettingsData/SettingsActions above) so the store creation below never has
-// to be touched when this section changes. See the bottom of this file.
-type VideoDownloadSettings = {
-  wifiOnlyDownloads: boolean;
+  // Video downloads
   setWifiOnlyDownloads: (value: boolean) => void;
 };
 
-export type SettingsState = SettingsData & SettingsActions & VideoDownloadSettings;
+export type SettingsState = SettingsData & SettingsActions;
 
 // ---------------------------------------------------------------------------
 // MMKV storage key names
@@ -88,6 +85,7 @@ const KEYS = {
   FAVORITES: "settings.favorites",
   PROGRESS: "settings.progress",
   HIDE_COMPLETED_LESSONS: "settings.hideCompletedLessons",
+  WIFI_ONLY_DOWNLOADS: "settings.wifiOnlyDownloads",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -152,6 +150,7 @@ export function readDefaults(): SettingsData {
       {},
     ),
     hideCompletedLessons: storage.getBoolean(KEYS.HIDE_COMPLETED_LESSONS) ?? false,
+    wifiOnlyDownloads: storage.getBoolean(KEYS.WIFI_ONLY_DOWNLOADS) ?? false,
   };
 }
 
@@ -159,10 +158,7 @@ export function readDefaults(): SettingsData {
 // Zustand store
 // ---------------------------------------------------------------------------
 
-// Parametrized with the pre-video-downloads shape so this call — and every
-// line inside it — never needs to change when VideoDownloadSettings changes.
-// The wider, publicly exported `useSettingsStore` type is applied below.
-export const useSettingsStore = create<SettingsData & SettingsActions>((set, get) => ({
+export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...readDefaults(),
 
   // UI Preferences
@@ -256,17 +252,9 @@ export const useSettingsStore = create<SettingsData & SettingsActions>((set, get
     storage.set(KEYS.PROGRESS, JSON.stringify(progress));
     set({ progress });
   },
-})) as unknown as UseBoundStore<StoreApi<SettingsState>>;
 
-// Video downloads — wifi-only gating. Appended here (rather than interleaved
-// into the KEYS/readDefaults/actions sections above) to minimize merge
-// conflicts with sibling PRs also touching this store.
-const WIFI_ONLY_DOWNLOADS_KEY = "settings.wifiOnlyDownloads";
-
-useSettingsStore.setState({
-  wifiOnlyDownloads: storage.getBoolean(WIFI_ONLY_DOWNLOADS_KEY) ?? false,
-  setWifiOnlyDownloads: (wifiOnlyDownloads: boolean) => {
-    storage.set(WIFI_ONLY_DOWNLOADS_KEY, wifiOnlyDownloads);
-    useSettingsStore.setState({ wifiOnlyDownloads });
+  setWifiOnlyDownloads: (wifiOnlyDownloads) => {
+    storage.set(KEYS.WIFI_ONLY_DOWNLOADS, wifiOnlyDownloads);
+    set({ wifiOnlyDownloads });
   },
-});
+}));

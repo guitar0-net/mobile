@@ -212,14 +212,15 @@ export async function listDownloadedVideos(): Promise<DownloadedVideo[]> {
     .from(lessons)
     .where(eq(lessons.videoDownloadStatus, "downloaded"));
 
-  const videos: DownloadedVideo[] = [];
-  for (const row of rows) {
-    if (!row.localVideoPath) continue;
-    const info = await FileSystem.getInfoAsync(row.localVideoPath);
-    if (!info.exists) continue;
-    videos.push({ lessonUuid: row.uuid, title: row.title, sizeBytes: info.size ?? 0 });
-  }
-  return videos;
+  const videos = await Promise.all(
+    rows.map(async (row) => {
+      if (!row.localVideoPath) return null;
+      const info = await FileSystem.getInfoAsync(row.localVideoPath);
+      if (!info.exists) return null;
+      return { lessonUuid: row.uuid, title: row.title, sizeBytes: info.size ?? 0 };
+    }),
+  );
+  return videos.filter((v): v is DownloadedVideo => v !== null);
 }
 
 export function useDownloadedVideos() {

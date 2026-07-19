@@ -17,13 +17,6 @@ import { DownloadedVideoItem } from "./downloaded-video-item";
 // Mocks
 // ---------------------------------------------------------------------------
 
-const mockInvalidateQueries = jest.fn();
-
-jest.mock("@tanstack/react-query", () => ({
-  ...jest.requireActual("@tanstack/react-query"),
-  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
-}));
-
 jest.mock("../use-video-download", () => ({
   useVideoDownload: jest.fn(),
 }));
@@ -65,7 +58,6 @@ function renderItem(hookOverrides: Partial<VideoDownloadHook> = {}) {
 
 beforeEach(() => {
   resetSettingsForTesting();
-  mockInvalidateQueries.mockReset();
   jest.spyOn(Alert, "alert").mockImplementation(() => {});
 });
 
@@ -90,7 +82,7 @@ describe("DownloadedVideoItem", () => {
     );
   });
 
-  test("confirming delete calls deleteDownload and refreshes the downloaded list", async () => {
+  test("confirming delete calls deleteDownload", () => {
     const deleteDownload = jest.fn().mockResolvedValue(undefined);
     jest.spyOn(Alert, "alert").mockImplementation((_title, _msg, buttons) => {
       const confirm = buttons?.find((b) => b.text === "Удалить");
@@ -100,10 +92,6 @@ describe("DownloadedVideoItem", () => {
 
     fireEvent.press(screen.getByLabelText("Удалить загрузку"));
 
-    await Promise.resolve();
     expect(deleteDownload).toHaveBeenCalledTimes(1);
-    expect(mockInvalidateQueries).toHaveBeenCalledWith({
-      queryKey: ["lessons", "downloaded-videos"],
-    });
   });
 });

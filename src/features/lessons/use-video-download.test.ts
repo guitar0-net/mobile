@@ -7,6 +7,7 @@ import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { eq } from "drizzle-orm";
 import type { ReactNode } from "react";
 import { createElement } from "react";
+import { Alert } from "react-native";
 
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { useSettingsStore } from "@/features/settings/store";
@@ -65,6 +66,7 @@ beforeEach(async () => {
   capturedProgressCallback = undefined;
   jest.clearAllMocks();
   mockGetNetworkStateAsync.mockResolvedValue({ type: "WIFI" });
+  jest.spyOn(Alert, "alert").mockImplementation(() => {});
 
   const db = await initDb();
   await db.insert(lessons).values({
@@ -253,6 +255,10 @@ test("does not start download when wifi-only is enabled on a cellular connection
 
   expect(mockDownloadAsync).not.toHaveBeenCalled();
   expect(result.current.status).toBe("idle");
+  expect(Alert.alert).toHaveBeenCalledWith(
+    "Нет подключения к Wi-Fi",
+    expect.any(String),
+  );
 });
 
 test("starts download when wifi-only is enabled on a Wi-Fi connection", async () => {

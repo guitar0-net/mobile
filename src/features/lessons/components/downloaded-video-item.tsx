@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useQueryClient } from "@tanstack/react-query";
 import { Alert, View } from "react-native";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,6 @@ export function DownloadedVideoItem({
   sizeBytes,
 }: DownloadedVideoItemProps) {
   const { deleteDownload } = useVideoDownload(lessonUuid, "downloaded");
-  const queryClient = useQueryClient();
 
   function handleDeletePress() {
     Alert.alert("Удалить загрузку", "Видео будет удалено с устройства.", [
@@ -31,13 +29,7 @@ export function DownloadedVideoItem({
       {
         text: "Удалить",
         style: "destructive",
-        onPress: () => {
-          void deleteDownload().then(() =>
-            queryClient.invalidateQueries({
-              queryKey: ["lessons", "downloaded-videos"],
-            }),
-          );
-        },
+        onPress: () => void deleteDownload(),
       },
     ]);
   }

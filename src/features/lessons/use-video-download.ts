@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Network from "expo-network";
 import { useEffect } from "react";
+import { Alert } from "react-native";
 
 import { useWifiOnlyDownloads } from "@/features/settings";
 import { getDb, lessons } from "@/lib/db";
@@ -71,7 +72,13 @@ export function useVideoDownload(
   async function startDownload() {
     if (wifiOnlyDownloads) {
       const networkState = await Network.getNetworkStateAsync();
-      if (networkState.type !== Network.NetworkStateType.WIFI) return;
+      if (networkState.type !== Network.NetworkStateType.WIFI) {
+        Alert.alert(
+          "Нет подключения к Wi-Fi",
+          "Включена загрузка видео только по Wi-Fi. Подключитесь к сети Wi-Fi или отключите этот параметр в настройках.",
+        );
+        return;
+      }
     }
 
     const url = videoStreamUrl(lessonId);
