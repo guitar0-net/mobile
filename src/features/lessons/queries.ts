@@ -4,6 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
+import * as FileSystem from "expo-file-system/legacy";
 import { useMemo } from "react";
 
 import { useProgress } from "@/features/settings";
@@ -191,6 +192,42 @@ export function useCompletedLessonsCount(): number {
       isLessonCompleted(lesson, progress[lesson.lessonUuid]),
     ).length;
   }, [query.data, progress]);
+}
+
+export type DownloadedVideo = {
+  lessonUuid: string;
+  title: string;
+  sizeBytes: number;
+};
+
+// Computed on demand rather than cached — a video can be deleted outside the
+// app (e.g. low storage cleanup), and a stale cached size would then be wrong.
+export async function listDownloadedVideos(): Promise<DownloadedVideo[]> {
+  const rows = await getDb()
+    .select({
+      uuid: lessons.uuid,
+      title: lessons.title,
+      localVideoPath: lessons.localVideoPath,
+    })
+    .from(lessons)
+    .where(eq(lessons.videoDownloadStatus, "downloaded"));
+
+  const videos = await Promise.all(
+    rows.map(async (row) => {
+      if (!row.localVideoPath) return null;
+      const info = await FileSystem.getInfoAsync(row.localVideoPath);
+      if (!info.exists) return null;
+      return { lessonUuid: row.uuid, title: row.title, sizeBytes: info.size ?? 0 };
+    }),
+  );
+  return videos.filter((v): v is DownloadedVideo => v !== null);
+}
+
+export function useDownloadedVideos() {
+  return useQuery({
+    queryKey: ["lessons", "downloaded-videos"],
+    queryFn: listDownloadedVideos,
+  });
 }
 
 export function useContinueLesson(courseUuid: string) {

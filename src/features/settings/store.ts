@@ -40,6 +40,9 @@ type SettingsData = {
   favorites: string[];
   progress: Record<string, LessonProgress>;
   hideCompletedLessons: boolean;
+
+  // Video downloads
+  wifiOnlyDownloads: boolean;
 };
 
 type SettingsActions = {
@@ -59,6 +62,9 @@ type SettingsActions = {
   setVideoViewed: (lessonId: string, viewed: boolean) => void;
   setSongCompleted: (lessonId: string, songId: string, completed: boolean) => void;
   setHideCompletedLessons: (value: boolean) => void;
+
+  // Video downloads
+  setWifiOnlyDownloads: (value: boolean) => void;
 };
 
 export type SettingsState = SettingsData & SettingsActions;
@@ -79,6 +85,7 @@ const KEYS = {
   FAVORITES: "settings.favorites",
   PROGRESS: "settings.progress",
   HIDE_COMPLETED_LESSONS: "settings.hideCompletedLessons",
+  WIFI_ONLY_DOWNLOADS: "settings.wifiOnlyDownloads",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -143,6 +150,7 @@ export function readDefaults(): SettingsData {
       {},
     ),
     hideCompletedLessons: storage.getBoolean(KEYS.HIDE_COMPLETED_LESSONS) ?? false,
+    wifiOnlyDownloads: storage.getBoolean(KEYS.WIFI_ONLY_DOWNLOADS) ?? false,
   };
 }
 
@@ -243,5 +251,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     };
     storage.set(KEYS.PROGRESS, JSON.stringify(progress));
     set({ progress });
+  },
+
+  setWifiOnlyDownloads: (wifiOnlyDownloads) => {
+    storage.set(KEYS.WIFI_ONLY_DOWNLOADS, wifiOnlyDownloads);
+    set({ wifiOnlyDownloads });
   },
 }));

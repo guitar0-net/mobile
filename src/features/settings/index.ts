@@ -79,3 +79,12 @@ export function useHideCompletedLessons() {
     })),
   );
 }
+
+export function useWifiOnlyDownloads() {
+  return useSettingsStore(
+    useShallow((s) => ({
+      wifiOnlyDownloads: s.wifiOnlyDownloads,
+      setWifiOnlyDownloads: s.setWifiOnlyDownloads,
+    })),
+  );
+}

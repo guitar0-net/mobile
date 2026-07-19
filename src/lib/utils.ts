@@ -99,6 +99,10 @@ export function formatTodayRu(date: Date = new Date()): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+export function formatMegabytesRu(bytes: number): string {
+  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+}
+
 export function stripMarkdown(md: string): string {
   return md
     .replace(/^#{1,6}\s+/gm, "")
