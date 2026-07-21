@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useRouter } from "expo-router";
+import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { View } from "react-native";
 
@@ -14,6 +15,7 @@ import { useDownloadedVideos } from "@/features/lessons";
 import { useWifiOnlyDownloads } from "@/features/settings";
 import { useAppSync, useSyncState } from "@/lib/sync";
 import type { AppSyncDeps } from "@/lib/sync";
+import { useColors } from "@/lib/themes";
 import { formatMegabytesRu, pluralRu } from "@/lib/utils";
 
 import { formatRelativeTimeRu } from "../format-relative-time-ru";
@@ -30,6 +32,7 @@ export function DataGroup({ deps }: DataGroupProps) {
   const { wifiOnlyDownloads, setWifiOnlyDownloads } = useWifiOnlyDownloads();
   const { data: downloadedVideos } = useDownloadedVideos();
   const router = useRouter();
+  const colors = useColors();
 
   const isSyncing = manuallyTriggered && status === "loading";
   const hasError = manuallyTriggered && (status === "error" || status === "offline");
@@ -49,6 +52,13 @@ export function DataGroup({ deps }: DataGroupProps) {
       </Text>
       <View className="overflow-hidden rounded-xl bg-surface px-4">
         <View className="flex-row items-center gap-3 py-3">
+          <View className="h-9 w-9 items-center justify-center rounded-lg">
+            <SymbolView
+              name={{ ios: "arrow.triangle.2.circlepath", android: "sync" }}
+              size={18}
+              tintColor={colors.foreground}
+            />
+          </View>
           <View className="flex-1">
             <Text>Последняя синхронизация</Text>
             <Text variant="caption">{formatRelativeTimeRu(lastSyncedAt)}</Text>
