@@ -9,14 +9,12 @@ import { SettingsRow } from "@/components/ui/settings-row";
 import { Text } from "@/components/ui/text";
 import { useDownloadedVideos } from "@/features/lessons";
 import { useWifiOnlyDownloads } from "@/features/settings";
-import { useColors } from "@/lib/themes";
 import { formatMegabytesRu, pluralRu } from "@/lib/utils";
 
 export function VideoGroup() {
   const { wifiOnlyDownloads, setWifiOnlyDownloads } = useWifiOnlyDownloads();
   const { data: downloadedVideos } = useDownloadedVideos();
   const router = useRouter();
-  const colors = useColors();
 
   const totalBytes = (downloadedVideos ?? []).reduce((sum, v) => sum + v.sizeBytes, 0);
   const summary = `${pluralRu(downloadedVideos?.length ?? 0, "урок", "урока", "уроков")} · ${formatMegabytesRu(totalBytes)}`;
@@ -30,7 +28,6 @@ export function VideoGroup() {
         <SettingsRow
           type="toggle"
           icon={{ ios: "wifi", android: "wifi" }}
-          iconBgColor={colors.primary}
           label="Скачивать только по Wi-Fi"
           value={wifiOnlyDownloads}
           onChange={setWifiOnlyDownloads}
@@ -39,7 +36,6 @@ export function VideoGroup() {
         <SettingsRow
           type="nav"
           icon={{ ios: "arrow.down.circle", android: "download" }}
-          iconBgColor={colors.brandAmber}
           label="Загруженные видео"
           sublabel={summary}
           onPress={() => router.push("/settings/downloaded-videos")}
