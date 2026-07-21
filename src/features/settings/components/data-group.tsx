@@ -2,14 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 
 import { Button } from "@/components/ui/button";
+import { SettingsRow } from "@/components/ui/settings-row";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
+import { useDownloadedVideos } from "@/features/lessons";
+import { useWifiOnlyDownloads } from "@/features/settings";
 import { useAppSync, useSyncState } from "@/lib/sync";
 import type { AppSyncDeps } from "@/lib/sync";
+import { formatMegabytesRu, pluralRu } from "@/lib/utils";
 
 import { formatRelativeTimeRu } from "../format-relative-time-ru";
 
@@ -22,6 +27,9 @@ export function DataGroup({ deps }: DataGroupProps) {
   const { lastSyncedAt } = useSyncState();
   const { status, retry } = useAppSync(deps);
   const [manuallyTriggered, setManuallyTriggered] = useState(false);
+  const { wifiOnlyDownloads, setWifiOnlyDownloads } = useWifiOnlyDownloads();
+  const { data: downloadedVideos } = useDownloadedVideos();
+  const router = useRouter();
 
   const isSyncing = manuallyTriggered && status === "loading";
   const hasError = manuallyTriggered && (status === "error" || status === "offline");
@@ -30,6 +38,9 @@ export function DataGroup({ deps }: DataGroupProps) {
     setManuallyTriggered(true);
     retry();
   };
+
+  const totalBytes = (downloadedVideos ?? []).reduce((sum, v) => sum + v.sizeBytes, 0);
+  const summary = `${pluralRu(downloadedVideos?.length ?? 0, "урок", "урока", "уроков")} · ${formatMegabytesRu(totalBytes)}`;
 
   return (
     <>
@@ -61,6 +72,22 @@ export function DataGroup({ deps }: DataGroupProps) {
             </View>
           </>
         )}
+        <View className="h-px bg-border" />
+        <SettingsRow
+          type="toggle"
+          icon={{ ios: "wifi", android: "wifi" }}
+          label="Скачивать только по Wi-Fi"
+          value={wifiOnlyDownloads}
+          onChange={setWifiOnlyDownloads}
+        />
+        <View className="h-px bg-border" />
+        <SettingsRow
+          type="nav"
+          icon={{ ios: "arrow.down.circle", android: "download" }}
+          label="Загруженные видео"
+          sublabel={summary}
+          onPress={() => router.push("/settings/downloaded-videos")}
+        />
       </View>
     </>
   );

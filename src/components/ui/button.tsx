@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils";
 
 import { Text } from "./text";
 
-export type ButtonVariant = "default" | "outline" | "ghost" | "inverse" | "link";
+export type ButtonVariant =
+  "default" | "outline" | "ghost" | "inverse" | "link" | "danger";
 export type ButtonSize = "sm" | "default" | "lg" | "icon" | "icon-sm";
 
 type ButtonProps = Omit<PressableProps, "style"> & {
@@ -34,6 +35,8 @@ const VARIANT_WRAPPER: Record<ButtonVariant, string> = {
   ghost: "bg-transparent",
   inverse: "bg-primary-fg",
   link: "bg-transparent",
+  // border color is set inline below — "destructive" has no Tailwind token
+  danger: "bg-transparent border",
 };
 
 const VARIANT_TEXT: Record<ButtonVariant, string> = {
@@ -42,6 +45,8 @@ const VARIANT_TEXT: Record<ButtonVariant, string> = {
   ghost: "text-foreground",
   inverse: "text-primary",
   link: "text-primary",
+  // color is set inline below — "destructive" has no Tailwind token
+  danger: "",
 };
 
 const SIZE_WRAPPER: Record<ButtonSize, string> = {
@@ -78,13 +83,14 @@ const ICON_SIZE: Record<ButtonSize, number> = {
 
 const VARIANT_ICON_COLOR: Record<
   ButtonVariant,
-  "primaryFg" | "foreground" | "primary"
+  "primaryFg" | "foreground" | "primary" | "destructive"
 > = {
   default: "primaryFg",
   outline: "foreground",
   ghost: "foreground",
   inverse: "primary",
   link: "primary",
+  danger: "destructive",
 };
 
 export function Button({
@@ -97,13 +103,15 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isIconOnly = size === "icon" || size === "icon-sm";
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const iconColor = resolveIconColor(VARIANT_ICON_COLOR[variant], theme);
+  const borderColor = variant === "danger" ? colors.destructive : undefined;
 
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
+      style={borderColor !== undefined ? { borderColor } : undefined}
       className={cn(
         "flex-row items-center justify-center",
         VARIANT_WRAPPER[variant],
@@ -132,6 +140,7 @@ export function Button({
                 SIZE_TEXT[size],
                 VARIANT_TEXT[variant],
               )}
+              style={variant === "danger" ? { color: colors.destructive } : undefined}
             >
               {children}
             </Text>

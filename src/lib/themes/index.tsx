@@ -31,14 +31,16 @@ export type { ThemeName };
  * them. A hardcoded "#FFFFFF" would go invisible in contrast-dark, where
  * primary (and brand-*) become white.
  * Use "foreground" for icons on transparent or neutral backgrounds,
- * and "primary" for icons on primary-fg (inverse) backgrounds.
+ * "primary" for icons on primary-fg (inverse) backgrounds, and "destructive"
+ * for icons on transparent backgrounds inside destructive/danger controls.
  */
 export function resolveIconColor(
-  color: "primaryFg" | "foreground" | "primary",
+  color: "primaryFg" | "foreground" | "primary" | "destructive",
   theme: ThemeName,
 ): string {
   if (color === "primaryFg") return THEME_DEFINITIONS[theme]["--color-primary-fg"];
   if (color === "primary") return THEME_DEFINITIONS[theme]["--color-primary"];
+  if (color === "destructive") return THEME_DEFINITIONS[theme]["--color-destructive"];
   return THEME_DEFINITIONS[theme]["--color-foreground"];
 }
 

@@ -76,17 +76,13 @@ export function DangerZoneGroup() {
         }}
       >
         <Button
-          variant="default"
+          variant="danger"
           onPress={confirmDeleteAllDownloadedVideos}
-          className="rounded-xl bg-brand-red"
+          className="rounded-xl"
         >
           Удалить все загруженные видео
         </Button>
-        <Button
-          variant="default"
-          onPress={confirmResetProgress}
-          className="rounded-xl bg-brand-red"
-        >
+        <Button variant="danger" onPress={confirmResetProgress} className="rounded-xl">
           Сбросить весь прогресс
         </Button>
       </View>
