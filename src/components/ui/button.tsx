@@ -76,7 +76,7 @@ const SIZE_TEXT: Record<ButtonSize, string> = {
 const ICON_SIZE: Record<ButtonSize, number> = {
   sm: 14,
   default: 18,
-  lg: 20,
+  lg: 26,
   icon: 22,
   "icon-sm": 18,
 };
