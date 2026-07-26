@@ -11,7 +11,8 @@ import { useColors } from "@/lib/themes";
 
 type BaseProps = {
   icon: SymbolViewProps["name"];
-  iconBgColor: string;
+  /** Omit for a neutral icon (foreground color, no background fill). */
+  iconBgColor?: string;
   label: string;
   sublabel?: string;
 };
@@ -29,14 +30,15 @@ type Props = NavRowProps | ToggleRowProps | ExternalRowProps;
 export function SettingsRow(props: Props) {
   const { icon, iconBgColor, label, sublabel } = props;
   const colors = useColors();
+  const iconTint = iconBgColor !== undefined ? colors.primaryFg : colors.foreground;
 
   const inner = (
     <View className="flex-row items-center gap-3 py-3">
       <View
         className="h-9 w-9 items-center justify-center rounded-lg"
-        style={{ backgroundColor: iconBgColor }}
+        style={{ backgroundColor: iconBgColor ?? "transparent" }}
       >
-        <SymbolView name={icon} size={18} tintColor={colors.primaryFg} />
+        <SymbolView name={icon} size={18} tintColor={iconTint} />
       </View>
       <View className="flex-1">
         <Text>{label}</Text>

@@ -24,14 +24,11 @@ export function AboutGroup() {
       </Text>
       <View className="overflow-hidden rounded-xl bg-surface px-4">
         <View className="flex-row items-center gap-3 py-3">
-          <View
-            className="h-9 w-9 items-center justify-center rounded-lg"
-            style={{ backgroundColor: colors.brandRed }}
-          >
+          <View className="h-9 w-9 items-center justify-center rounded-lg">
             <SymbolView
               name={{ ios: "info.circle", android: "info" }}
               size={18}
-              tintColor={colors.primaryFg}
+              tintColor={colors.foreground}
             />
           </View>
           <View className="flex-1">
@@ -43,7 +40,6 @@ export function AboutGroup() {
         <SettingsRow
           type="external"
           icon={{ ios: "chevron.left.forwardslash.chevron.right", android: "code" }}
-          iconBgColor={colors.brandAmber}
           label="GitHub"
           onPress={() => {
             Linking.openURL(GITHUB_URL).catch(() => {});
@@ -53,7 +49,6 @@ export function AboutGroup() {
         <SettingsRow
           type="external"
           icon={{ ios: "envelope", android: "mail" }}
-          iconBgColor={colors.brandBrown}
           label="Написать разработчику"
           onPress={() => {
             Linking.openURL(CONTACT_EMAIL_URL).catch(() => {});

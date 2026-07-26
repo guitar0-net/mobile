@@ -14,8 +14,6 @@ import { useThemePreference } from "@/features/settings";
 import { AboutGroup } from "@/features/settings/components/about-group";
 import { DangerZoneGroup } from "@/features/settings/components/danger-zone-group";
 import { DataGroup } from "@/features/settings/components/data-group";
-import { VideoGroup } from "@/features/settings/components/video-group";
-import { useColors } from "@/lib/themes";
 import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
 const THEME_MODE_OPTIONS: { label: string; value: ThemeMode }[] = [
@@ -27,7 +25,6 @@ const THEME_MODE_OPTIONS: { label: string; value: ThemeMode }[] = [
 export default function SettingsScreen() {
   const { themeMode, highContrast, setThemeMode, setHighContrast } =
     useThemePreference();
-  const colors = useColors();
 
   const screenOptions = useMemo(
     () => ({ title: "Настройки", headerBackTitle: "Назад" }),
@@ -58,14 +55,12 @@ export default function SettingsScreen() {
           <SettingsRow
             type="toggle"
             icon={{ ios: "circle.lefthalf.filled", android: "contrast" }}
-            iconBgColor={colors.brandBrown}
             label="Высокая контрастность"
             value={highContrast}
             onChange={setHighContrast}
           />
         </View>
         <DataGroup />
-        <VideoGroup />
         <AboutGroup />
         <DangerZoneGroup />
       </ScreenScrollView>
