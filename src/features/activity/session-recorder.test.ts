@@ -72,6 +72,21 @@ describe("recordSession", () => {
     });
   });
 
+  test("a session implausibly longer than 12 hours (e.g. the device clock jumped forward) is capped", async () => {
+    const db = await initDb();
+
+    const chunks = await recordSession(
+      db,
+      "device-1",
+      new Date("2026-01-05T10:00:00"),
+      new Date("2026-02-05T10:00:00"), // a month later
+    );
+
+    const totalSeconds = chunks.reduce((sum, chunk) => sum + chunk.seconds, 0);
+    expect(totalSeconds).toBe(12 * 60 * 60);
+    expect(chunks.some((chunk) => chunk.date === "2026-02-05")).toBe(false);
+  });
+
   test("writes a single event for the whole session even when it spans two days", async () => {
     const db = await initDb();
 
