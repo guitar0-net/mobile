@@ -17,7 +17,12 @@ import { Text } from "@/components/ui/text";
 import { useActivityStreak } from "@/features/activity";
 import { AnnouncementsPreview } from "@/features/announcements";
 import { fetchChordsCount } from "@/features/chords";
-import { CourseContinueCard, fetchCourses, MAIN_COURSE_ID } from "@/features/lessons";
+import {
+  CourseContinueCard,
+  fetchCourses,
+  FavoritesPreview,
+  MAIN_COURSE_ID,
+} from "@/features/lessons";
 import { useMetronomeStore } from "@/features/metronome";
 import { TUNINGS, useTunerStore } from "@/features/tuner";
 import { useColors } from "@/lib/themes";
@@ -143,6 +148,8 @@ export default function HomeScreen() {
               onPress={() => router.push("/chords")}
             />
           </View>
+
+          <FavoritesPreview />
 
           <AnnouncementsPreview />
 
