@@ -7,7 +7,7 @@ import { and, asc, count, eq, inArray } from "drizzle-orm";
 import * as FileSystem from "expo-file-system/legacy";
 import { useMemo } from "react";
 
-import { useProgress } from "@/features/settings";
+import { useFavorites, useProgress } from "@/features/settings";
 import { getDb, courseLessons, courses, lessons, lessonSongs, songs } from "@/lib/db";
 import type { VideoDownloadStatus } from "@/lib/db";
 
@@ -228,6 +228,93 @@ export function useDownloadedVideos() {
     queryKey: ["lessons", "downloaded-videos"],
     queryFn: listDownloadedVideos,
   });
+}
+
+export type FavoriteLessonRow = {
+  lessonUuid: string;
+  title: string;
+  courseUuid: string;
+  courseTitle: string;
+  order: number;
+  totalInCourse: number;
+};
+
+// A lesson can belong to more than one course (see fetchAllLessonSongCounts) —
+// pick the oldest course (createdAt, then uuid to break ties) so a favorited
+// lesson always resolves to the same navigation target regardless of
+// query-plan or insertion order.
+export async function fetchFavoriteLessons(
+  favoriteUuids: string[],
+): Promise<FavoriteLessonRow[]> {
+  if (favoriteUuids.length === 0) return [];
+  const db = getDb();
+
+  // Both selects run inside one transaction so a concurrent sync (which
+  // deletes and re-inserts course_lessons, see sync.ts) can't remove a
+  // course between the join query and the totals query.
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select({
+        lessonUuid: lessons.uuid,
+        title: lessons.title,
+        courseUuid: courses.uuid,
+        courseTitle: courses.title,
+        order: courseLessons.order,
+      })
+      .from(lessons)
+      .innerJoin(courseLessons, eq(courseLessons.lessonUuid, lessons.uuid))
+      .innerJoin(courses, eq(courses.uuid, courseLessons.courseUuid))
+      .where(inArray(lessons.uuid, favoriteUuids))
+      .orderBy(asc(courses.createdAt), asc(courses.uuid));
+
+    const byLesson = new Map<string, (typeof rows)[number]>();
+    for (const row of rows) {
+      if (!byLesson.has(row.lessonUuid)) byLesson.set(row.lessonUuid, row);
+    }
+    if (byLesson.size === 0) return [];
+
+    const courseUuids = [...new Set([...byLesson.values()].map((r) => r.courseUuid))];
+    const totals = await tx
+      .select({ courseUuid: courseLessons.courseUuid, total: count() })
+      .from(courseLessons)
+      .where(inArray(courseLessons.courseUuid, courseUuids))
+      .groupBy(courseLessons.courseUuid);
+    const totalByCourse = new Map(totals.map((t) => [t.courseUuid, t.total]));
+
+    // Every row's courseUuid came from courseLessons itself, so a miss here
+    // means the totals query is broken — surface it rather than fabricating
+    // a plausible-looking total from row.order.
+    return [...byLesson.values()].map((row) => {
+      const totalInCourse = totalByCourse.get(row.courseUuid);
+      if (totalInCourse == null) {
+        throw new Error(`No lesson total found for course ${row.courseUuid}`);
+      }
+      return { ...row, totalInCourse };
+    });
+  });
+}
+
+// Favorites order in settings is insertion order (see addFavorite/removeFavorite
+// in features/settings/store.ts), so reversing it gives most-recently-added first.
+export function useFavoriteLessons(limit?: number) {
+  const { favorites } = useFavorites();
+
+  const query = useQuery({
+    queryKey: ["favorite-lessons", favorites],
+    queryFn: () => fetchFavoriteLessons(favorites),
+    enabled: favorites.length > 0,
+  });
+
+  const lessonsList = useMemo(() => {
+    const byUuid = new Map((query.data ?? []).map((row) => [row.lessonUuid, row]));
+    const ordered = [...favorites]
+      .reverse()
+      .map((uuid) => byUuid.get(uuid))
+      .filter((row): row is FavoriteLessonRow => row != null);
+    return limit != null ? ordered.slice(0, limit) : ordered;
+  }, [query.data, favorites, limit]);
+
+  return { ...query, lessons: lessonsList };
 }
 
 export function useContinueLesson(courseUuid: string) {

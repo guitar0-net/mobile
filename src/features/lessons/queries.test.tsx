@@ -15,11 +15,13 @@ import {
   fetchAllLessonSongCounts,
   fetchCourses,
   fetchCourseLessons,
+  fetchFavoriteLessons,
   fetchLessonDetail,
   listDownloadedVideos,
   useCompletedLessonsCount,
   useContinueLesson,
   useDownloadedVideos,
+  useFavoriteLessons,
   useLessonDetail,
 } from "./queries";
 
@@ -742,5 +744,112 @@ describe("useDownloadedVideos", () => {
     expect(result.current.data).toEqual([
       { lessonUuid: "lesson-downloaded-1", title: "Open chords", sizeBytes: 5_000_000 },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchFavoriteLessons
+// ---------------------------------------------------------------------------
+
+describe("fetchFavoriteLessons", () => {
+  test("returns an empty array without querying when given no uuids", async () => {
+    await initDb();
+    expect(await fetchFavoriteLessons([])).toEqual([]);
+  });
+
+  test("returns lesson rows with course title and total lessons in course", async () => {
+    await seedCourse();
+
+    const rows = await fetchFavoriteLessons(["lesson-1"]);
+    expect(rows).toEqual([
+      {
+        lessonUuid: "lesson-1",
+        title: "Open chords",
+        courseUuid: "course-1",
+        courseTitle: "Beginner",
+        order: 1,
+        totalInCourse: 2,
+      },
+    ]);
+  });
+
+  test("omits a favorite uuid that no longer matches any lesson", async () => {
+    await seedCourse();
+
+    const rows = await fetchFavoriteLessons(["lesson-1", "deleted-lesson"]);
+    expect(rows.map((r) => r.lessonUuid)).toEqual(["lesson-1"]);
+  });
+
+  test("resolves to a single row when a lesson belongs to two courses", async () => {
+    await seedCourse();
+    const db = await initDb();
+    await db.insert(courses).values({
+      uuid: "course-2",
+      title: "Advanced",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db.insert(courseLessons).values({
+      courseUuid: "course-2",
+      lessonUuid: "lesson-1",
+      order: 1,
+    });
+
+    const rows = await fetchFavoriteLessons(["lesson-1"]);
+    expect(rows).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useFavoriteLessons
+// ---------------------------------------------------------------------------
+
+describe("useFavoriteLessons", () => {
+  test("returns an empty list when there are no favorites", () => {
+    const { result } = renderHook(() => useFavoriteLessons(), {
+      wrapper: makeWrapper(),
+    });
+    expect(result.current.lessons).toEqual([]);
+  });
+
+  test("returns favorited lessons ordered most-recently-added first", async () => {
+    await seedCourse();
+    useSettingsStore.setState({ favorites: ["lesson-1", "lesson-2"] });
+
+    const { result } = renderHook(() => useFavoriteLessons(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(result.current.lessons.map((l) => l.lessonUuid)).toEqual([
+        "lesson-2",
+        "lesson-1",
+      ]),
+    );
+  });
+
+  test("filters out favorite uuids that no longer exist in the database", async () => {
+    await seedCourse();
+    useSettingsStore.setState({ favorites: ["lesson-1", "deleted-lesson"] });
+
+    const { result } = renderHook(() => useFavoriteLessons(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(result.current.lessons.map((l) => l.lessonUuid)).toEqual(["lesson-1"]),
+    );
+  });
+
+  test("limit truncates the returned list to the given count", async () => {
+    await seedCourse();
+    useSettingsStore.setState({ favorites: ["lesson-1", "lesson-2"] });
+
+    const { result } = renderHook(() => useFavoriteLessons(1), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.lessons).toHaveLength(1));
+    expect(result.current.lessons[0].lessonUuid).toBe("lesson-2");
   });
 });

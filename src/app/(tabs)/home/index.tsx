@@ -17,11 +17,16 @@ import { Text } from "@/components/ui/text";
 import { useActivityStreak } from "@/features/activity";
 import { AnnouncementsPreview } from "@/features/announcements";
 import { fetchChordsCount } from "@/features/chords";
-import { CourseContinueCard, fetchCourses, MAIN_COURSE_ID } from "@/features/lessons";
+import {
+  CourseContinueCard,
+  fetchCourses,
+  FavoritesPreview,
+  MAIN_COURSE_ID,
+} from "@/features/lessons";
 import { useMetronomeStore } from "@/features/metronome";
 import { TUNINGS, useTunerStore } from "@/features/tuner";
 import { useColors } from "@/lib/themes";
-import { cn, formatTodayRu, pluralRu } from "@/lib/utils";
+import { cn, formatGreetingRu, formatTodayRu, pluralRu } from "@/lib/utils";
 
 type ToolCardProps = {
   icon: ComponentProps<typeof SymbolView>["name"];
@@ -94,7 +99,7 @@ export default function HomeScreen() {
           <View className="mb-4">
             <Text variant="caption">{formatTodayRu()}</Text>
             <Text variant="heading" className="my-2 text-4xl">
-              Привет!
+              {formatGreetingRu()}
             </Text>
             <View className="flex-row items-center gap-2">
               <Badge variant="outline">
@@ -143,6 +148,8 @@ export default function HomeScreen() {
               onPress={() => router.push("/chords")}
             />
           </View>
+
+          <FavoritesPreview />
 
           <AnnouncementsPreview />
 

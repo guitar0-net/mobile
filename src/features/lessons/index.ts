@@ -31,5 +31,7 @@ export type { LessonState } from "./logic";
 export { deleteAllDownloadedVideos, videoStreamUrl } from "./use-video-download";
 export { CourseContinueCard } from "./components/course-continue-card";
 export { DownloadedVideosList } from "./components/downloaded-videos-list";
+export { FavoriteLessonsList } from "./components/favorite-lessons-list";
+export { FavoritesPreview } from "./components/favorites-preview";
 export { SongRow } from "./components/song-row";
 export { VideoCard } from "./components/video-card";

@@ -6,6 +6,7 @@ import {
   cn,
   describeRemainingItems,
   formatDateRu,
+  formatGreetingRu,
   formatHoursMinutesRu,
   formatMegabytesRu,
   formatTimeRu,
@@ -256,5 +257,26 @@ describe("formatTodayRu", () => {
   test("starts with uppercase", () => {
     const result = formatTodayRu(new Date("2026-05-31"));
     expect(result[0]).toBe(result[0].toUpperCase());
+  });
+});
+
+describe("formatGreetingRu", () => {
+  test("greets with good night before 6am", () => {
+    expect(formatGreetingRu(new Date("2026-05-31T05:59:00"))).toBe("Доброй ночи!");
+  });
+
+  test("greets with good morning from 6am to noon", () => {
+    expect(formatGreetingRu(new Date("2026-05-31T06:00:00"))).toBe("Доброе утро!");
+    expect(formatGreetingRu(new Date("2026-05-31T11:59:00"))).toBe("Доброе утро!");
+  });
+
+  test("greets with good afternoon from noon to 6pm", () => {
+    expect(formatGreetingRu(new Date("2026-05-31T12:00:00"))).toBe("Добрый день!");
+    expect(formatGreetingRu(new Date("2026-05-31T17:59:00"))).toBe("Добрый день!");
+  });
+
+  test("greets with good evening from 6pm", () => {
+    expect(formatGreetingRu(new Date("2026-05-31T18:00:00"))).toBe("Добрый вечер!");
+    expect(formatGreetingRu(new Date("2026-05-31T23:59:00"))).toBe("Добрый вечер!");
   });
 });

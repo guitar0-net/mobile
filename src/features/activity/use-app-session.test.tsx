@@ -119,12 +119,14 @@ describe("useAppSession", () => {
     });
   });
 
-  test("also records the session when transitioning to 'inactive'", async () => {
+  test("ends the session once 'inactive' persists past the grace period without a return to 'active'", async () => {
     setAppState("active");
     const getListener = captureAppStateListener();
     await initDb();
 
-    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
+    renderHook(() => useAppSession({ inactiveGraceMs: 5 }), {
+      wrapper: makeWrapper().Wrapper,
+    });
     jest.setSystemTime(new Date("2026-01-05T10:02:00"));
     getListener()("inactive");
 
@@ -132,6 +134,79 @@ describe("useAppSession", () => {
       const db = await initDb();
       expect(await db.select().from(activityEvents)).toHaveLength(1);
     });
+    const db = await initDb();
+    const [event] = await db.select().from(activityEvents);
+    expect(event.durationSeconds).toBe(120);
+  });
+
+  test("does not record a session for a transient 'inactive' blip that returns to 'active' before the grace period elapses", async () => {
+    setAppState("active");
+    const getListener = captureAppStateListener();
+    await initDb();
+
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
+    jest.setSystemTime(new Date("2026-01-05T10:02:00"));
+    getListener()("inactive");
+    getListener()("active"); // returns before the (default, real) grace period could ever elapse
+
+    await Promise.resolve();
+    await Promise.resolve();
+    const db = await initDb();
+    expect(await db.select().from(activityEvents)).toEqual([]);
+
+    // The original session continued uninterrupted — duration is measured
+    // from the initial mount time, not restarted at the "active" blip.
+    jest.setSystemTime(new Date("2026-01-05T10:05:00"));
+    getListener()("background");
+    await waitFor(async () => {
+      expect(await db.select().from(activityEvents)).toHaveLength(1);
+    });
+    const [event] = await db.select().from(activityEvents);
+    expect(event.durationSeconds).toBe(300);
+  });
+
+  test("a 'background' right after 'inactive' ends the session immediately, without waiting for the grace period", async () => {
+    setAppState("active");
+    const getListener = captureAppStateListener();
+    await initDb();
+
+    renderHook(() => useAppSession(), { wrapper: makeWrapper().Wrapper });
+    jest.setSystemTime(new Date("2026-01-05T10:02:00"));
+    getListener()("inactive");
+    getListener()("background");
+
+    await waitFor(async () => {
+      const db = await initDb();
+      expect(await db.select().from(activityEvents)).toHaveLength(1);
+    });
+  });
+
+  test("periodically flushes accrued time to SQLite while the session stays active", async () => {
+    setAppState("active");
+    const getListener = captureAppStateListener();
+    await initDb();
+
+    renderHook(() => useAppSession({ heartbeatIntervalMs: 5 }), {
+      wrapper: makeWrapper().Wrapper,
+    });
+    jest.setSystemTime(new Date("2026-01-05T10:00:30"));
+
+    const db = await initDb();
+    await waitFor(async () => {
+      expect(await db.select().from(activityEvents)).toHaveLength(1);
+    });
+    const [firstEvent] = await db.select().from(activityEvents);
+    expect(firstEvent.durationSeconds).toBe(30);
+
+    // Session keeps running after a heartbeat flush — backgrounding afterward
+    // only accounts for the time since the last flush, not the whole session.
+    jest.setSystemTime(new Date("2026-01-05T10:01:00"));
+    getListener()("background");
+    await waitFor(async () => {
+      expect(await db.select().from(activityEvents)).toHaveLength(2);
+    });
+    const events = await db.select().from(activityEvents);
+    expect(events[1].durationSeconds).toBe(30);
   });
 
   test("does nothing when backgrounded without ever having been active", async () => {
