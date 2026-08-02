@@ -56,7 +56,7 @@ describe("FavoritesPreview", () => {
   test("navigates to the full favorites screen when the link is pressed", () => {
     mockUseFavoriteLessons.mockReturnValue({ lessons: [favoriteLesson] });
     render(<FavoritesPreview />, { wrapper });
-    fireEvent.press(screen.getByText("Все избранное"));
+    fireEvent.press(screen.getByText("Все"));
     expect(mockPush).toHaveBeenCalledWith("/favorites");
   });
 });

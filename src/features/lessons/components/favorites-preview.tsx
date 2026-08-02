@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useRouter } from "expo-router";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
+import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 
 import { useFavoriteLessons } from "../queries";
@@ -24,11 +25,9 @@ export function FavoritesPreview() {
         <Text variant="heading" className="text-xl">
           Избранное
         </Text>
-        <Pressable onPress={() => router.push("/favorites")}>
-          <Text variant="caption" className="text-sm text-primary">
-            Все избранное
-          </Text>
-        </Pressable>
+        <Button variant="link" onPress={() => router.push("/favorites")}>
+          Все
+        </Button>
       </View>
       {lessons.map((lesson) => (
         <FavoriteLessonCard key={lesson.lessonUuid} lesson={lesson} />

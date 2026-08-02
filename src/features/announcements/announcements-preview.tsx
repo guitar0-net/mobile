@@ -22,17 +22,9 @@ export function AnnouncementsPreview() {
   return (
     <View className="mt-6 gap-3">
       <View className="flex-row items-center justify-between">
-        <View className="gap-0.5">
-          <Text
-            variant="caption"
-            className="text-xs uppercase tracking-wider text-primary"
-          >
-            Обновления
-          </Text>
-          <Text variant="heading" className="text-xl">
-            Что нового
-          </Text>
-        </View>
+        <Text variant="heading" className="text-xl">
+          Что нового
+        </Text>
         <Button variant="link" onPress={() => router.push("/home/announcements")}>
           Все
         </Button>
