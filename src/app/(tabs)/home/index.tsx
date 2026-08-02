@@ -26,7 +26,7 @@ import {
 import { useMetronomeStore } from "@/features/metronome";
 import { TUNINGS, useTunerStore } from "@/features/tuner";
 import { useColors } from "@/lib/themes";
-import { cn, formatTodayRu, pluralRu } from "@/lib/utils";
+import { cn, formatGreetingRu, formatTodayRu, pluralRu } from "@/lib/utils";
 
 type ToolCardProps = {
   icon: ComponentProps<typeof SymbolView>["name"];
@@ -99,7 +99,7 @@ export default function HomeScreen() {
           <View className="mb-4">
             <Text variant="caption">{formatTodayRu()}</Text>
             <Text variant="heading" className="my-2 text-4xl">
-              Привет!
+              {formatGreetingRu()}
             </Text>
             <View className="flex-row items-center gap-2">
               <Badge variant="outline">

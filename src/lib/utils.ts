@@ -99,6 +99,14 @@ export function formatTodayRu(date: Date = new Date()): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+export function formatGreetingRu(date: Date = new Date()): string {
+  const hour = date.getHours();
+  if (hour < 6) return "Доброй ночи!";
+  if (hour < 12) return "Доброе утро!";
+  if (hour < 18) return "Добрый день!";
+  return "Добрый вечер!";
+}
+
 export function formatMegabytesRu(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
 }
