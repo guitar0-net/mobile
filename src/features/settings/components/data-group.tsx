@@ -28,7 +28,7 @@ type DataGroupProps = {
 
 export function DataGroup({ deps }: DataGroupProps) {
   const { lastSyncedAt } = useSyncState();
-  const { status, retry } = useAppSync(deps);
+  const { status, failure, retry } = useAppSync(deps);
   const [manuallyTriggered, setManuallyTriggered] = useState(false);
   const { wifiOnlyDownloads, setWifiOnlyDownloads } = useWifiOnlyDownloads();
   const { data: downloadedVideos } = useDownloadedVideos();
@@ -36,7 +36,7 @@ export function DataGroup({ deps }: DataGroupProps) {
   const colors = useColors();
 
   const isSyncing = manuallyTriggered && status === "loading";
-  const hasError = manuallyTriggered && (status === "error" || status === "offline");
+  const shownFailure = manuallyTriggered ? failure : null;
 
   const handleSyncNow = () => {
     setManuallyTriggered(true);
@@ -69,12 +69,12 @@ export function DataGroup({ deps }: DataGroupProps) {
           {isSyncing ? "Синхронизация…" : "Синхронизировать"}
         </Button>
       </View>
-      {hasError && (
+      {shownFailure !== null && (
         <>
           <View className="h-px bg-border" />
           <View className="items-center gap-2 py-4">
             <StatusMessage variant="error">
-              Не удалось синхронизировать. Проверьте подключение к интернету.
+              {`Не удалось синхронизировать. ${shownFailure.reason}.`}
             </StatusMessage>
           </View>
         </>
