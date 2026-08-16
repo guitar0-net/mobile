@@ -7,9 +7,8 @@ import { View } from "react-native";
 
 import { Badge } from "@/components/ui/badge";
 import { Text } from "@/components/ui/text";
+import { getDeviceId } from "@/lib/device-id";
 import { useColors } from "@/lib/themes";
-
-import { getDeviceId } from "../device-id";
 
 export function ProfileHeader() {
   const colors = useColors();

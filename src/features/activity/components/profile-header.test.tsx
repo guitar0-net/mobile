@@ -6,10 +6,10 @@ import { render, screen } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
+import { getDeviceId } from "@/lib/device-id";
+import { storage } from "@/lib/storage";
 import { ThemeProvider } from "@/lib/themes";
 
-import { getDeviceId } from "../device-id";
-import { storage } from "../storage";
 import { ProfileHeader } from "./profile-header";
 
 beforeEach(() => {

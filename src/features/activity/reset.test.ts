@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { _resetDbForTesting, activityDaily, activityEvents, initDb } from "@/lib/db";
+import { storage } from "@/lib/storage";
 
 import { insertLessonViewedEvent, upsertDailyTotal } from "./db/repository";
 import { resetActivity } from "./reset";
-import { storage } from "./storage";
 
 beforeEach(() => {
   _resetDbForTesting();
