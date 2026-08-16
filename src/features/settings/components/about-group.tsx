@@ -4,7 +4,7 @@
 
 import Constants from "expo-constants";
 import { SymbolView } from "expo-symbols";
-import { Linking, View } from "react-native";
+import { Alert, Linking, View } from "react-native";
 
 import { SettingsGroup } from "@/components/ui/settings-group";
 import { SettingsRow } from "@/components/ui/settings-row";
@@ -12,7 +12,13 @@ import { Text } from "@/components/ui/text";
 import { useColors } from "@/lib/themes";
 
 const GITHUB_URL = "https://github.com/guitar0-net";
-const CONTACT_EMAIL_URL = "mailto:guitar0.app@gmail.com";
+const CONTACT_EMAIL = "guitar0.app@gmail.com";
+
+function openContactEmail() {
+  Linking.openURL(`mailto:${CONTACT_EMAIL}`).catch(() => {
+    Alert.alert("Почтовый клиент не найден", `Напишите нам на ${CONTACT_EMAIL}`);
+  });
+}
 
 export function AboutGroup() {
   const colors = useColors();
@@ -47,9 +53,7 @@ export function AboutGroup() {
         type="external"
         icon={{ ios: "envelope", android: "mail" }}
         label="Написать разработчику"
-        onPress={() => {
-          Linking.openURL(CONTACT_EMAIL_URL).catch(() => {});
-        }}
+        onPress={openContactEmail}
       />
     </SettingsGroup>
   );
