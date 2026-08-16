@@ -8,6 +8,7 @@ import { useState } from "react";
 import { View } from "react-native";
 
 import { Button } from "@/components/ui/button";
+import { SettingsGroup } from "@/components/ui/settings-group";
 import { SettingsRow } from "@/components/ui/settings-row";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
@@ -46,59 +47,54 @@ export function DataGroup({ deps }: DataGroupProps) {
   const summary = `${pluralRu(downloadedVideos?.length ?? 0, "урок", "урока", "уроков")} · ${formatMegabytesRu(totalBytes)}`;
 
   return (
-    <>
-      <Text className="mb-2 mt-6 text-xs font-semibold uppercase tracking-widest text-muted-fg">
-        Данные
-      </Text>
-      <View className="overflow-hidden rounded-xl bg-surface px-4">
-        <View className="flex-row items-center gap-3 py-3">
-          <View className="h-9 w-9 items-center justify-center rounded-lg">
-            <SymbolView
-              name={{ ios: "arrow.triangle.2.circlepath", android: "sync" }}
-              size={18}
-              tintColor={colors.foreground}
-            />
-          </View>
-          <View className="flex-1">
-            <Text>Последняя синхронизация</Text>
-            <Text variant="caption">{formatRelativeTimeRu(lastSyncedAt)}</Text>
-          </View>
-          <Button
-            variant="outline"
-            size="sm"
-            onPress={handleSyncNow}
-            disabled={isSyncing}
-          >
-            {isSyncing ? "Синхронизация…" : "Синхронизировать"}
-          </Button>
+    <SettingsGroup title="Данные">
+      <View className="flex-row items-center gap-3 py-3">
+        <View className="h-9 w-9 items-center justify-center rounded-lg">
+          <SymbolView
+            name={{ ios: "arrow.triangle.2.circlepath", android: "sync" }}
+            size={18}
+            tintColor={colors.foreground}
+          />
         </View>
-        {hasError && (
-          <>
-            <View className="h-px bg-border" />
-            <View className="items-center gap-2 py-4">
-              <StatusMessage variant="error">
-                Не удалось синхронизировать. Проверьте подключение к интернету.
-              </StatusMessage>
-            </View>
-          </>
-        )}
-        <View className="h-px bg-border" />
-        <SettingsRow
-          type="toggle"
-          icon={{ ios: "wifi", android: "wifi" }}
-          label="Скачивать только по Wi-Fi"
-          value={wifiOnlyDownloads}
-          onChange={setWifiOnlyDownloads}
-        />
-        <View className="h-px bg-border" />
-        <SettingsRow
-          type="nav"
-          icon={{ ios: "arrow.down.circle", android: "download" }}
-          label="Загруженные видео"
-          sublabel={summary}
-          onPress={() => router.push("/settings/downloaded-videos")}
-        />
+        <View className="flex-1">
+          <Text>Последняя синхронизация</Text>
+          <Text variant="caption">{formatRelativeTimeRu(lastSyncedAt)}</Text>
+        </View>
+        <Button
+          variant="outline"
+          size="sm"
+          onPress={handleSyncNow}
+          disabled={isSyncing}
+        >
+          {isSyncing ? "Синхронизация…" : "Синхронизировать"}
+        </Button>
       </View>
-    </>
+      {hasError && (
+        <>
+          <View className="h-px bg-border" />
+          <View className="items-center gap-2 py-4">
+            <StatusMessage variant="error">
+              Не удалось синхронизировать. Проверьте подключение к интернету.
+            </StatusMessage>
+          </View>
+        </>
+      )}
+      <View className="h-px bg-border" />
+      <SettingsRow
+        type="toggle"
+        icon={{ ios: "wifi", android: "wifi" }}
+        label="Скачивать только по Wi-Fi"
+        value={wifiOnlyDownloads}
+        onChange={setWifiOnlyDownloads}
+      />
+      <View className="h-px bg-border" />
+      <SettingsRow
+        type="nav"
+        icon={{ ios: "arrow.down.circle", android: "download" }}
+        label="Загруженные видео"
+        sublabel={summary}
+        onPress={() => router.push("/settings/downloaded-videos")}
+      />
+    </SettingsGroup>
   );
 }

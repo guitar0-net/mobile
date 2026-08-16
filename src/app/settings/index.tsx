@@ -8,6 +8,7 @@ import { View } from "react-native";
 
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SettingsGroup } from "@/components/ui/settings-group";
 import { SettingsRow } from "@/components/ui/settings-row";
 import { Text } from "@/components/ui/text";
 import { useThemePreference } from "@/features/settings";
@@ -39,10 +40,7 @@ export default function SettingsScreen() {
         className="flex-1 bg-background"
         contentContainerClassName="px-4 pb-8 pt-4"
       >
-        <Text className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-fg">
-          Внешний вид
-        </Text>
-        <View className="overflow-hidden rounded-xl bg-surface px-4">
+        <SettingsGroup title="Внешний вид" className="mt-0">
           <View className="gap-2 py-3">
             <Text>Тема</Text>
             <SegmentedControl
@@ -59,7 +57,7 @@ export default function SettingsScreen() {
             value={highContrast}
             onChange={setHighContrast}
           />
-        </View>
+        </SettingsGroup>
         <DataGroup />
         <AboutGroup />
         <DangerZoneGroup />
