@@ -15,6 +15,7 @@ import { useThemePreference } from "@/features/settings";
 import { AboutGroup } from "@/features/settings/components/about-group";
 import { DangerZoneGroup } from "@/features/settings/components/danger-zone-group";
 import { DataGroup } from "@/features/settings/components/data-group";
+import { SupportGroup } from "@/features/settings/components/support-group";
 import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
 const THEME_MODE_OPTIONS: { label: string; value: ThemeMode }[] = [
@@ -59,6 +60,7 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
         <DataGroup />
+        <SupportGroup />
         <AboutGroup />
         <DangerZoneGroup />
       </ScreenScrollView>
