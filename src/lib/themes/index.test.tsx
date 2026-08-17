@@ -4,7 +4,7 @@
 
 import { act, renderHook } from "@testing-library/react-native";
 import type { ReactNode } from "react";
-import * as ReactNative from "react-native";
+import { Appearance } from "react-native";
 
 import { useThemePreference } from "@/features/settings";
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
@@ -20,6 +20,25 @@ import {
 beforeEach(() => {
   resetSettingsForTesting();
 });
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+/**
+ * Stands in for the native Appearance module: an app-level override shadows the
+ * device setting until it is cleared with "unspecified", and — as on a real
+ * device — setting it never notifies useColorScheme listeners.
+ */
+function mockDevice(deviceScheme: "light" | "dark") {
+  let override: "light" | "dark" | null = null;
+  jest
+    .spyOn(Appearance, "getColorScheme")
+    .mockImplementation(() => override ?? deviceScheme);
+  jest.spyOn(Appearance, "setColorScheme").mockImplementation((scheme) => {
+    override = scheme === "unspecified" ? null : scheme;
+  });
+}
 
 function wrapper({ children }: { children: ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>;
@@ -38,26 +57,22 @@ describe("useTheme", () => {
 
 describe("ThemeProvider", () => {
   test('falls back to dark theme when system color scheme is dark and themeMode is "system" (default)', () => {
-    const spy = jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("dark");
+    mockDevice("dark");
 
     const { result } = renderHook(() => useTheme(), { wrapper });
     expect(result.current.theme).toBe<ThemeName>("dark");
-
-    spy.mockRestore();
   });
 
   test('falls back to light theme when system color scheme is light and themeMode is "system" (default)', () => {
-    const spy = jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("light");
+    mockDevice("light");
 
     const { result } = renderHook(() => useTheme(), { wrapper });
     expect(result.current.theme).toBe<ThemeName>("light");
-
-    spy.mockRestore();
   });
 
   test("stored themeMode overrides the system color scheme", () => {
     // Simulate: user previously chose "dark", but system is light
-    const spy = jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("light");
+    mockDevice("light");
 
     const { result: prefResult } = renderHook(() => useThemePreference());
     act(() => {
@@ -66,8 +81,40 @@ describe("ThemeProvider", () => {
 
     const { result } = renderHook(() => useTheme(), { wrapper });
     expect(result.current.theme).toBe<ThemeName>("dark");
+  });
 
-    spy.mockRestore();
+  test('switching back to "system" restores the device scheme after an explicit choice', () => {
+    mockDevice("dark");
+
+    const { result: prefResult } = renderHook(() => useThemePreference());
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    act(() => {
+      prefResult.current.setThemeMode("light");
+    });
+    expect(result.current.theme).toBe<ThemeName>("light");
+
+    act(() => {
+      prefResult.current.setThemeMode("system");
+    });
+    expect(result.current.theme).toBe<ThemeName>("dark");
+  });
+
+  test('switching back to "system" restores a light device scheme after choosing dark', () => {
+    mockDevice("light");
+
+    const { result: prefResult } = renderHook(() => useThemePreference());
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    act(() => {
+      prefResult.current.setThemeMode("dark");
+    });
+    expect(result.current.theme).toBe<ThemeName>("dark");
+
+    act(() => {
+      prefResult.current.setThemeMode("system");
+    });
+    expect(result.current.theme).toBe<ThemeName>("light");
   });
 
   test("highContrast combines with themeMode to select the contrast variant", () => {

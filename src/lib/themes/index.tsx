@@ -9,15 +9,16 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from "react";
-import { Appearance, useColorScheme, View } from "react-native";
+import { Appearance, View } from "react-native";
 
 import { useThemePreference } from "@/features/settings";
 
 import { THEME_DEFINITIONS, type ThemeName } from "./definitions";
-import { resolveTheme } from "./resolve-theme";
+import { resolveTheme, type SystemScheme, type ThemeMode } from "./resolve-theme";
 
 export type { ThemeName };
 
@@ -111,13 +112,42 @@ export function useThemedScreenOptions() {
   );
 }
 
+const overrideListeners = new Set<() => void>();
+
+function subscribeToColorScheme(onChange: () => void) {
+  overrideListeners.add(onChange);
+  const subscription = Appearance.addChangeListener(onChange);
+  return () => {
+    overrideListeners.delete(onChange);
+    subscription.remove();
+  };
+}
+
+/**
+ * Once Appearance.setColorScheme() forces a scheme, reading it back returns that
+ * override — the real device setting becomes unreachable, so a provider that
+ * both forces a scheme and reads one latches onto its own last choice and
+ * "system" stops meaning anything. Clearing the override ("unspecified") makes
+ * the device setting readable again, but Appearance only emits change events for
+ * device-level changes, never for our own writes, so the readers have to be
+ * notified here or they keep rendering the stale override.
+ */
+function useSystemColorScheme(themeMode: ThemeMode): SystemScheme {
+  useEffect(() => {
+    Appearance.setColorScheme(themeMode === "system" ? "unspecified" : themeMode);
+    for (const notify of overrideListeners) notify();
+  }, [themeMode]);
+
+  return useSyncExternalStore(subscribeToColorScheme, Appearance.getColorScheme);
+}
+
 type ThemeProviderProps = {
   children: ReactNode;
 };
 
 export function ThemeProvider({ children }: ThemeProviderProps): ReactElement {
   const { themeMode, highContrast } = useThemePreference();
-  const systemScheme = useColorScheme();
+  const systemScheme = useSystemColorScheme(themeMode);
 
   const theme = useMemo<ThemeName>(
     () => resolveTheme(themeMode, highContrast, systemScheme),
@@ -136,11 +166,6 @@ export function ThemeProvider({ children }: ThemeProviderProps): ReactElement {
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(colors.background);
   }, [colors.background]);
-
-  useEffect(() => {
-    const isDark = theme === "dark" || theme === "contrast-dark";
-    Appearance.setColorScheme(isDark ? "dark" : "light");
-  }, [theme]);
 
   return (
     <ThemeContext.Provider value={ctx}>
