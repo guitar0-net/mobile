@@ -7,8 +7,8 @@ import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
 import { initDb } from "@/lib/db";
+import { getDeviceId } from "@/lib/device-id";
 
-import { getDeviceId } from "./device-id";
 import { localDayKey } from "./logic";
 import { recordSession } from "./session-recorder";
 import { useActivityStatsStore } from "./stats-store";

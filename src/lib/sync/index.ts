@@ -8,6 +8,7 @@ import { useSyncStore } from "./store";
 
 export { useSyncStore } from "./store";
 export type { SyncStoreState } from "./store";
+export type { SyncFailure, SyncFailureKind } from "./failure";
 export { useAppSync } from "./use-app-sync";
 export type { AppSyncDeps, AppSyncState, SyncStatus } from "./use-app-sync";
 

@@ -4,8 +4,9 @@
 
 import { create } from "zustand";
 
+import { storage } from "@/lib/storage";
+
 import { advanceStreak } from "./logic";
-import { storage } from "./storage";
 
 type StatsData = {
   currentStreak: number;

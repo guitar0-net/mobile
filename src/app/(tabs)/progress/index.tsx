@@ -19,6 +19,7 @@ import {
   useActivityTimeline,
   useActivityTotalTime,
 } from "@/features/activity";
+import { DonationSupportCard } from "@/features/donations";
 import { useCompletedLessonsCount } from "@/features/lessons";
 
 const MONTHS_BACK = 12;
@@ -73,6 +74,8 @@ export default function ProgressScreen() {
           <View className="mt-4">
             <ActivityGrid history={history} />
           </View>
+
+          <DonationSupportCard />
 
           <Text variant="heading" className="mb-2 mt-6 text-xl">
             Журнал занятий

@@ -4,10 +4,10 @@
 
 import { _resetDbForTesting, getDb, initDb } from "@/lib/db";
 import { queryClient } from "@/lib/network/query-client";
+import { storage } from "@/lib/storage";
 
 import { recordLessonViewed, recordSongCompletion } from "./completion-recorder";
 import { getTimelineEvents } from "./db/repository";
-import { storage } from "./storage";
 
 beforeEach(async () => {
   _resetDbForTesting();

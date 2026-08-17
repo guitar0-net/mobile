@@ -6,6 +6,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 import type { ReactNode } from "react";
 import { Switch } from "react-native";
 
+import { ApiError } from "@/lib/network";
 import { resetSyncForTesting } from "@/lib/sync/__tests__/testing";
 import { useSyncStore } from "@/lib/sync/store";
 import type { AppSyncDeps } from "@/lib/sync/use-app-sync";
@@ -131,6 +132,20 @@ describe("DataGroup", () => {
     await waitFor(() =>
       expect(screen.getByText(/не удалось синхронизировать/i)).toBeTruthy(),
     );
+  });
+
+  test("a rate-limited sync does not tell the user to check their connection", async () => {
+    const deps = makeDeps({
+      syncAll: jest.fn().mockRejectedValue(new ApiError(503)),
+    });
+    renderGroup({ deps });
+
+    fireEvent.press(screen.getByText("Синхронизировать"));
+
+    await waitFor(() =>
+      expect(screen.getByText(/попробуйте через минуту/i)).toBeTruthy(),
+    );
+    expect(screen.queryByText(/подключение к интернету/i)).toBeNull();
   });
 
   test("a failed automatic background sync stays silent", async () => {

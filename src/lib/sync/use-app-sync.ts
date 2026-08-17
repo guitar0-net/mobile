@@ -10,12 +10,16 @@ import type { SyncProgress } from "@/features/lessons/sync";
 import { initDb as defaultInitDb } from "@/lib/db";
 import type { AppDb } from "@/lib/db";
 
+import { describeSyncFailure } from "./failure";
+import type { SyncFailure } from "./failure";
 import { useSyncStore } from "./store";
 
-export type SyncStatus = "loading" | "success" | "offline" | "error";
+/** "stale" — sync failed but local content is usable; "error" — nothing to fall back on. */
+export type SyncStatus = "loading" | "success" | "stale" | "error";
 
 export type AppSyncState = {
   status: SyncStatus;
+  failure: SyncFailure | null;
   progress: SyncProgress | null;
   isFirstLaunch: boolean;
   retry: () => void;
@@ -51,6 +55,7 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
 
   const [isFirstLaunch] = useState(() => !isInitialSyncDone);
   const [status, setStatus] = useState<SyncStatus>("loading");
+  const [failure, setFailure] = useState<SyncFailure | null>(null);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
 
   const sync = useCallback(async () => {
@@ -63,9 +68,11 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
       if (version != null) setContentVersion(version);
       setIsInitialSyncDone(true);
       setLastSyncedAt(Date.now());
+      setFailure(null);
       setStatus("success");
-    } catch {
-      setStatus(isFirstLaunch ? "error" : "offline");
+    } catch (error) {
+      setFailure(describeSyncFailure(error));
+      setStatus(isFirstLaunch ? "error" : "stale");
     }
   }, [
     initDb,
@@ -79,6 +86,7 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
 
   const retry = useCallback(() => {
     setStatus("loading");
+    setFailure(null);
     setProgress(null);
     void sync();
   }, [sync]);
@@ -90,5 +98,5 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { status, progress, isFirstLaunch, retry };
+  return { status, failure, progress, isFirstLaunch, retry };
 }

@@ -4,6 +4,8 @@
 
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
+import { ApiError } from "@/lib/network";
+
 import { resetSyncForTesting } from "./__tests__/testing";
 import { useSyncStore } from "./store";
 import { useAppSync } from "./use-app-sync";
@@ -172,12 +174,12 @@ describe("useAppSync — returning user (isInitialSyncDone=true)", () => {
     expect(onProgress).toBeUndefined();
   });
 
-  test("transitions to offline when sync fails (not error)", async () => {
+  test("transitions to stale when sync fails (not error)", async () => {
     const deps = makeDeps({
       syncAll: jest.fn().mockRejectedValue(new Error("Network")),
     });
     const { result } = renderHook(() => useAppSync(deps));
-    await waitFor(() => expect(result.current.status).toBe("offline"));
+    await waitFor(() => expect(result.current.status).toBe("stale"));
   });
 
   test("isInitialSyncDone stays true after network failure", async () => {
@@ -185,7 +187,7 @@ describe("useAppSync — returning user (isInitialSyncDone=true)", () => {
       syncAll: jest.fn().mockRejectedValue(new Error("Network")),
     });
     const { result } = renderHook(() => useAppSync(deps));
-    await waitFor(() => expect(result.current.status).toBe("offline"));
+    await waitFor(() => expect(result.current.status).toBe("stale"));
     expect(useSyncStore.getState().isInitialSyncDone).toBe(true);
   });
 
@@ -194,7 +196,74 @@ describe("useAppSync — returning user (isInitialSyncDone=true)", () => {
       syncAll: jest.fn().mockRejectedValue(new Error("Network")),
     });
     const { result } = renderHook(() => useAppSync(deps));
-    await waitFor(() => expect(result.current.status).toBe("offline"));
+    await waitFor(() => expect(result.current.status).toBe("stale"));
     expect(useSyncStore.getState().lastSyncedAt).toBeNull();
+  });
+});
+
+describe("useAppSync — failure classification", () => {
+  beforeEach(() => {
+    useSyncStore.setState({ isInitialSyncDone: true, contentVersion: "v0.9" });
+  });
+
+  async function failWith(error: unknown) {
+    const deps = makeDeps({ syncAll: jest.fn().mockRejectedValue(error) });
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.failure).not.toBeNull());
+    return result;
+  }
+
+  test("reports a tripped rate limit as a busy server, not a lost connection", async () => {
+    const result = await failWith(new ApiError(503));
+    expect(result.current.failure?.kind).toBe("busy");
+    expect(result.current.failure?.reason).toBe(
+      "Слишком много запросов — попробуйте через минуту",
+    );
+  });
+
+  test("reports 429 as busy", async () => {
+    const result = await failWith(new ApiError(429));
+    expect(result.current.failure?.kind).toBe("busy");
+  });
+
+  test("reports other 5xx as a server outage", async () => {
+    const result = await failWith(new ApiError(502));
+    expect(result.current.failure?.kind).toBe("server");
+  });
+
+  test("reports 4xx as a rejected request", async () => {
+    const result = await failWith(new ApiError(422));
+    expect(result.current.failure?.kind).toBe("rejected");
+  });
+
+  test("reports a fetch TypeError as offline", async () => {
+    const result = await failWith(new TypeError("Network request failed"));
+    expect(result.current.failure?.kind).toBe("offline");
+    expect(result.current.failure?.reason).toBe("Проверьте подключение к интернету");
+  });
+
+  test("does not blame the network for a local failure", async () => {
+    const deps = makeDeps({ initDb: jest.fn().mockRejectedValue(new Error("DB")) });
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.failure).not.toBeNull());
+    expect(result.current.failure?.kind).toBe("unknown");
+  });
+
+  test("clears the failure once a retry succeeds", async () => {
+    const deps = makeDeps({
+      syncAll: jest
+        .fn()
+        .mockRejectedValueOnce(new ApiError(503))
+        .mockResolvedValueOnce("v1.0"),
+    });
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.failure).not.toBeNull());
+
+    act(() => {
+      result.current.retry();
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("success"));
+    expect(result.current.failure).toBeNull();
   });
 });

@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
-import { Linking } from "react-native";
+import { Alert, Linking } from "react-native";
 
 import { ThemeProvider } from "@/lib/themes";
 
@@ -39,5 +39,20 @@ describe("AboutGroup", () => {
     render(<AboutGroup />, { wrapper });
     fireEvent.press(screen.getByText("Написать разработчику"));
     expect(Linking.openURL).toHaveBeenCalledWith("mailto:guitar0.app@gmail.com");
+  });
+
+  test("shows the address in an alert when no mail client can open the link", async () => {
+    jest.spyOn(Linking, "openURL").mockRejectedValue(new Error("no handler"));
+    const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+
+    render(<AboutGroup />, { wrapper });
+    fireEvent.press(screen.getByText("Написать разработчику"));
+
+    await waitFor(() => {
+      expect(alert).toHaveBeenCalledWith(
+        "Почтовый клиент не найден",
+        "Напишите нам на guitar0.app@gmail.com",
+      );
+    });
   });
 });

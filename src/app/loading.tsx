@@ -18,14 +18,14 @@ import { useColors } from "@/lib/themes";
 export default function LoadingScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { status, progress, isFirstLaunch, retry } = useAppSync();
+  const { status, failure, progress, isFirstLaunch, retry } = useAppSync();
 
   useEffect(() => {
     if (status === "success") {
       const t = setTimeout(() => router.replace("/(tabs)/home"), 1000);
       return () => clearTimeout(t);
     }
-    if (status === "offline") {
+    if (status === "stale") {
       const t = setTimeout(() => router.replace("/(tabs)/home"), 1500);
       return () => clearTimeout(t);
     }
@@ -74,20 +74,24 @@ export default function LoadingScreen() {
               <StatusMessage variant="success">Синхронизировано</StatusMessage>
             )}
 
-            {status === "offline" && (
+            {status === "stale" && failure !== null && (
               <StatusMessage
                 variant="warning"
-                icon={{ ios: "wifi.slash", android: "wifi_off" }}
+                icon={
+                  failure.kind === "offline"
+                    ? { ios: "wifi.slash", android: "wifi_off" }
+                    : undefined
+                }
               >
-                Нет соединения
+                {failure.label}
               </StatusMessage>
             )}
 
-            {status === "error" && (
+            {status === "error" && failure !== null && (
               <>
                 <StatusMessage variant="error">
-                  Не удалось загрузить данные.{"\n"}Проверьте подключение к интернету
-                  или попробуйте позже.
+                  Не удалось загрузить данные.{"\n"}
+                  {`${failure.reason}.`}
                 </StatusMessage>
                 <Button variant="ghost" size="sm" onPress={retry}>
                   Повторить

@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { getDb } from "@/lib/db";
+import { getDeviceId } from "@/lib/device-id";
 import { queryClient } from "@/lib/network/query-client";
 
 import { insertLessonViewedEvent, insertSongCompletionEvent } from "./db/repository";
-import { getDeviceId } from "./device-id";
 
 function invalidateTimeline(): void {
   void queryClient.invalidateQueries({ queryKey: ["activity", "timeline"] });

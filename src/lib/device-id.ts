@@ -6,11 +6,15 @@ import * as Crypto from "expo-crypto";
 
 import { storage } from "./storage";
 
+// Key kept as "activity.deviceId" for backward compatibility: this module used
+// to live in features/activity before donations needed the same identifier
+// too. Renaming it would silently generate a new id for every existing
+// install, orphaning whatever is already tagged with the old one.
 const KEY = "activity.deviceId";
 
 // Anonymous identifier generated once and persisted in MMKV, so that when
-// server accounts ship, a device's history can be attached to an account in
-// one request without re-tagging existing rows.
+// server accounts ship, a device's history (activity, donations) can be
+// attached to an account in one request without re-tagging existing rows.
 export function getDeviceId(): string {
   const existing = storage.getString(KEY);
   if (existing) return existing;

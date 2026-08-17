@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { storage } from "@/lib/storage";
+
 import { resetActivityStatsForTesting } from "./__tests__/testing";
 import { readDefaults, useActivityStatsStore } from "./stats-store";
-import { storage } from "./storage";
 
 beforeEach(() => {
   resetActivityStatsForTesting();
