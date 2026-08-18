@@ -19,6 +19,12 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     plugins: {
       prettier: prettierPlugin,
       "@typescript-eslint": tsPlugin,
@@ -38,6 +44,16 @@ const eslintConfig = defineConfig([
         },
       ],
       "import/no-duplicates": "error",
+      // eslint-config-expo's allow-list only covers Metro's built-in asset
+      // extensions; .lottie is a custom extension we added to assetExts.
+      "@typescript-eslint/no-require-imports": [
+        "warn",
+        {
+          allow: [
+            "\\.(aac|aiff|avif|bmp|caf|db|gif|heic|html|jpeg|jpg|json|lottie|m4a|m4v|mov|mp3|mp4|mpeg|mpg|otf|pdf|png|psd|svg|ttf|wav|webm|webp|xml|yaml|yml|zip)$",
+          ],
+        },
+      ],
     },
   },
 ]);
