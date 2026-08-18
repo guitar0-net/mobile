@@ -11,7 +11,7 @@ type AppIconProps = {
 export function AppIcon({ size = 100 }: AppIconProps) {
   return (
     <Image
-      source={require("@/assets/images/icon.png")}
+      source={require("@/assets/images/app-icon.png")}
       style={{ width: size, height: size }}
       resizeMode="contain"
     />
