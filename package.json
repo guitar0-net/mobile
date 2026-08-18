@@ -14,6 +14,7 @@
     "format:check": "prettier --check .",
     "generate:types": "openapi-typescript https://api.guitar0.net/api/v1/schema/ --output src/lib/network/api.types.ts",
     "db:generate": "drizzle-kit generate",
+    "build:lottie": "node scripts/build-lottie.mjs",
     "type:check": "tsc --noEmit",
     "deps:check": "expo install --check",
     "test": "jest --passWithNoTests",
@@ -51,6 +52,7 @@
     "expo-symbols": "~57.0.2",
     "expo-system-ui": "~57.0.2",
     "expo-video": "~57.0.2",
+    "lottie-react-native": "~7.3.8",
     "nativewind": "^4.2.6",
     "pitchy": "^4.1.0",
     "react": "19.2.3",
@@ -72,6 +74,7 @@
   "devDependencies": {
     "@commitlint/cli": "^20.0.0",
     "@commitlint/config-conventional": "^20.0.0",
+    "@dotlottie/dotlottie-js": "^1.8.0",
     "@testing-library/react-native": "^13.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^29.0.0",
