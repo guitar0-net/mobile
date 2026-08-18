@@ -33,10 +33,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#208AEF",
-        android: {
-          image: "./assets/images/splash-icon.png",
-          imageWidth: 76,
+        backgroundColor: "#FFFFFF",
+        image: "./assets/images/splash-icon.png",
+        imageWidth: 180,
+        dark: {
+          backgroundColor: "#09090B",
         },
       },
     ],
