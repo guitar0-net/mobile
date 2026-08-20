@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { LottieAnimation } from "@/components/ui/lottie-animation";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
+import { hasPendingLegacyReview, importLegacyProgress } from "@/features/migration";
 import { useAppSync } from "@/lib/sync";
 import { useColors } from "@/lib/themes";
 
@@ -21,14 +22,31 @@ export default function LoadingScreen() {
   const { status, failure, progress, isFirstLaunch, retry } = useAppSync();
 
   useEffect(() => {
-    if (status === "success") {
-      const t = setTimeout(() => router.replace("/(tabs)/home"), 1000);
-      return () => clearTimeout(t);
-    }
-    if (status === "stale") {
-      const t = setTimeout(() => router.replace("/(tabs)/home"), 1500);
-      return () => clearTimeout(t);
-    }
+    if (status !== "success" && status !== "stale") return;
+
+    let cancelled = false;
+    const t = setTimeout(
+      () => {
+        void (async () => {
+          let needsReview = false;
+          try {
+            await importLegacyProgress();
+            needsReview = hasPendingLegacyReview();
+          } catch {
+            // A failed migration must never leave the user on the splash
+            // screen, which has no way out of this state.
+          }
+          if (cancelled) return;
+          router.replace(needsReview ? "/migration" : "/(tabs)/home");
+        })();
+      },
+      status === "success" ? 1000 : 1500,
+    );
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [status, router]);
   const percentage =
     progress && progress.total > 0
