@@ -21,6 +21,12 @@ export type LessonProgress = {
   completedSongIds: string[];
 };
 
+/** A lesson together with every song it teaches. */
+export type LessonCompletion = {
+  lessonId: string;
+  songIds: string[];
+};
+
 // ---------------------------------------------------------------------------
 // State shape
 // ---------------------------------------------------------------------------
@@ -58,8 +64,11 @@ type SettingsActions = {
 
   // Content Interaction
   addFavorite: (uuid: string) => void;
+  addFavorites: (uuids: string[]) => void;
   removeFavorite: (uuid: string) => void;
   setVideoViewed: (lessonId: string, viewed: boolean) => void;
+  setLessonCompletion: (completion: LessonCompletion, completed: boolean) => void;
+  completeLessons: (completions: LessonCompletion[]) => void;
   setSongCompleted: (lessonId: string, songId: string, completed: boolean) => void;
   setHideCompletedLessons: (value: boolean) => void;
 
@@ -154,6 +163,13 @@ export function readDefaults(): SettingsData {
   };
 }
 
+// Completing a lesson writes through to the per-song state it is derived from,
+// so completion never has a second source of truth that can drift from it.
+function completedProgress(songIds: string[], completed: boolean): LessonProgress {
+  if (!completed) return { videoViewed: false, completedSongIds: [] };
+  return { videoViewed: true, completedSongIds: [...new Set(songIds)] };
+}
+
 // ---------------------------------------------------------------------------
 // Zustand store
 // ---------------------------------------------------------------------------
@@ -211,6 +227,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ favorites });
   },
 
+  addFavorites: (uuids) => {
+    const favorites = [...new Set([...get().favorites, ...uuids])];
+    storage.set(KEYS.FAVORITES, JSON.stringify(favorites));
+    set({ favorites });
+  },
+
   removeFavorite: (uuid) => {
     const favorites = get().favorites.filter((f) => f !== uuid);
     storage.set(KEYS.FAVORITES, JSON.stringify(favorites));
@@ -227,6 +249,24 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       ...currentProgress,
       [lessonId]: { ...existing, videoViewed: viewed },
     };
+    storage.set(KEYS.PROGRESS, JSON.stringify(progress));
+    set({ progress });
+  },
+
+  setLessonCompletion: ({ lessonId, songIds }, completed) => {
+    const progress = {
+      ...get().progress,
+      [lessonId]: completedProgress(songIds, completed),
+    };
+    storage.set(KEYS.PROGRESS, JSON.stringify(progress));
+    set({ progress });
+  },
+
+  completeLessons: (completions) => {
+    const progress = { ...get().progress };
+    for (const { lessonId, songIds } of completions) {
+      progress[lessonId] = completedProgress(songIds, true);
+    }
     storage.set(KEYS.PROGRESS, JSON.stringify(progress));
     set({ progress });
   },

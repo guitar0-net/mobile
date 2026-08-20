@@ -4,12 +4,14 @@
 
 import { useShallow } from "zustand/react/shallow";
 
+import type { LessonCompletion } from "./store";
 import { useSettingsStore } from "./store";
 
 export type {
   DiagramOrientation,
   DiagramSize,
   FontSize,
+  LessonCompletion,
   LessonProgress,
   SettingsState,
 } from "./store";
@@ -67,8 +69,19 @@ export function useProgress() {
       progress: s.progress,
       setVideoViewed: s.setVideoViewed,
       setSongCompleted: s.setSongCompleted,
+      setLessonCompletion: s.setLessonCompletion,
     })),
   );
+}
+
+// Imperative counterparts of the hooks above, for callers that run outside
+// React — currently the one-shot import of pre-5.0 progress at startup.
+export function completeLessons(completions: LessonCompletion[]): void {
+  useSettingsStore.getState().completeLessons(completions);
+}
+
+export function addFavorites(uuids: string[]): void {
+  useSettingsStore.getState().addFavorites(uuids);
 }
 
 export function useHideCompletedLessons() {
