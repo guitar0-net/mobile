@@ -6,6 +6,8 @@ import { act, renderHook } from "@testing-library/react-native";
 
 import { resetSettingsForTesting } from "./__tests__/testing";
 import {
+  addFavorites,
+  completeLessons,
   useDiagramSettings,
   useFavorites,
   useFontSize,
@@ -490,5 +492,76 @@ describe("resetProgress", () => {
     expect(useSettingsStore.getState().hideCompletedLessons).toBe(true);
     expect(useSettingsStore.getState().themeMode).toBe("dark");
     expect(useSettingsStore.getState().fontSize).toBe(5);
+  });
+});
+
+describe("bulk progress and favorites writes", () => {
+  test("setLessonCompletion marks the video and every song of the lesson", () => {
+    const { result } = renderHook(() => useProgress());
+
+    act(() => {
+      result.current.setLessonCompletion(
+        { lessonId: "lesson-1", songIds: ["song-1", "song-2", "song-1"] },
+        true,
+      );
+    });
+
+    expect(result.current.progress["lesson-1"]).toEqual({
+      videoViewed: true,
+      completedSongIds: ["song-1", "song-2"],
+    });
+  });
+
+  test("setLessonCompletion with false clears the video as well as the songs", () => {
+    const { result } = renderHook(() => useProgress());
+
+    act(() => {
+      result.current.setLessonCompletion(
+        { lessonId: "lesson-1", songIds: ["song-1"] },
+        true,
+      );
+      result.current.setLessonCompletion(
+        { lessonId: "lesson-1", songIds: ["song-1"] },
+        false,
+      );
+    });
+
+    expect(result.current.progress["lesson-1"]).toEqual({
+      videoViewed: false,
+      completedSongIds: [],
+    });
+  });
+
+  test("completeLessons completes several lessons and keeps the rest untouched", () => {
+    const { result } = renderHook(() => useProgress());
+
+    act(() => {
+      result.current.setSongCompleted("lesson-3", "song-5", true);
+      completeLessons([
+        { lessonId: "lesson-1", songIds: ["song-1"] },
+        { lessonId: "lesson-2", songIds: [] },
+      ]);
+    });
+
+    expect(result.current.progress["lesson-1"]).toEqual({
+      videoViewed: true,
+      completedSongIds: ["song-1"],
+    });
+    expect(result.current.progress["lesson-2"]).toEqual({
+      videoViewed: true,
+      completedSongIds: [],
+    });
+    expect(result.current.progress["lesson-3"].completedSongIds).toEqual(["song-5"]);
+  });
+
+  test("addFavorites appends without duplicating what is already favorited", () => {
+    const { result } = renderHook(() => useFavorites());
+
+    act(() => {
+      result.current.addFavorite("lesson-1");
+      addFavorites(["lesson-1", "lesson-2"]);
+    });
+
+    expect(result.current.favorites).toEqual(["lesson-1", "lesson-2"]);
   });
 });
