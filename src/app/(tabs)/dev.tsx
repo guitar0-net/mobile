@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
+import { resetLegacyImport } from "@/features/migration";
 import { useThemePreference } from "@/features/settings";
 import { chords, courses, getDb, lessons, schemes, songs } from "@/lib/db";
 import { resetAllData, resetSyncState } from "@/lib/dev";
@@ -82,6 +83,11 @@ export default function DevToolsScreen() {
 
   function handleResetSync() {
     resetSyncState();
+    router.replace("/loading");
+  }
+
+  function handleReplayLegacyImport() {
+    resetLegacyImport();
     router.replace("/loading");
   }
 
@@ -178,6 +184,9 @@ export default function DevToolsScreen() {
             </Button>
             <Button variant="ghost" onPress={handleResetSync}>
               Сбросить синк-стейт
+            </Button>
+            <Button variant="ghost" onPress={handleReplayLegacyImport}>
+              Повторить импорт прогресса 4.x
             </Button>
           </View>
         </ScreenScrollView>
