@@ -24,6 +24,7 @@ path = [
   ".github/renovate.json",
   "patches/react-native-css-interop+0.2.4.patch",
   "src/lib/network/api.types.ts",
+  "src/features/migration/legacy-lesson-map.json",
   "drizzle/**"
 ]
 precedence = "closest"
