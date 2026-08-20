@@ -351,10 +351,8 @@ export function useContinueLesson(courseUuid: string) {
   const lesson = useMemo(() => {
     if (!query.data) return null;
     return (
-      query.data.find((row) => {
-        const p = progress[row.lessonUuid];
-        return !p || !p.videoViewed || p.completedSongIds.length < row.songCount;
-      }) ?? query.data.at(-1)
+      query.data.find((row) => !isLessonCompleted(row, progress[row.lessonUuid])) ??
+      query.data.at(-1)
     );
   }, [query.data, progress]);
 
