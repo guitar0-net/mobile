@@ -13,7 +13,7 @@ const eslintConfig = defineConfig([
   ...expo,
   prettierConfig,
   {
-    files: ["__mocks__/**/*.js"],
+    files: ["__mocks__/**/*.js", "jest.setup.js"],
     languageOptions: {
       globals: globals.jest,
     },
