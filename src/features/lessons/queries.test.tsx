@@ -17,6 +17,7 @@ import {
   fetchCourseLessons,
   fetchFavoriteLessons,
   fetchLessonDetail,
+  fetchSongIdsByLesson,
   listDownloadedVideos,
   useCompletedLessonsCount,
   useContinueLesson,
@@ -851,5 +852,29 @@ describe("useFavoriteLessons", () => {
 
     await waitFor(() => expect(result.current.lessons).toHaveLength(1));
     expect(result.current.lessons[0].lessonUuid).toBe("lesson-2");
+  });
+});
+
+describe("fetchSongIdsByLesson", () => {
+  test("returns the songs of each requested lesson", async () => {
+    await seedCourse();
+
+    expect(await fetchSongIdsByLesson(["lesson-1"])).toEqual({
+      "lesson-1": ["song-1", "song-2"],
+    });
+  });
+
+  test("returns an empty list for a lesson that teaches no songs", async () => {
+    await seedCourse();
+
+    expect(await fetchSongIdsByLesson(["lesson-2"])).toEqual({ "lesson-2": [] });
+  });
+
+  test("omits lessons the local content does not have", async () => {
+    await seedCourse();
+
+    const byLesson = await fetchSongIdsByLesson(["lesson-1", "missing-lesson"]);
+
+    expect(Object.keys(byLesson)).toEqual(["lesson-1"]);
   });
 });

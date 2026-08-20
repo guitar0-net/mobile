@@ -179,6 +179,28 @@ export async function fetchAllLessonSongCounts(): Promise<LessonSongCount[]> {
     .groupBy(lessons.uuid);
 }
 
+// Driven from `lessons` rather than `lessonSongs`: a lesson that teaches no
+// songs still gets a key, so a missing key means the lesson is not in the
+// local content at all.
+export async function fetchSongIdsByLesson(
+  lessonUuids: string[],
+): Promise<Record<string, string[]>> {
+  if (lessonUuids.length === 0) return {};
+
+  const rows = await getDb()
+    .select({ lessonUuid: lessons.uuid, songUuid: lessonSongs.songUuid })
+    .from(lessons)
+    .leftJoin(lessonSongs, eq(lessonSongs.lessonUuid, lessons.uuid))
+    .where(inArray(lessons.uuid, lessonUuids));
+
+  const byLesson: Record<string, string[]> = {};
+  for (const row of rows) {
+    const songIds = (byLesson[row.lessonUuid] ??= []);
+    if (row.songUuid !== null) songIds.push(row.songUuid);
+  }
+  return byLesson;
+}
+
 export function useCompletedLessonsCount(): number {
   const { progress } = useProgress();
   const query = useQuery({

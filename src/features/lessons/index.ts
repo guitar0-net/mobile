@@ -12,6 +12,7 @@ export {
   fetchCourseLessons,
   fetchLessonDetail,
   fetchLessonVideoPath,
+  fetchSongIdsByLesson,
   listDownloadedVideos,
   useCompletedLessonsCount,
   useContinueLesson,
