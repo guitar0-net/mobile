@@ -15,9 +15,9 @@ export type PurchaseVerifyRequest = {
   device_id: string;
 };
 
-// expo-iap normalizes both stores' proof-of-purchase into one `purchaseToken`
-// field (iOS's StoreKit JWS, Android's Play Billing token) — this just routes
-// it to whichever server field that platform's verify endpoint expects.
+// expo-iap reports both stores' proof of purchase through one `purchaseToken`
+// field (a StoreKit JWS on iOS, a Play Billing token on Android), while the
+// server expects each in a field of its own.
 export function buildVerifyPayload(
   purchase: Purchase,
   platform: DonationPlatform,

@@ -10,10 +10,9 @@ export type DonationTier = {
   icon: SymbolViewProps["name"];
 };
 
-// Product IDs must match exactly across three places: this list, the
-// non-consumable SKUs created in App Store Connect / Google Play Console, and
-// the DonationProduct rows in the Django admin — none of the three is the
-// source of truth for the others.
+// Product IDs must match exactly in three places with no single source of
+// truth: this list, the non-consumable SKUs in App Store Connect / Google Play
+// Console, and the DonationProduct rows in the Django admin.
 export const DONATION_TIERS: readonly DonationTier[] = [
   {
     productId: "donation_thanks",
@@ -37,10 +36,6 @@ export const DONATION_TIERS: readonly DonationTier[] = [
   },
 ];
 
-// Staff can deactivate a DonationProduct from the admin without an app
-// release; a deactivated product_id just disappears from this list until
-// reactivated, instead of the client trying to sell something the server
-// will reject.
 export function getVisibleTiers(activeProductIds: readonly string[]): DonationTier[] {
   const active = new Set(activeProductIds);
   return DONATION_TIERS.filter((tier) => active.has(tier.productId));

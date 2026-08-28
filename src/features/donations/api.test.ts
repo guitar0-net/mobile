@@ -58,8 +58,6 @@ describe("getActiveDonationProductIds", () => {
     const ids = await getActiveDonationProductIds();
 
     expect(ids).toEqual(["donation_thanks", "donation_coffee"]);
-    // Offset advances by the one row the first page actually returned, not by
-    // the requested limit of 50.
     expect(globalThis.fetch).toHaveBeenLastCalledWith(
       `${BASE_URL}/api/v1/donations/products/?limit=50&offset=1`,
     );

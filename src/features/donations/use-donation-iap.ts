@@ -40,41 +40,27 @@ type UseDonationIapResult = {
 
 const PLATFORM: DonationPlatform = Platform.OS === "ios" ? "ios" : "android";
 
-// initConnection() resolving to `false` (Play Store not ready, StoreKit
-// unavailable) is not an error as far as expo-iap is concerned — no onError
-// fires and `connected` simply stays false forever. Without this deadline the
-// screen would sit on a spinner with nothing left to wait for.
+// expo-iap treats an initConnection() that resolves `false` as a non-event:
+// no onError fires and `connected` stays false forever, so without a deadline
+// the screen waits on a spinner that can never resolve.
 const STORE_CONNECTION_TIMEOUT_MS = 10_000;
 
-// Tier catalog (price, availability) and purchase flow (buy, restore,
-// ownership) share a single useIAP() call rather than each calling it
-// independently — expo-iap opens its own store connection and registers a
-// full set of native listeners per call, and the two are only ever consumed
-// together by DonationTierList.
+// Catalog and purchase flow share one useIAP() call because expo-iap opens a
+// store connection and registers native listeners per call.
 export function useDonationIap(): UseDonationIapResult {
   const deviceId = useMemo(() => getDeviceId(), []);
   const [purchasingProductId, setPurchasingProductId] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const restoringRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  // Confirmed by *our own* successful verify+finish this session. Union'd
-  // with availablePurchases below rather than relied on alone, since that
-  // still needs to cover a tier bought in a previous session/install that
-  // this session hasn't reconciled yet.
   const [confirmedProductIds, setConfirmedProductIds] = useState<Set<string>>(
     new Set(),
   );
   const reconcilingRef = useRef<Set<string>>(new Set());
-  // Settled this session (verified and finished, or permanently rejected).
-  // Deliberately not persisted across launches: re-verifying is idempotent
-  // server-side and is what repairs a donation the server never recorded.
   const reconciledRef = useRef<Set<string>>(new Set());
 
   const [iapError, setIapError] = useState(false);
   const [connectionTimedOut, setConnectionTimedOut] = useState(false);
-  // Bumping this on refetch() re-runs the fetchProducts effect below so a
-  // retry can actually recover, instead of leaving iapError stuck true for
-  // the rest of the session.
   const [retryToken, setRetryToken] = useState(0);
   const [completedFetchKey, setCompletedFetchKey] = useState<string | null>(null);
 
@@ -103,20 +89,16 @@ export function useDonationIap(): UseDonationIapResult {
       const message = describePurchaseError(error);
       if (message) setErrorMessage(message);
     },
-    // Every call this hook makes handles its own rejection; onError is kept
-    // for the one failure we can't reach — the initConnection() useIAP runs
-    // itself on mount. It fires for restore failures too, which restore()
-    // reports inline: blanking the priced tier list over a failed restore
-    // would be both wrong and unrecoverable without a manual retry.
+    // The only failure this hook can't catch at the call site is the
+    // initConnection() useIAP runs on mount. onError also fires for restore
+    // failures, which restore() reports inline instead.
     onError: () => {
       if (!restoringRef.current) setIapError(true);
     },
   });
 
-  // Reports whether the transaction is settled rather than throwing: a store
-  // that refuses to finish an already-finished non-consumable must not be
-  // mistaken for a failed donation, but it must still leave the receipt open
-  // for a later retry.
+  // A store refusing to finish an already-finished non-consumable is not a
+  // failed donation, so this reports settlement instead of throwing.
   const finish = useCallback(
     async (purchase: Purchase): Promise<boolean> => {
       try {
@@ -129,9 +111,6 @@ export function useDonationIap(): UseDonationIapResult {
     [finishTransaction],
   );
 
-  // `silent` suppresses the error banner for purchases the user didn't just
-  // make — reconciling what the store already knows about runs on mount, and
-  // a failure there is not something the user asked for or can act on.
   const reconcile = useCallback(
     async (purchase: Purchase, { silent = false } = {}) => {
       const key = purchase.transactionId ?? purchase.id;
@@ -141,9 +120,9 @@ export function useDonationIap(): UseDonationIapResult {
         try {
           await verifyPurchase(buildVerifyPayload(purchase, PLATFORM, deviceId));
         } catch (error) {
-          // Leaving a permanently rejected transaction unfinished would get it
-          // auto-refunded by Play after three days and re-delivered by StoreKit
-          // on every launch, so finish it and stop replaying a doomed receipt.
+          // An unfinished transaction is auto-refunded by Play after three days
+          // and re-delivered by StoreKit on every launch, so a doomed receipt
+          // still has to be finished.
           if (isPermanentVerifyRejection(error)) {
             const finished = await finish(purchase);
             if (finished) reconciledRef.current.add(key);
@@ -164,14 +143,9 @@ export function useDonationIap(): UseDonationIapResult {
   );
 
   useEffect(() => {
-    // initConnection() inside useIAP() is async — calling this before it
-    // resolves throws (store not connected yet) and, since
-    // getAvailablePurchases has a stable identity, this effect never
-    // re-fires on its own, so the restore would silently never happen.
+    // useIAP()'s initConnection() is async, and getAvailablePurchases throws
+    // until it resolves.
     if (!connected) return;
-    // A store that can't list what the user already owns can't be trusted to
-    // sell either, so this failure gets the same retryable error screen as a
-    // failed fetchProducts.
     getAvailablePurchases().catch(() => setIapError(true));
   }, [connected, getAvailablePurchases]);
 
@@ -200,10 +174,8 @@ export function useDonationIap(): UseDonationIapResult {
         },
         type: "in-app",
       }).catch(() => {
-        // onPurchaseError (async, event-based) covers the normal failure
-        // path; this handles a request that never reaches the store at all
-        // (e.g. not connected yet), which onPurchaseError never fires for —
-        // without this the button would silently reset with no explanation.
+        // onPurchaseError covers store-side failures; a request that never
+        // reaches the store rejects here instead and fires no event.
         setPurchasingProductId(null);
         setErrorMessage(describePurchaseError({}));
       });
@@ -216,8 +188,7 @@ export function useDonationIap(): UseDonationIapResult {
     restoringRef.current = true;
     setErrorMessage(null);
     setIsRestoring(true);
-    // restorePurchases() already refreshes availablePurchases internally —
-    // no separate getAvailablePurchases() round-trip needed here.
+    // restorePurchases() refreshes availablePurchases itself.
     restorePurchases()
       .catch(() => setErrorMessage(RESTORE_FAILED_MESSAGE))
       .finally(() => {
@@ -226,9 +197,6 @@ export function useDonationIap(): UseDonationIapResult {
       });
   }, [restorePurchases]);
 
-  // Merges the server's active product_id list (which tiers are sellable
-  // right now) with the store's own product catalog (price, in the user's
-  // locale and currency) — neither source alone is enough to render a row.
   const visibleTiers = useMemo(
     () => getVisibleTiers(productIdsQuery.data ?? []),
     [productIdsQuery.data],
@@ -265,17 +233,13 @@ export function useDonationIap(): UseDonationIapResult {
   }, [connected, connectionTimedOut, visibleTiers.length]);
 
   const fetchAttempted = completedFetchKey === fetchKey;
-  // With no sellable tier the store is irrelevant — there is no SKU to price
-  // and nothing to buy — so a dead store connection must not preempt the
-  // "temporarily unavailable" message with a retry screen that can only ever
-  // fail again. Matches the connection-timeout effect, which already parks
-  // itself on an empty catalog.
+  // With nothing to sell, a dead store connection changes nothing the user can
+  // act on, so an empty catalog keeps its own message instead of the retry one.
   const hasCatalog = visibleTiers.length > 0;
   const storeUnavailable = hasCatalog && (iapError || connectionTimedOut);
 
-  // A tier the store doesn't price is one it can't sell — expo-iap silently
-  // omits SKUs it doesn't recognize from fetchProducts, so an unpriced tier
-  // stays out of the list rather than rendering a row that can't be bought.
+  // expo-iap silently omits SKUs it doesn't recognize from fetchProducts, so
+  // an unpriced tier is one the store can't sell.
   const tiers = useMemo(
     () =>
       visibleTiers.flatMap((tier) => {
@@ -296,11 +260,8 @@ export function useDonationIap(): UseDonationIapResult {
       setIapError(false);
       setConnectionTimedOut(false);
       setRetryToken((token) => token + 1);
-      // reconnect() is the only way back from an initConnection() that
-      // resolved false — the fetchProducts effect stays parked on `connected`
-      // until it flips, so bumping retryToken alone would change nothing. It
-      // reports failure by resolving false (the throw is swallowed internally),
-      // so a bare .catch() would leave a failed retry stuck on the spinner.
+      // reconnect() is the only way back from an initConnection() that resolved
+      // false, and it reports failure by resolving false rather than rejecting.
       if (!connected) {
         void reconnect()
           .catch(() => false)
@@ -308,8 +269,7 @@ export function useDonationIap(): UseDonationIapResult {
             if (!reconnected) setIapError(true);
           });
       }
-      // React Query's refetch() resolves with the error rather than rejecting
-      // — productIdsQuery.isError is what surfaces it.
+      // React Query's refetch() resolves with the error instead of rejecting.
       void productIdsQuery.refetch();
     },
     ownedProductIds,

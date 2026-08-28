@@ -6,18 +6,16 @@ import { ErrorCode } from "expo-iap";
 
 import { ApiError } from "@/lib/network";
 
-// expo-iap's own onPurchaseError callback and its publicly exported
-// PurchaseError type disagree on whether `code` is required — this only
-// needs to read `code`, so it accepts either shape rather than picking one.
+// expo-iap's onPurchaseError callback and its exported PurchaseError type
+// disagree on whether `code` is required, so this accepts either shape.
 type PurchaseErrorLike = { code?: ErrorCode | null };
 
 export const RESTORE_FAILED_MESSAGE =
   "Не удалось восстановить покупки. Проверьте подключение к интернету";
 
-// 422/400 mean the server looked at the receipt and rejected it (see
-// PurchaseVerificationError and UnknownDonationProductError in the server's
-// services.py) — replaying the same request can never turn into a success,
-// unlike 502 (the store was unreachable from the server).
+// The server rejects the receipt itself with 400/422 (PurchaseVerificationError
+// and UnknownDonationProductError in its services.py); 502 means it only failed
+// to reach the store, which a retry can still fix.
 const PERMANENT_REJECTION_STATUSES = [400, 422];
 
 export function isPermanentVerifyRejection(error: unknown): boolean {
@@ -26,7 +24,6 @@ export function isPermanentVerifyRejection(error: unknown): boolean {
   );
 }
 
-// Maps /donations/verify/'s HTTP status back to a message a donor can act on.
 export function describeVerifyError(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 502) {
@@ -40,8 +37,7 @@ export function describeVerifyError(error: unknown): string {
   return "Не удалось подтвердить покупку. Проверьте подключение к интернету";
 }
 
-// Returns null for cases that need no message at all — the user already
-// knows they cancelled, so surfacing an error for it would just be noise.
+/** Returns null when the failure needs no message, such as a cancellation. */
 export function describePurchaseError(error: PurchaseErrorLike): string | null {
   switch (error.code) {
     case ErrorCode.UserCancelled:
