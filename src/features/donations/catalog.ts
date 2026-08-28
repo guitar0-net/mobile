@@ -36,6 +36,12 @@ export const DONATION_TIERS: readonly DonationTier[] = [
   },
 ];
 
+const DONATION_PRODUCT_IDS = new Set(DONATION_TIERS.map((tier) => tier.productId));
+
+export function isDonationProduct(productId: string): boolean {
+  return DONATION_PRODUCT_IDS.has(productId);
+}
+
 export function getVisibleTiers(activeProductIds: readonly string[]): DonationTier[] {
   const active = new Set(activeProductIds);
   return DONATION_TIERS.filter((tier) => active.has(tier.productId));

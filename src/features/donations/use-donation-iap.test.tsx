@@ -11,6 +11,7 @@ import React from "react";
 import { ApiError } from "@/lib/network";
 
 import { getActiveDonationProductIds, verifyPurchase } from "./api";
+import { DonationIapProvider } from "./donation-iap-provider";
 import { useDonationIap } from "./use-donation-iap";
 
 jest.mock("expo-iap", () => ({
@@ -31,7 +32,11 @@ const mockVerifyPurchase = jest.mocked(verifyPurchase);
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={client}>
+      <DonationIapProvider>{children}</DonationIapProvider>
+    </QueryClientProvider>
+  );
 }
 
 function makePurchase(overrides: Partial<Purchase> = {}): Purchase {
