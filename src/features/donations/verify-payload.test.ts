@@ -6,8 +6,6 @@ import type { Purchase } from "expo-iap";
 
 import { buildVerifyPayload } from "./verify-payload";
 
-// Only the fields buildVerifyPayload reads are filled in — the rest of the
-// real Purchase union isn't relevant to this mapping.
 function makePurchase(overrides: Partial<Purchase>): Purchase {
   return {
     id: "fallback-id",

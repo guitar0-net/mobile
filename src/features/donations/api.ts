@@ -6,10 +6,8 @@ import { apiFetch, apiPostJson } from "@/lib/network";
 
 import type { PurchaseVerifyRequest } from "./verify-payload";
 
-// Hand-written response shapes: donations isn't deployed yet, so the OpenAPI
-// schema api.types.ts is generated from doesn't know about it. Replace with
-// the generated components["schemas"][...] types once `npm run generate:types`
-// picks it up.
+// Hand-written because the OpenAPI schema behind api.types.ts doesn't cover
+// donations yet — replace with the generated types once it does.
 type DonationProductListResponse = {
   next: string | null;
   results: { product_id: string }[];
@@ -24,15 +22,10 @@ type PurchaseVerifyResponse = {
 
 const PAGE_SIZE = 50;
 
-// The catalog is a handful of tiers, so a response still promising more pages
-// past this point is a broken or hostile cursor rather than a real catalog.
-// Without the cap, a `next` that never goes null makes the client request
-// pages forever, on a mobile connection, behind two react-query retries.
+// Guards against a `next` that never goes null: the catalog is a handful of
+// tiers, so anything past this page is a broken cursor, not more products.
 const MAX_PAGES = 5;
 
-// Walks the pages instead of trusting one request to hold every product:
-// a tier missing from the response is a tier the app silently stops offering,
-// which is the one failure mode worth a second round-trip to rule out.
 export async function getActiveDonationProductIds(): Promise<string[]> {
   const productIds: string[] = [];
   let offset = 0;
@@ -42,8 +35,8 @@ export async function getActiveDonationProductIds(): Promise<string[]> {
     );
     productIds.push(...response.results.map((product) => product.product_id));
     if (response.next === null || response.results.length === 0) break;
-    // Advance by what the server actually returned rather than by the limit we
-    // asked for — a smaller server-side page cap would otherwise skip rows.
+    // The server may cap a page below the requested limit, so advance by the
+    // rows it actually returned.
     offset += response.results.length;
   }
   return productIds;

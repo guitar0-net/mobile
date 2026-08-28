@@ -14,9 +14,8 @@ import { getActiveDonationProductIds, verifyPurchase } from "./api";
 import { useDonationIap } from "./use-donation-iap";
 
 jest.mock("expo-iap", () => ({
-  // Pull ErrorCode from the plain-data types module rather than the full
-  // "expo-iap" index — the index's native-module init graph doesn't survive
-  // being re-evaluated through requireActual inside a mock factory.
+  // expo-iap's index initializes its native module and doesn't survive being
+  // re-evaluated through requireActual, so ErrorCode comes from types instead.
   ErrorCode: jest.requireActual("expo-iap/build/types").ErrorCode,
   useIAP: jest.fn(),
 }));
@@ -198,9 +197,8 @@ describe("useDonationIap — tiers", () => {
 
   test("refetch(): an empty catalog stays on the unavailable message instead of cycling back to the error", async () => {
     mockGetActiveDonationProductIds.mockResolvedValue([]);
-    // expo-iap swallows a failed initConnection() and re-reports it through
-    // onError rather than by rejecting, which is what made the retry loop
-    // bounce back to the error screen on every press.
+    // expo-iap swallows a failed initConnection() and reports it through
+    // onError rather than by rejecting.
     let reportStoreError: ((error: Error) => void) | undefined;
     const reconnect = jest.fn(() => {
       reportStoreError?.(new Error("no billing service"));
