@@ -74,4 +74,13 @@ describe("describePurchaseError", () => {
       "Не удалось совершить покупку. Попробуйте ещё раз",
     );
   });
+
+  test.each([[null], [undefined], ["boom"], [new Error("boom")]])(
+    "falls back to a generic message for a rejection without a code: %p",
+    (error) => {
+      expect(describePurchaseError(error)).toBe(
+        "Не удалось совершить покупку. Попробуйте ещё раз",
+      );
+    },
+  );
 });

@@ -292,6 +292,40 @@ describe("DonationIapProvider", () => {
     expect(result.current.storeError).toBe(false);
   });
 
+  test("reports why a purchase request never reached the store", async () => {
+    const requestPurchase = jest.fn().mockRejectedValue(
+      Object.assign(new Error("billing service gone"), {
+        code: ErrorCode.ServiceDisconnected,
+      }),
+    );
+    mockIAP({ requestPurchase });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => result.current.purchase("donation_thanks"));
+
+    expect(result.current.errorMessage).toBe(
+      "Нет соединения с магазином. Проверьте интернет",
+    );
+    expect(result.current.purchasingProductId).toBeNull();
+  });
+
+  test("stays quiet when the purchase request is cancelled by the user", async () => {
+    const requestPurchase = jest.fn().mockRejectedValue(
+      Object.assign(new Error("cancelled"), {
+        code: ErrorCode.UserCancelled,
+      }),
+    );
+    mockIAP({ requestPurchase });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => result.current.purchase("donation_thanks"));
+
+    expect(result.current.errorMessage).toBeNull();
+    expect(result.current.purchasingProductId).toBeNull();
+  });
+
   test("clears the store error once the catalog loads", async () => {
     const fetchProducts = jest
       .fn()

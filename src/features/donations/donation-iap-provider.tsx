@@ -270,12 +270,13 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           google: { skus: [productId] },
         },
         type: "in-app",
-      }).catch(() => {
+      }).catch((error) => {
         // onPurchaseError covers store-side failures; a request that never
         // reaches the store rejects here instead and fires no event. It is not
         // retried automatically — a second attempt could open a second dialog.
         setPurchasingProductId(null);
-        setErrorMessage(describePurchaseError({}));
+        const message = describePurchaseError(error);
+        if (message) setErrorMessage(message);
       });
     },
     [requestPurchase, purchasingProductId],
