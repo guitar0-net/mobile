@@ -89,7 +89,11 @@ function mockIAP(overrides: Partial<IAPMock> = {}) {
     capturedOptions = options;
     return session as unknown as ReturnType<typeof useIAP>;
   });
-  return { ...base, getOptions: () => capturedOptions! };
+  return {
+    ...base,
+    getOptions: () => capturedOptions!,
+    update: (patch: Partial<IAPMock>) => Object.assign(session, patch),
+  };
 }
 
 function disconnectedError() {
@@ -140,6 +144,31 @@ describe("DonationIapProvider", () => {
       ),
     );
     expect(finishTransaction).toHaveBeenCalledWith({ purchase, isConsumable: false });
+  });
+
+  test("clears the verification error once a background check confirms the purchase", async () => {
+    const purchase = makePurchase();
+    mockVerifyPurchase.mockRejectedValueOnce(new Error("offline"));
+    const { getOptions, update } = mockIAP();
+
+    const { result, rerender } = renderHook(() => useDonationIapSession(), {
+      wrapper,
+    });
+
+    await act(async () => getOptions().onPurchaseSuccess?.(purchase));
+    await waitFor(() =>
+      expect(result.current.errorMessage).toBe(
+        "Не удалось подтвердить покупку. Проверьте подключение к интернету",
+      ),
+    );
+
+    await act(async () => {
+      update({ availablePurchases: [purchase] });
+      rerender(undefined);
+    });
+
+    await waitFor(() => expect(result.current.errorMessage).toBeNull());
+    expect(result.current.ownedProductIds.has("donation_thanks")).toBe(true);
   });
 
   test("leaves purchases of products this build doesn't sell alone", async () => {
