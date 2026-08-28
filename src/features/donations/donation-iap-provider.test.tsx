@@ -98,7 +98,20 @@ function disconnectedError() {
   });
 }
 
+function captureAppStateHandlers() {
+  const handlers: ((state: AppStateStatus) => void)[] = [];
+  jest.spyOn(AppState, "addEventListener").mockImplementation(((
+    _event: string,
+    handler: (state: AppStateStatus) => void,
+  ) => {
+    handlers.push(handler);
+    return { remove: jest.fn() };
+  }) as never);
+  return (state: AppStateStatus) => handlers.forEach((handler) => handler(state));
+}
+
 beforeEach(() => {
+  jest.restoreAllMocks();
   jest.clearAllMocks();
   mockIAP();
   mockVerifyPurchase.mockResolvedValue({
@@ -107,6 +120,10 @@ beforeEach(() => {
     status: "completed",
     verified_at: "2026-01-01T00:00:00Z",
   });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe("DonationIapProvider", () => {
@@ -141,47 +158,90 @@ describe("DonationIapProvider", () => {
   });
 
   test("re-checks the store's purchases when the app returns to the foreground", async () => {
-    const handlers: ((state: AppStateStatus) => void)[] = [];
-    jest.spyOn(AppState, "addEventListener").mockImplementation(((
-      _event: string,
-      handler: (state: AppStateStatus) => void,
-    ) => {
-      handlers.push(handler);
-      return { remove: jest.fn() };
-    }) as never);
+    const sendAppState = captureAppStateHandlers();
     const getAvailablePurchases = jest.fn().mockResolvedValue(undefined);
     mockIAP({ getAvailablePurchases });
 
     renderHook(() => useDonationIapSession(), { wrapper });
     await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(1));
 
-    await act(async () => {
-      handlers.forEach((handler) => handler("active"));
-    });
+    await act(async () => sendAppState("active"));
 
     expect(getAvailablePurchases).toHaveBeenCalledTimes(2);
   });
 
   test("does not re-check the store's purchases when the app goes to the background", async () => {
-    const handlers: ((state: AppStateStatus) => void)[] = [];
-    jest.spyOn(AppState, "addEventListener").mockImplementation(((
-      _event: string,
-      handler: (state: AppStateStatus) => void,
-    ) => {
-      handlers.push(handler);
-      return { remove: jest.fn() };
-    }) as never);
+    const sendAppState = captureAppStateHandlers();
     const getAvailablePurchases = jest.fn().mockResolvedValue(undefined);
     mockIAP({ getAvailablePurchases });
 
     renderHook(() => useDonationIapSession(), { wrapper });
     await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(1));
 
-    await act(async () => {
-      handlers.forEach((handler) => handler("background"));
-    });
+    await act(async () => sendAppState("background"));
 
     expect(getAvailablePurchases).toHaveBeenCalledTimes(1);
+  });
+
+  test("retries a connection that never came up at launch, then gives up", async () => {
+    jest.useFakeTimers();
+    const reconnect = jest.fn().mockResolvedValue(false);
+    mockIAP({ connected: false, reconnect });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => jest.advanceTimersByTime(10_000));
+    expect(reconnect).toHaveBeenCalledTimes(1);
+
+    await act(async () => jest.advanceTimersByTime(60_000));
+    expect(reconnect).toHaveBeenCalledTimes(2);
+
+    await act(async () => jest.advanceTimersByTime(300_000));
+    expect(reconnect).toHaveBeenCalledTimes(3);
+
+    await act(async () => jest.advanceTimersByTime(300_000));
+    expect(reconnect).toHaveBeenCalledTimes(3);
+  });
+
+  test("stops retrying once the store connects", async () => {
+    jest.useFakeTimers();
+    const reconnect = jest.fn().mockResolvedValue(true);
+    mockIAP({ connected: false, reconnect });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => jest.advanceTimersByTime(10_000));
+    expect(reconnect).toHaveBeenCalledTimes(1);
+
+    await act(async () => jest.advanceTimersByTime(600_000));
+    expect(reconnect).toHaveBeenCalledTimes(1);
+  });
+
+  test("retries a dead connection on return to the foreground and restarts the delays", async () => {
+    jest.useFakeTimers();
+    const sendAppState = captureAppStateHandlers();
+    const reconnect = jest.fn().mockResolvedValue(false);
+    mockIAP({ connected: false, reconnect });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => sendAppState("active"));
+    expect(reconnect).toHaveBeenCalledTimes(1);
+
+    await act(async () => jest.advanceTimersByTime(10_000));
+    expect(reconnect).toHaveBeenCalledTimes(2);
+  });
+
+  test("does not retry the connection while the store is connected", async () => {
+    jest.useFakeTimers();
+    const reconnect = jest.fn().mockResolvedValue(true);
+    mockIAP({ reconnect });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => jest.advanceTimersByTime(600_000));
+
+    expect(reconnect).not.toHaveBeenCalled();
   });
 
   test("reconnects and retries a call the store refused after dropping the connection", async () => {

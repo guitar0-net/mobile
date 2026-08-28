@@ -44,6 +44,8 @@ type DonationIapSession = {
 
 const PLATFORM: DonationPlatform = Platform.OS === "ios" ? "ios" : "android";
 
+const RECONNECT_DELAYS_MS = [10_000, 60_000, 300_000];
+
 const DISCONNECTED_CODES: readonly ErrorCode[] = [
   ErrorCode.NotPrepared,
   ErrorCode.ServiceDisconnected,
@@ -181,6 +183,42 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     });
     return () => subscription.remove();
   }, [connected, refreshPurchases]);
+
+  // useIAP runs initConnection() once on mount and never retries, and a
+  // connection that never came up leaves the purchase listeners unregistered,
+  // so a dead store at launch stays dead until something asks it again.
+  useEffect(() => {
+    if (connected) return;
+    let attempt = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    function scheduleRetry() {
+      if (attempt >= RECONNECT_DELAYS_MS.length) return;
+      timer = setTimeout(runRetry, RECONNECT_DELAYS_MS[attempt]);
+      attempt += 1;
+    }
+
+    function runRetry() {
+      void reconnect()
+        .catch(() => false)
+        .then((reconnected) => {
+          if (!reconnected) scheduleRetry();
+        });
+    }
+
+    scheduleRetry();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state !== "active") return;
+      clearTimeout(timer);
+      attempt = 0;
+      runRetry();
+    });
+
+    return () => {
+      clearTimeout(timer);
+      subscription.remove();
+    };
+  }, [connected, reconnect]);
 
   useEffect(() => {
     for (const availablePurchase of availablePurchases) {
