@@ -4,3 +4,4 @@
 
 export { DonationSupportCard } from "./components/donation-support-card";
 export { DonationTierList } from "./components/donation-tier-list";
+export { DonationIapProvider } from "./donation-iap-provider";

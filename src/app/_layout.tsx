@@ -19,6 +19,7 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { ActivitySessionTracker } from "@/features/activity";
+import { DonationIapProvider } from "@/features/donations";
 import { queryClient } from "@/lib/network/query-client";
 import { ThemeProvider, useTheme, useThemedScreenOptions } from "@/lib/themes";
 
@@ -92,12 +93,14 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <ActivitySessionTracker />
-        <ThemeProvider>
-          <BottomSheetModalProvider>
-            <ThemedStack />
-            <StatusBarAdapter />
-          </BottomSheetModalProvider>
-        </ThemeProvider>
+        <DonationIapProvider>
+          <ThemeProvider>
+            <BottomSheetModalProvider>
+              <ThemedStack />
+              <StatusBarAdapter />
+            </BottomSheetModalProvider>
+          </ThemeProvider>
+        </DonationIapProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
   );
