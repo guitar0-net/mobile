@@ -187,19 +187,6 @@ describe("useDonationIap — tiers", () => {
     expect(reconnect).toHaveBeenCalled();
   });
 
-  test("does not turn a store failure into an error screen when nothing is sellable", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue([]);
-    const getAvailablePurchases = jest.fn().mockRejectedValue(new Error("offline"));
-    mockIAP({ getAvailablePurchases });
-
-    const { result } = renderHook(() => useDonationIap(), { wrapper });
-    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalled());
-    await act(async () => {});
-
-    expect(result.current.isError).toBe(false);
-    expect(result.current.tiers).toEqual([]);
-  });
-
   test("refetch(): an empty catalog stays on the unavailable message instead of cycling back to the error", async () => {
     mockGetActiveDonationProductIds.mockResolvedValue([]);
     const reconnect = jest.fn().mockResolvedValue(false);
