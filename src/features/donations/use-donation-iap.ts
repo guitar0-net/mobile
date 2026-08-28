@@ -55,6 +55,7 @@ export function useDonationIap(): UseDonationIapResult {
   const deviceId = useMemo(() => getDeviceId(), []);
   const [purchasingProductId, setPurchasingProductId] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const restoringRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // Confirmed by *our own* successful verify+finish this session. Union'd
   // with availablePurchases below rather than relied on alone, since that
@@ -104,8 +105,12 @@ export function useDonationIap(): UseDonationIapResult {
     },
     // Every call this hook makes handles its own rejection; onError is kept
     // for the one failure we can't reach — the initConnection() useIAP runs
-    // itself on mount.
-    onError: () => setIapError(true),
+    // itself on mount. It fires for restore failures too, which restore()
+    // reports inline: blanking the priced tier list over a failed restore
+    // would be both wrong and unrecoverable without a manual retry.
+    onError: () => {
+      if (!restoringRef.current) setIapError(true);
+    },
   });
 
   // Reports whether the transaction is settled rather than throwing: a store
@@ -207,15 +212,19 @@ export function useDonationIap(): UseDonationIapResult {
   );
 
   const restore = useCallback(() => {
-    if (isRestoring) return;
+    if (restoringRef.current) return;
+    restoringRef.current = true;
     setErrorMessage(null);
     setIsRestoring(true);
     // restorePurchases() already refreshes availablePurchases internally —
     // no separate getAvailablePurchases() round-trip needed here.
     restorePurchases()
       .catch(() => setErrorMessage(RESTORE_FAILED_MESSAGE))
-      .finally(() => setIsRestoring(false));
-  }, [restorePurchases, isRestoring]);
+      .finally(() => {
+        restoringRef.current = false;
+        setIsRestoring(false);
+      });
+  }, [restorePurchases]);
 
   // Merges the server's active product_id list (which tiers are sellable
   // right now) with the store's own product catalog (price, in the user's
