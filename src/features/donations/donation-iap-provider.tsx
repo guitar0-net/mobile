@@ -167,8 +167,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     [deviceId, finish],
   );
 
+  // Re-checking purchases is background work the user never asked for, so its
+  // failure must not hide the tiers. Whether the store works is decided by
+  // whether it hands over the catalog.
   const refreshPurchases = useCallback(
-    () => withReconnect(() => getAvailablePurchases()).catch(() => setStoreError(true)),
+    () => withReconnect(() => getAvailablePurchases()).catch(() => {}),
     [getAvailablePurchases, withReconnect],
   );
 
@@ -249,7 +252,10 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     (productIds: readonly string[]) =>
       withReconnect(() =>
         fetchProducts({ skus: [...productIds], type: "in-app" }),
-      ).catch(() => setStoreError(true)),
+      ).then(
+        () => setStoreError(false),
+        () => setStoreError(true),
+      ),
     [fetchProducts, withReconnect],
   );
 

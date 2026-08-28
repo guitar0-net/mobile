@@ -292,6 +292,38 @@ describe("DonationIapProvider", () => {
     expect(result.current.storeError).toBe(false);
   });
 
+  test("clears the store error once the catalog loads", async () => {
+    const fetchProducts = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("catalog unavailable"))
+      .mockResolvedValue(undefined);
+    mockIAP({ fetchProducts });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => {
+      await result.current.fetchPrices(["donation_thanks"]);
+    });
+    expect(result.current.storeError).toBe(true);
+
+    await act(async () => {
+      await result.current.fetchPrices(["donation_thanks"]);
+    });
+    expect(result.current.storeError).toBe(false);
+  });
+
+  test("keeps the store usable when re-checking purchases fails", async () => {
+    const getAvailablePurchases = jest.fn().mockRejectedValue(new Error("offline"));
+    mockIAP({ getAvailablePurchases });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalled());
+    await act(async () => {});
+
+    expect(result.current.storeError).toBe(false);
+  });
+
   test("reports the store as unavailable when reconnecting after a drop fails", async () => {
     const fetchProducts = jest.fn().mockRejectedValue(disconnectedError());
     const reconnect = jest.fn().mockResolvedValue(false);
