@@ -183,6 +183,69 @@ describe("useDonationIap — tiers", () => {
     expect(reconnect).toHaveBeenCalled();
   });
 
+  test("does not turn a dead store connection into an error screen when nothing is sellable", async () => {
+    mockGetActiveDonationProductIds.mockResolvedValue([]);
+    const { getOptions } = mockIAP({ connected: false });
+
+    const { result } = renderHook(() => useDonationIap(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => getOptions().onError?.(new Error("Play Store unavailable")));
+
+    expect(result.current.isError).toBe(false);
+    expect(result.current.tiers).toEqual([]);
+  });
+
+  test("refetch(): an empty catalog stays on the unavailable message instead of cycling back to the error", async () => {
+    mockGetActiveDonationProductIds.mockResolvedValue([]);
+    // expo-iap swallows a failed initConnection() and re-reports it through
+    // onError rather than by rejecting, which is what made the retry loop
+    // bounce back to the error screen on every press.
+    let reportStoreError: ((error: Error) => void) | undefined;
+    const reconnect = jest.fn(() => {
+      reportStoreError?.(new Error("no billing service"));
+      return Promise.resolve(false);
+    });
+    const { getOptions } = mockIAP({ connected: false, reconnect });
+
+    const { result } = renderHook(() => useDonationIap(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    reportStoreError = getOptions().onError;
+
+    act(() => result.current.refetch());
+
+    await waitFor(() => expect(reconnect).toHaveBeenCalled());
+    expect(result.current.isError).toBe(false);
+    expect(result.current.tiers).toEqual([]);
+  });
+
+  test("refetch(): surfaces an error when reconnect reports failure by resolving false", async () => {
+    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+    const reconnect = jest.fn().mockResolvedValue(false);
+    mockIAP({ connected: false, reconnect });
+
+    const { result } = renderHook(() => useDonationIap(), { wrapper });
+    await waitFor(() => expect(mockGetActiveDonationProductIds).toHaveBeenCalled());
+
+    act(() => result.current.refetch());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  test("refetch(): surfaces an error when reconnect rejects outright", async () => {
+    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+    const reconnect = jest.fn().mockRejectedValue(new Error("no billing service"));
+    mockIAP({ connected: false, reconnect });
+
+    const { result } = renderHook(() => useDonationIap(), { wrapper });
+    await waitFor(() => expect(mockGetActiveDonationProductIds).toHaveBeenCalled());
+
+    act(() => result.current.refetch());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
   test("refetch(): does not reconnect a store that is already connected", async () => {
     mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
     const reconnect = jest.fn().mockResolvedValue(true);
