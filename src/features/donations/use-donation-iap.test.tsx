@@ -216,6 +216,32 @@ describe("useDonationIap — tiers", () => {
       type: "in-app",
     });
   });
+
+  test("does not leak an unhandled rejection when the store refuses its requests", async () => {
+    const rejections: unknown[] = [];
+    const record = (reason: unknown) => rejections.push(reason);
+    process.on("unhandledRejection", record);
+    try {
+      mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+      const notConnected = () =>
+        Promise.reject(new Error("Play Store service is not connected"));
+      mockIAP({
+        fetchProducts: jest.fn(notConnected),
+        getAvailablePurchases: jest.fn(notConnected),
+      });
+
+      const { result } = renderHook(() => useDonationIap(), { wrapper });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      await act(async () => {
+        await new Promise<void>((resolve) => setImmediate(() => resolve()));
+      });
+
+      expect(rejections).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", record);
+    }
+  });
 });
 
 describe("useDonationIap — purchase", () => {
