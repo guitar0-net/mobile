@@ -478,4 +478,32 @@ describe("useDonationIap — purchase", () => {
     );
     expect(result.current.isRestoring).toBe(false);
   });
+
+  test("restore(): reports a failure inline instead of blanking the tier list", async () => {
+    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+    let reportStoreError: ((error: Error) => void) | undefined;
+    // expo-iap funnels a failed restore through onError *and* rejects.
+    const restorePurchases = jest.fn(() => {
+      reportStoreError?.(new Error("offline"));
+      return Promise.reject(new Error("offline"));
+    });
+    const { getOptions } = mockIAP({
+      restorePurchases,
+      products: [{ id: "donation_thanks", displayPrice: "$1.00" }],
+    });
+
+    const { result } = renderHook(() => useDonationIap(), { wrapper });
+    await waitFor(() => expect(result.current.tiers).toHaveLength(1));
+    reportStoreError = getOptions().onError;
+
+    act(() => result.current.restore());
+
+    await waitFor(() =>
+      expect(result.current.errorMessage).toBe(
+        "Не удалось восстановить покупки. Проверьте подключение к интернету",
+      ),
+    );
+    expect(result.current.isError).toBe(false);
+    expect(result.current.tiers).toHaveLength(1);
+  });
 });
