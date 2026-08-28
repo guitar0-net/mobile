@@ -157,7 +157,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         }
 
         setConfirmedProductIds((prev) => new Set(prev).add(purchase.productId));
-        if (!silent) setErrorMessage(null);
+        setErrorMessage(null);
         const finished = await finish(purchase);
         if (finished) reconciledRef.current.add(key);
       } finally {
