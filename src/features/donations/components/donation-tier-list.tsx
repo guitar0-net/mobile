@@ -61,7 +61,9 @@ export function DonationTierList() {
   return (
     <View className="gap-4">
       {errorMessage !== null && (
-        <StatusMessage variant="error">{errorMessage}</StatusMessage>
+        <StatusMessage variant="error" inline>
+          {errorMessage}
+        </StatusMessage>
       )}
 
       <View className="overflow-hidden rounded-xl bg-surface px-4">
