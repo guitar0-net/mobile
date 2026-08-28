@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { SymbolView, SymbolViewProps } from "expo-symbols";
+import { View } from "react-native";
 
 import { Text } from "@/components/ui/text";
 import { useColors, type Colors } from "@/lib/themes";
@@ -14,6 +15,7 @@ type Variant = "success" | "warning" | "error";
 type StatusMessageProps = {
   variant: Variant;
   icon?: SymbolName;
+  inline?: boolean;
   children: React.ReactNode;
 };
 
@@ -29,13 +31,34 @@ const COLOR_KEY: Record<Variant, keyof Colors> = {
   error: "destructive",
 };
 
-export function StatusMessage({ variant, icon, children }: StatusMessageProps) {
+export function StatusMessage({
+  variant,
+  icon,
+  inline = false,
+  children,
+}: StatusMessageProps) {
   const colors = useColors();
   const color = colors[COLOR_KEY[variant]];
+  const symbol = (
+    <SymbolView
+      name={icon ?? DEFAULT_ICONS[variant]}
+      size={inline ? 20 : 32}
+      tintColor={color}
+    />
+  );
+
+  if (inline) {
+    return (
+      <View className="flex-row items-center gap-2">
+        {symbol}
+        <Text className="flex-1 text-sm text-muted-fg">{children}</Text>
+      </View>
+    );
+  }
 
   return (
     <>
-      <SymbolView name={icon ?? DEFAULT_ICONS[variant]} size={32} tintColor={color} />
+      {symbol}
       <Text className="text-center text-sm text-muted-fg">{children}</Text>
     </>
   );
