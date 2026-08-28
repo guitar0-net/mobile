@@ -52,6 +52,15 @@ type IAPMock = {
   reconnect: jest.Mock;
 };
 
+// expo-iap reports every failed store call to onError *and* rejects, so a mock
+// that only rejects hides whatever the provider does in onError.
+const REPORTED_TO_ON_ERROR = [
+  "fetchProducts",
+  "getAvailablePurchases",
+  "restorePurchases",
+  "reconnect",
+] as const;
+
 function mockIAP(overrides: Partial<IAPMock> = {}) {
   let capturedOptions: UseIAPOptions | undefined;
   const base: IAPMock = {
@@ -66,9 +75,19 @@ function mockIAP(overrides: Partial<IAPMock> = {}) {
     reconnect: jest.fn().mockResolvedValue(true),
     ...overrides,
   };
+  const session = { ...base };
+  for (const name of REPORTED_TO_ON_ERROR) {
+    const call = base[name];
+    session[name] = jest.fn((...args: unknown[]) =>
+      call(...args).catch((error: unknown) => {
+        capturedOptions?.onError?.(error as Error);
+        throw error;
+      }),
+    );
+  }
   mockUseIAP.mockImplementation((options) => {
     capturedOptions = options;
-    return base as unknown as ReturnType<typeof useIAP>;
+    return session as unknown as ReturnType<typeof useIAP>;
   });
   return { ...base, getOptions: () => capturedOptions! };
 }

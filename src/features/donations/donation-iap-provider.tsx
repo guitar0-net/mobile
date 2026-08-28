@@ -104,12 +104,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       const message = describePurchaseError(error);
       if (message) setErrorMessage(message);
     },
-    // The only failure this provider can't catch at the call site is the
-    // initConnection() useIAP runs on mount. onError also fires for restore
-    // failures, which restore() reports inline instead.
-    onError: () => {
-      if (!restoringRef.current) setStoreError(true);
-    },
   });
 
   const withReconnect = useCallback(
