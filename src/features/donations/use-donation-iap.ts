@@ -28,7 +28,7 @@ type UseDonationIapResult = {
 
 // The store connection is opened at app start, but the screen can still be
 // reached before it settles, and expo-iap treats an initConnection() that
-// resolves `false` as a non-event: no onError fires and `connected` stays false
+// resolves `false` as a non-event: nothing rejects and `connected` stays false
 // forever, so without a deadline the screen waits on a spinner that can never
 // resolve.
 const STORE_CONNECTION_TIMEOUT_MS = 10_000;

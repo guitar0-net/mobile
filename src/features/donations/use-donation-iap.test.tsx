@@ -187,14 +187,14 @@ describe("useDonationIap — tiers", () => {
     expect(reconnect).toHaveBeenCalled();
   });
 
-  test("does not turn a dead store connection into an error screen when nothing is sellable", async () => {
+  test("does not turn a store failure into an error screen when nothing is sellable", async () => {
     mockGetActiveDonationProductIds.mockResolvedValue([]);
-    const { getOptions } = mockIAP({ connected: false });
+    const getAvailablePurchases = jest.fn().mockRejectedValue(new Error("offline"));
+    mockIAP({ getAvailablePurchases });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    act(() => getOptions().onError?.(new Error("Play Store unavailable")));
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalled());
+    await act(async () => {});
 
     expect(result.current.isError).toBe(false);
     expect(result.current.tiers).toEqual([]);
@@ -202,18 +202,11 @@ describe("useDonationIap — tiers", () => {
 
   test("refetch(): an empty catalog stays on the unavailable message instead of cycling back to the error", async () => {
     mockGetActiveDonationProductIds.mockResolvedValue([]);
-    // expo-iap swallows a failed initConnection() and reports it through
-    // onError rather than by rejecting.
-    let reportStoreError: ((error: Error) => void) | undefined;
-    const reconnect = jest.fn(() => {
-      reportStoreError?.(new Error("no billing service"));
-      return Promise.resolve(false);
-    });
-    const { getOptions } = mockIAP({ connected: false, reconnect });
+    const reconnect = jest.fn().mockResolvedValue(false);
+    mockIAP({ connected: false, reconnect });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    reportStoreError = getOptions().onError;
 
     act(() => result.current.refetch());
 
@@ -264,14 +257,14 @@ describe("useDonationIap — tiers", () => {
 
   test("clears a prior IAP error and retries fetchProducts when refetch is called", async () => {
     mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
-    const fetchProducts = jest.fn().mockResolvedValue(undefined);
-    const { getOptions } = mockIAP({ fetchProducts });
+    const fetchProducts = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("network blip"))
+      .mockResolvedValue(undefined);
+    mockIAP({ fetchProducts });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
-    await waitFor(() => expect(fetchProducts).toHaveBeenCalledTimes(1));
-
-    act(() => getOptions().onError?.(new Error("network blip")));
-    expect(result.current.isError).toBe(true);
+    await waitFor(() => expect(result.current.isError).toBe(true));
 
     fetchProducts.mockClear();
     act(() => result.current.refetch());
@@ -547,20 +540,14 @@ describe("useDonationIap — purchase", () => {
 
   test("restore(): reports a failure inline instead of blanking the tier list", async () => {
     mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
-    let reportStoreError: ((error: Error) => void) | undefined;
-    // expo-iap funnels a failed restore through onError *and* rejects.
-    const restorePurchases = jest.fn(() => {
-      reportStoreError?.(new Error("offline"));
-      return Promise.reject(new Error("offline"));
-    });
-    const { getOptions } = mockIAP({
+    const restorePurchases = jest.fn().mockRejectedValue(new Error("offline"));
+    mockIAP({
       restorePurchases,
       products: [{ id: "donation_thanks", displayPrice: "$1.00" }],
     });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
     await waitFor(() => expect(result.current.tiers).toHaveLength(1));
-    reportStoreError = getOptions().onError;
 
     act(() => result.current.restore());
 
