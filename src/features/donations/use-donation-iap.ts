@@ -265,7 +265,13 @@ export function useDonationIap(): UseDonationIapResult {
   }, [connected, connectionTimedOut, visibleTiers.length]);
 
   const fetchAttempted = completedFetchKey === fetchKey;
-  const storeUnavailable = iapError || connectionTimedOut;
+  // With no sellable tier the store is irrelevant — there is no SKU to price
+  // and nothing to buy — so a dead store connection must not preempt the
+  // "temporarily unavailable" message with a retry screen that can only ever
+  // fail again. Matches the connection-timeout effect, which already parks
+  // itself on an empty catalog.
+  const hasCatalog = visibleTiers.length > 0;
+  const storeUnavailable = hasCatalog && (iapError || connectionTimedOut);
 
   // A tier the store doesn't price is one it can't sell — expo-iap silently
   // omits SKUs it doesn't recognize from fetchProducts, so an unpriced tier
@@ -284,8 +290,7 @@ export function useDonationIap(): UseDonationIapResult {
   return {
     tiers,
     isLoading:
-      productIdsQuery.isLoading ||
-      (visibleTiers.length > 0 && !fetchAttempted && !storeUnavailable),
+      productIdsQuery.isLoading || (hasCatalog && !fetchAttempted && !storeUnavailable),
     isError: productIdsQuery.isError || storeUnavailable,
     refetch: () => {
       setIapError(false);
@@ -293,8 +298,16 @@ export function useDonationIap(): UseDonationIapResult {
       setRetryToken((token) => token + 1);
       // reconnect() is the only way back from an initConnection() that
       // resolved false — the fetchProducts effect stays parked on `connected`
-      // until it flips, so bumping retryToken alone would change nothing.
-      if (!connected) reconnect().catch(() => setIapError(true));
+      // until it flips, so bumping retryToken alone would change nothing. It
+      // reports failure by resolving false (the throw is swallowed internally),
+      // so a bare .catch() would leave a failed retry stuck on the spinner.
+      if (!connected) {
+        void reconnect()
+          .catch(() => false)
+          .then((reconnected) => {
+            if (!reconnected) setIapError(true);
+          });
+      }
       // React Query's refetch() resolves with the error rather than rejecting
       // — productIdsQuery.isError is what surfaces it.
       void productIdsQuery.refetch();
