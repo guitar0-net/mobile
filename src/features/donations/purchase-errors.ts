@@ -38,8 +38,8 @@ export function describeVerifyError(error: unknown): string {
 }
 
 /** Returns null when the failure needs no message, such as a cancellation. */
-export function describePurchaseError(error: PurchaseErrorLike): string | null {
-  switch (error.code) {
+export function describePurchaseError(error: unknown): string | null {
+  switch ((error as PurchaseErrorLike | null)?.code) {
     case ErrorCode.UserCancelled:
       return null;
     case ErrorCode.AlreadyOwned:
