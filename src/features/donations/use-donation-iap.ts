@@ -71,10 +71,9 @@ export function useDonationIap(): UseDonationIapResult {
 
   const [iapError, setIapError] = useState(false);
   const [connectionTimedOut, setConnectionTimedOut] = useState(false);
-  // onError fires for transient, promise-based failures (network blips
-  // during fetchProducts, store unavailable, …) — bumping this on refetch()
-  // re-runs the fetchProducts effect below so a retry can actually recover,
-  // instead of leaving iapError stuck true for the rest of the session.
+  // Bumping this on refetch() re-runs the fetchProducts effect below so a
+  // retry can actually recover, instead of leaving iapError stuck true for
+  // the rest of the session.
   const [retryToken, setRetryToken] = useState(0);
   const [completedFetchKey, setCompletedFetchKey] = useState<string | null>(null);
 
@@ -103,6 +102,9 @@ export function useDonationIap(): UseDonationIapResult {
       const message = describePurchaseError(error);
       if (message) setErrorMessage(message);
     },
+    // Every call this hook makes handles its own rejection; onError is kept
+    // for the one failure we can't reach — the initConnection() useIAP runs
+    // itself on mount.
     onError: () => setIapError(true),
   });
 
@@ -162,7 +164,10 @@ export function useDonationIap(): UseDonationIapResult {
     // getAvailablePurchases has a stable identity, this effect never
     // re-fires on its own, so the restore would silently never happen.
     if (!connected) return;
-    void getAvailablePurchases();
+    // A store that can't list what the user already owns can't be trusted to
+    // sell either, so this failure gets the same retryable error screen as a
+    // failed fetchProducts.
+    getAvailablePurchases().catch(() => setIapError(true));
   }, [connected, getAvailablePurchases]);
 
   useEffect(() => {
@@ -207,7 +212,7 @@ export function useDonationIap(): UseDonationIapResult {
     setIsRestoring(true);
     // restorePurchases() already refreshes availablePurchases internally —
     // no separate getAvailablePurchases() round-trip needed here.
-    void restorePurchases()
+    restorePurchases()
       .catch(() => setErrorMessage(RESTORE_FAILED_MESSAGE))
       .finally(() => setIsRestoring(false));
   }, [restorePurchases, isRestoring]);
@@ -228,12 +233,14 @@ export function useDonationIap(): UseDonationIapResult {
   useEffect(() => {
     if (!connected || visibleTiers.length === 0) return;
     let cancelled = false;
-    void fetchProducts({
+    fetchProducts({
       skus: visibleTiers.map((tier) => tier.productId),
       type: "in-app",
-    }).finally(() => {
-      if (!cancelled) setCompletedFetchKey(fetchKey);
-    });
+    })
+      .catch(() => setIapError(true))
+      .finally(() => {
+        if (!cancelled) setCompletedFetchKey(fetchKey);
+      });
     return () => {
       cancelled = true;
     };
@@ -278,7 +285,9 @@ export function useDonationIap(): UseDonationIapResult {
       // reconnect() is the only way back from an initConnection() that
       // resolved false — the fetchProducts effect stays parked on `connected`
       // until it flips, so bumping retryToken alone would change nothing.
-      if (!connected) void reconnect();
+      if (!connected) reconnect().catch(() => setIapError(true));
+      // React Query's refetch() resolves with the error rather than rejecting
+      // — productIdsQuery.isError is what surfaces it.
       void productIdsQuery.refetch();
     },
     ownedProductIds,
