@@ -10,11 +10,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
+import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
+import { useCompletedLessonsCount } from "@/features/lessons";
 import { resetLegacyImport } from "@/features/migration";
-import { useThemePreference } from "@/features/settings";
+import { useFavorites, useThemePreference } from "@/features/settings";
 import { chords, courses, getDb, lessons, schemes, songs } from "@/lib/db";
-import { resetAllData, resetSyncState } from "@/lib/dev";
+import {
+  clearLegacyProgress,
+  resetAllData,
+  resetSyncState,
+  seedLegacyProgress,
+} from "@/lib/dev";
 import { useSyncState } from "@/lib/sync";
 import { useTheme, type ThemeName } from "@/lib/themes";
 import type { ThemeMode } from "@/lib/themes/resolve-theme";
@@ -49,7 +56,10 @@ export default function DevToolsScreen() {
   const { isInitialSyncDone, contentVersion } = useSyncState();
   const { theme } = useTheme();
   const { setThemeMode, setHighContrast } = useThemePreference();
+  const { favorites } = useFavorites();
+  const completedLessons = useCompletedLessonsCount();
   const [counts, setCounts] = useState<DbCounts | null>(null);
+  const [seedResult, setSeedResult] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -89,6 +99,18 @@ export default function DevToolsScreen() {
   function handleReplayLegacyImport() {
     resetLegacyImport();
     router.replace("/loading");
+  }
+
+  async function handleSeedLegacyProgress() {
+    const { completed, favorites: favoriteCount } = await seedLegacyProgress();
+    setSeedResult(
+      `Записано в старом формате: ${completed} пройденных, ${favoriteCount} избранных. Текущий прогресс очищен.`,
+    );
+  }
+
+  async function handleClearLegacyProgress() {
+    await clearLegacyProgress();
+    setSeedResult("Старый прогресс удалён.");
   }
 
   return (
@@ -177,6 +199,38 @@ export default function DevToolsScreen() {
 
           <View className="gap-3">
             <Text className="text-xs font-semibold uppercase tracking-widest text-muted-fg">
+              Миграция 4.x
+            </Text>
+            <View className="overflow-hidden rounded-xl bg-surface">
+              {[
+                ["Пройдено уроков", completedLessons],
+                ["Избранных уроков", favorites.length],
+              ].map(([label, value], i, arr) => (
+                <View
+                  key={label as string}
+                  className={`flex-row justify-between px-4 py-3 ${i < arr.length - 1 ? "border-b border-border" : ""}`}
+                >
+                  <Text className="text-foreground">{label as string}</Text>
+                  <Text className="text-muted-fg">{String(value)}</Text>
+                </View>
+              ))}
+            </View>
+            {seedResult !== null && (
+              <StatusMessage variant="success">{seedResult}</StatusMessage>
+            )}
+            <Button variant="outline" onPress={() => void handleSeedLegacyProgress()}>
+              Подложить прогресс 4.x
+            </Button>
+            <Button variant="ghost" onPress={handleReplayLegacyImport}>
+              Запустить импорт
+            </Button>
+            <Button variant="ghost" onPress={() => void handleClearLegacyProgress()}>
+              Удалить старый прогресс
+            </Button>
+          </View>
+
+          <View className="gap-3">
+            <Text className="text-xs font-semibold uppercase tracking-widest text-muted-fg">
               Сброс
             </Text>
             <Button variant="outline" onPress={() => void handleResetAll()}>
@@ -184,9 +238,6 @@ export default function DevToolsScreen() {
             </Button>
             <Button variant="ghost" onPress={handleResetSync}>
               Сбросить синк-стейт
-            </Button>
-            <Button variant="ghost" onPress={handleReplayLegacyImport}>
-              Повторить импорт прогресса 4.x
             </Button>
           </View>
         </ScreenScrollView>
