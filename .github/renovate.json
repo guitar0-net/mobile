@@ -14,10 +14,18 @@
 
   "labels": ["dependencies"],
   "commitMessagePrefix": "chore(deps):",
-  "rebaseWhen": "conflicted",
+  "rebaseWhen": "behind-base-branch",
   "separateMajorMinor": true,
   "major": {
     "labels": ["dependencies", "breaking-change"]
+  },
+
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on Saturday"],
+    "labels": ["dependencies", "npm"],
+    "commitMessageAction": "refresh transitive dependencies",
+    "postUpdateOptions": ["npmDedupe"]
   },
 
   "packageRules": [
@@ -27,9 +35,10 @@
       "labels": ["dependencies", "npm"]
     },
     {
-      "matchPackageNames": ["expo", "expo-*"],
+      "matchPackageNames": ["expo", "expo-*", "@expo/**"],
       "groupName": "expo-sdk",
-      "minimumReleaseAge": "5 days"
+      "minimumReleaseAge": "1 day",
+      "schedule": ["before 6am"]
     },
     {
       "matchPackageNames": ["react-native", "react-native-*", "@react-navigation/**"],
