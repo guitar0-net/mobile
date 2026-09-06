@@ -8,14 +8,19 @@ import { Button } from "@/components/ui/button";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 
-import { useDonationIap } from "../use-donation-iap";
+import { type DonationLoadError, useDonationIap } from "../use-donation-iap";
 import { DonationTierRow } from "./donation-tier-row";
+
+const LOAD_ERROR_MESSAGES: Record<DonationLoadError, string> = {
+  catalog: "Не удалось загрузить варианты поддержки. Проверьте подключение к интернету",
+  store: "Магазин недоступен. Попробуйте ещё раз позже",
+};
 
 export function DonationTierList() {
   const {
     tiers,
     isLoading,
-    isError,
+    loadError,
     refetch,
     ownedProductIds,
     purchasingProductId,
@@ -25,12 +30,10 @@ export function DonationTierList() {
     restore,
   } = useDonationIap();
 
-  if (isError) {
+  if (loadError !== null) {
     return (
       <View className="items-center gap-3 py-8">
-        <StatusMessage variant="error">
-          Не удалось загрузить варианты поддержки. Проверьте подключение к интернету
-        </StatusMessage>
+        <StatusMessage variant="error">{LOAD_ERROR_MESSAGES[loadError]}</StatusMessage>
         <Button variant="outline" size="sm" onPress={refetch}>
           Повторить
         </Button>

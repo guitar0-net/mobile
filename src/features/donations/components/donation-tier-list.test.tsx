@@ -21,7 +21,7 @@ function wrapper({ children }: { children: ReactNode }) {
 const defaults: ReturnType<typeof useDonationIap> = {
   tiers: [],
   isLoading: false,
-  isError: false,
+  loadError: null,
   refetch: jest.fn(),
   ownedProductIds: new Set(),
   purchasingProductId: null,
@@ -36,12 +36,30 @@ beforeEach(() => {
 });
 
 describe("DonationTierList", () => {
-  test("shows an error with a retry button when loading failed", () => {
+  test("blames the connection when the server withheld the tier list", () => {
     const refetch = jest.fn();
-    mockUseDonationIap.mockReturnValue({ ...defaults, isError: true, refetch });
+    mockUseDonationIap.mockReturnValue({ ...defaults, loadError: "catalog", refetch });
 
     render(<DonationTierList />, { wrapper });
 
+    expect(
+      screen.getByText(
+        "Не удалось загрузить варианты поддержки. Проверьте подключение к интернету",
+      ),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByText("Повторить"));
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  test("blames the store, not the connection, when the store withheld its prices", () => {
+    const refetch = jest.fn();
+    mockUseDonationIap.mockReturnValue({ ...defaults, loadError: "store", refetch });
+
+    render(<DonationTierList />, { wrapper });
+
+    expect(
+      screen.getByText("Магазин недоступен. Попробуйте ещё раз позже"),
+    ).toBeTruthy();
     fireEvent.press(screen.getByText("Повторить"));
     expect(refetch).toHaveBeenCalled();
   });

@@ -108,7 +108,7 @@ describe("useDonationIap — tiers", () => {
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
 
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.loadError).toBe("catalog"));
   });
 
   test("returns no tiers when nothing is active", async () => {
@@ -168,7 +168,7 @@ describe("useDonationIap — tiers", () => {
       });
 
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.isError).toBe(true);
+      expect(result.current.loadError).toBe("store");
     } finally {
       jest.useRealTimers();
     }
@@ -198,7 +198,7 @@ describe("useDonationIap — tiers", () => {
     act(() => result.current.refetch());
 
     await waitFor(() => expect(reconnect).toHaveBeenCalled());
-    expect(result.current.isError).toBe(false);
+    expect(result.current.loadError).toBeNull();
     expect(result.current.tiers).toEqual([]);
   });
 
@@ -212,7 +212,7 @@ describe("useDonationIap — tiers", () => {
 
     act(() => result.current.refetch());
 
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.loadError).toBe("store"));
     expect(result.current.isLoading).toBe(false);
   });
 
@@ -226,7 +226,7 @@ describe("useDonationIap — tiers", () => {
 
     act(() => result.current.refetch());
 
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.loadError).toBe("store"));
   });
 
   test("refetch(): does not reconnect a store that is already connected", async () => {
@@ -251,12 +251,12 @@ describe("useDonationIap — tiers", () => {
     mockIAP({ fetchProducts });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.loadError).toBe("store"));
 
     fetchProducts.mockClear();
     act(() => result.current.refetch());
 
-    expect(result.current.isError).toBe(false);
+    expect(result.current.loadError).toBeNull();
     expect(fetchProducts).toHaveBeenCalledWith({
       skus: ["donation_thanks"],
       type: "in-app",
@@ -543,7 +543,7 @@ describe("useDonationIap — purchase", () => {
         "Не удалось восстановить покупки. Проверьте подключение к интернету",
       ),
     );
-    expect(result.current.isError).toBe(false);
+    expect(result.current.loadError).toBeNull();
     expect(result.current.tiers).toHaveLength(1);
   });
 });

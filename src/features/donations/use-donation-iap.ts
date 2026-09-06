@@ -13,10 +13,12 @@ export type DonationTierView = DonationTier & {
   displayPrice: string;
 };
 
+export type DonationLoadError = "catalog" | "store";
+
 type UseDonationIapResult = {
   tiers: DonationTierView[];
   isLoading: boolean;
-  isError: boolean;
+  loadError: DonationLoadError | null;
   refetch: () => void;
   ownedProductIds: Set<string>;
   purchasingProductId: string | null;
@@ -104,11 +106,15 @@ export function useDonationIap(): UseDonationIapResult {
     [visibleTiers, prices],
   );
 
+  let loadError: DonationLoadError | null = null;
+  if (productIdsQuery.isError) loadError = "catalog";
+  else if (storeUnavailable) loadError = "store";
+
   return {
     tiers,
     isLoading:
       productIdsQuery.isLoading || (hasCatalog && !fetchAttempted && !storeUnavailable),
-    isError: productIdsQuery.isError || storeUnavailable,
+    loadError,
     refetch: () => {
       setConnectionTimedOut(false);
       setRetryToken((token) => token + 1);
