@@ -50,14 +50,22 @@ const DISCONNECTED_CODES: readonly ErrorCode[] = [
   ErrorCode.NotPrepared,
   ErrorCode.ServiceDisconnected,
   ErrorCode.InitConnection,
+  ErrorCode.ServiceError,
 ];
+
+const SERVICE_DISCONNECTED_RESPONSE_CODE = -1;
 
 // Play drops the billing service on its own — a Play Store update, a long
 // backgrounded app — and expo-iap keeps reporting `connected: true` afterwards,
 // so a dead connection only shows up as a rejection from the next store call.
 function isStoreDisconnected(error: unknown): boolean {
-  if (typeof error !== "object" || error === null || !("code" in error)) return false;
-  return DISCONNECTED_CODES.includes((error as { code: ErrorCode }).code);
+  if (typeof error !== "object" || error === null) return false;
+  const { code, responseCode } = error as {
+    code?: ErrorCode;
+    responseCode?: number;
+  };
+  if (responseCode === SERVICE_DISCONNECTED_RESPONSE_CODE) return true;
+  return code !== undefined && DISCONNECTED_CODES.includes(code);
 }
 
 const SessionContext = createContext<DonationIapSession | null>(null);

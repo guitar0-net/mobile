@@ -292,6 +292,30 @@ describe("DonationIapProvider", () => {
     expect(result.current.storeError).toBe(false);
   });
 
+  test("reconnects when the dropped connection is only named by the Play response code", async () => {
+    const fetchProducts = jest
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("Failed to query product"), {
+          code: ErrorCode.QueryProduct,
+          responseCode: -1,
+        }),
+      )
+      .mockResolvedValue(undefined);
+    const reconnect = jest.fn().mockResolvedValue(true);
+    mockIAP({ fetchProducts, reconnect });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => {
+      await result.current.fetchPrices(["donation_thanks"]);
+    });
+
+    expect(reconnect).toHaveBeenCalledTimes(1);
+    expect(fetchProducts).toHaveBeenCalledTimes(2);
+    expect(result.current.storeError).toBe(false);
+  });
+
   test("reports why a purchase request never reached the store", async () => {
     const requestPurchase = jest.fn().mockRejectedValue(
       Object.assign(new Error("billing service gone"), {
@@ -344,6 +368,24 @@ describe("DonationIapProvider", () => {
       await result.current.fetchPrices(["donation_thanks"]);
     });
     expect(result.current.storeError).toBe(false);
+  });
+
+  test("reconnects and re-checks purchases after Play drops the billing service", async () => {
+    const getAvailablePurchases = jest
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("Play Store service is not connected"), {
+          code: ErrorCode.ServiceError,
+        }),
+      )
+      .mockResolvedValue(undefined);
+    const reconnect = jest.fn().mockResolvedValue(true);
+    mockIAP({ getAvailablePurchases, reconnect });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(2));
+    expect(reconnect).toHaveBeenCalledTimes(1);
   });
 
   test("keeps the store usable when re-checking purchases fails", async () => {
