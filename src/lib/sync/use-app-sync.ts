@@ -71,6 +71,7 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
       setFailure(null);
       setStatus("success");
     } catch (error) {
+      if (__DEV__) console.warn("[sync] failed:", error);
       setFailure(describeSyncFailure(error));
       setStatus(isFirstLaunch ? "error" : "stale");
     }

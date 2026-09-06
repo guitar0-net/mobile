@@ -15,6 +15,12 @@ console.error = (...args) => {
   originalConsoleError(...args);
 };
 
+const originalConsoleWarn = console.warn;
+console.warn = (...args) => {
+  if (typeof args[0] === "string" && args[0].startsWith("[sync] failed:")) return;
+  originalConsoleWarn(...args);
+};
+
 // AsyncStorage is only read by the pre-5.0 progress import; the package ships
 // an in-memory mock so tests never touch native storage.
 jest.mock("@react-native-async-storage/async-storage", () =>

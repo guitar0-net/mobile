@@ -12,6 +12,7 @@ import migrations from "../../../drizzle/migrations";
 export type AppDb = ReturnType<typeof drizzle<typeof schema>>;
 
 let db: AppDb | null = null;
+let isMigrated = false;
 
 function openDb(): AppDb {
   if (!db) {
@@ -29,6 +30,7 @@ export function initDb(): Promise<AppDb> {
   initPromise ??= (async () => {
     const database = openDb();
     await migrate(database, migrations);
+    isMigrated = true;
     return database;
   })().catch((error: unknown) => {
     initPromise = null;
@@ -38,7 +40,7 @@ export function initDb(): Promise<AppDb> {
 }
 
 export function getDb(): AppDb {
-  if (!db) {
+  if (!db || !isMigrated) {
     throw new Error("Database not initialised — call initDb() before getDb()");
   }
   return db;
@@ -47,6 +49,7 @@ export function getDb(): AppDb {
 export function _resetDbForTesting(): void {
   db = null;
   initPromise = null;
+  isMigrated = false;
 }
 
 export {
