@@ -27,7 +27,7 @@ export function isPermanentVerifyRejection(error: unknown): boolean {
 export function describeVerifyError(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 502) {
-      return "Магазин временно недоступен. Попробуйте ещё раз позже";
+      return "Покупка ещё не подтверждена. Мы попробуем ещё раз позже";
     }
     if (isPermanentVerifyRejection(error)) {
       return "Не удалось подтвердить покупку";

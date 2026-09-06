@@ -28,13 +28,15 @@ import {
 import type { DonationPlatform } from "./verify-payload";
 import { buildVerifyPayload } from "./verify-payload";
 
+export type DonationPurchaseState = "pending" | "confirmed";
+
 type DonationIapSession = {
   connected: boolean;
   storeError: boolean;
   prices: ReadonlyMap<string, string>;
   fetchPrices: (productIds: readonly string[]) => Promise<void>;
   retryConnection: () => void;
-  ownedProductIds: Set<string>;
+  purchaseStates: ReadonlyMap<string, DonationPurchaseState>;
   purchasingProductId: string | null;
   isRestoring: boolean;
   errorMessage: string | null;
@@ -241,14 +243,17 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     }
   }, [availablePurchases, reconcile]);
 
-  const ownedProductIds = useMemo(() => {
-    const merged = new Set(confirmedProductIds);
+  const purchaseStates = useMemo(() => {
+    const states = new Map<string, DonationPurchaseState>();
     for (const availablePurchase of availablePurchases) {
       if (isDonationProduct(availablePurchase.productId)) {
-        merged.add(availablePurchase.productId);
+        states.set(availablePurchase.productId, "pending");
       }
     }
-    return merged;
+    for (const productId of confirmedProductIds) {
+      states.set(productId, "confirmed");
+    }
+    return states;
   }, [confirmedProductIds, availablePurchases]);
 
   const prices = useMemo(
@@ -323,7 +328,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       prices,
       fetchPrices,
       retryConnection,
-      ownedProductIds,
+      purchaseStates,
       purchasingProductId,
       isRestoring,
       errorMessage,
@@ -336,7 +341,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       prices,
       fetchPrices,
       retryConnection,
-      ownedProductIds,
+      purchaseStates,
       purchasingProductId,
       isRestoring,
       errorMessage,

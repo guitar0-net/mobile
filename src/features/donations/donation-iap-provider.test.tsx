@@ -8,6 +8,8 @@ import { ErrorCode, useIAP } from "expo-iap";
 import React from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
+import { ApiError } from "@/lib/network";
+
 import { verifyPurchase } from "./api";
 import { DonationIapProvider, useDonationIapSession } from "./donation-iap-provider";
 
@@ -168,7 +170,17 @@ describe("DonationIapProvider", () => {
     });
 
     await waitFor(() => expect(result.current.errorMessage).toBeNull());
-    expect(result.current.ownedProductIds.has("donation_thanks")).toBe(true);
+    expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed");
+  });
+
+  test("holds a store purchase as pending until the server verifies it", async () => {
+    mockVerifyPurchase.mockRejectedValue(new ApiError(502, "Store unavailable"));
+    mockIAP({ availablePurchases: [makePurchase({ productId: "donation_thanks" })] });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() => expect(mockVerifyPurchase).toHaveBeenCalled());
+    expect(result.current.purchaseStates.get("donation_thanks")).toBe("pending");
   });
 
   test("leaves purchases of products this build doesn't sell alone", async () => {
@@ -183,7 +195,7 @@ describe("DonationIapProvider", () => {
     await waitFor(() => expect(result.current.connected).toBe(true));
     expect(mockVerifyPurchase).not.toHaveBeenCalled();
     expect(finishTransaction).not.toHaveBeenCalled();
-    expect(result.current.ownedProductIds.has("premium2")).toBe(false);
+    expect(result.current.purchaseStates.has("premium2")).toBe(false);
   });
 
   test("re-checks the store's purchases when the app returns to the foreground", async () => {

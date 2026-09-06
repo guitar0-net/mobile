@@ -8,27 +8,34 @@ import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { useColors } from "@/lib/themes";
 
+import type { DonationPurchaseState } from "../donation-iap-provider";
 import type { DonationTierView } from "../use-donation-iap";
 
 type Props = {
   tier: DonationTierView;
-  isOwned: boolean;
+  purchaseState: DonationPurchaseState | undefined;
   isPurchasing: boolean;
   onPress: () => void;
 };
 
-export function DonationTierRow({ tier, isOwned, isPurchasing, onPress }: Props) {
+export function DonationTierRow({ tier, purchaseState, isPurchasing, onPress }: Props) {
   const colors = useColors();
-  const disabled = isOwned || isPurchasing;
+  const disabled = purchaseState !== undefined || isPurchasing;
 
   let trailing: React.ReactNode;
-  if (isOwned) {
+  if (purchaseState === "confirmed") {
     trailing = (
       <SymbolView
         name={{ ios: "checkmark.circle.fill", android: "check_circle" }}
         size={20}
         tintColor={colors.success}
       />
+    );
+  } else if (purchaseState === "pending") {
+    trailing = (
+      <Text variant="caption" className="text-muted-fg">
+        Проверяем…
+      </Text>
     );
   } else if (isPurchasing) {
     trailing = (

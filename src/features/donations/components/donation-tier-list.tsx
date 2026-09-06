@@ -22,7 +22,7 @@ export function DonationTierList() {
     isLoading,
     loadError,
     refetch,
-    ownedProductIds,
+    purchaseStates,
     purchasingProductId,
     isRestoring,
     errorMessage,
@@ -74,7 +74,7 @@ export function DonationTierList() {
           <View key={tier.productId}>
             <DonationTierRow
               tier={tier}
-              isOwned={ownedProductIds.has(tier.productId)}
+              purchaseState={purchaseStates.get(tier.productId)}
               isPurchasing={purchasingProductId === tier.productId}
               onPress={() => purchase(tier.productId)}
             />

@@ -13,9 +13,9 @@ function makePurchaseError(code: ErrorCode) {
 }
 
 describe("describeVerifyError", () => {
-  test("tells the user to retry later on a 502 (store unreachable)", () => {
+  test("promises another attempt on a 502 (store unreachable)", () => {
     expect(describeVerifyError(new ApiError(502))).toBe(
-      "Магазин временно недоступен. Попробуйте ещё раз позже",
+      "Покупка ещё не подтверждена. Мы попробуем ещё раз позже",
     );
   });
 

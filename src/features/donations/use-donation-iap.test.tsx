@@ -314,7 +314,9 @@ describe("useDonationIap — purchase", () => {
 
     act(() => getOptions().onPurchaseSuccess?.(purchase));
 
-    await waitFor(() => expect(result.current.ownedProductIds.has("donation_thanks")));
+    await waitFor(() =>
+      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
+    );
     expect(mockVerifyPurchase).toHaveBeenCalledWith(
       expect.objectContaining({
         product_id: "donation_thanks",
@@ -352,7 +354,7 @@ describe("useDonationIap — purchase", () => {
     act(() => getOptions().onPurchaseSuccess?.(purchase));
 
     await waitFor(() =>
-      expect(result.current.ownedProductIds.has("donation_thanks")).toBe(true),
+      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
     );
     expect(result.current.errorMessage).toBeNull();
   });
@@ -417,7 +419,7 @@ describe("useDonationIap — purchase", () => {
     act(() => getOptions().onPurchaseSuccess?.(makePurchase()));
 
     await waitFor(() =>
-      expect(result.current.ownedProductIds.has("donation_thanks")).toBe(true),
+      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
     );
     expect(result.current.errorMessage).toBeNull();
   });
@@ -447,13 +449,13 @@ describe("useDonationIap — purchase", () => {
     expect(mockVerifyPurchase).toHaveBeenCalledTimes(1);
   });
 
-  test("merges purchases the store already knows about into ownedProductIds", async () => {
+  test("confirms purchases the store already knows about", async () => {
     mockIAP({ availablePurchases: [makePurchase({ productId: "donation_coffee" })] });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
 
     await waitFor(() =>
-      expect(result.current.ownedProductIds.has("donation_coffee")).toBe(true),
+      expect(result.current.purchaseStates.get("donation_coffee")).toBe("confirmed"),
     );
   });
 
