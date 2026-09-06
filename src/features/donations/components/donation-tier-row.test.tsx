@@ -66,13 +66,27 @@ describe("DonationTierRow", () => {
     render(
       <DonationTierRow
         tier={baseTier}
-        purchaseState="pending"
+        purchaseState="verifying"
         isPurchasing={false}
         onPress={jest.fn()}
       />,
       { wrapper },
     );
     expect(screen.getByText("Проверяем…")).toBeTruthy();
+    expect(screen.queryByText("$1.00")).toBeNull();
+  });
+
+  test("says it is waiting for payment while the store collects a slow one", () => {
+    render(
+      <DonationTierRow
+        tier={baseTier}
+        purchaseState="awaiting-payment"
+        isPurchasing={false}
+        onPress={jest.fn()}
+      />,
+      { wrapper },
+    );
+    expect(screen.getByText("Ожидаем оплату")).toBeTruthy();
     expect(screen.queryByText("$1.00")).toBeNull();
   });
 
@@ -128,7 +142,7 @@ describe("DonationTierRow", () => {
     render(
       <DonationTierRow
         tier={baseTier}
-        purchaseState="pending"
+        purchaseState="verifying"
         isPurchasing={false}
         onPress={onPress}
       />,

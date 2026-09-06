@@ -148,7 +148,7 @@ describe("DonationTierList", () => {
   test("says a purchase is still being checked while the server has not confirmed it", () => {
     mockUseDonationIap.mockReturnValue({
       ...defaults,
-      purchaseStates: new Map([["donation_thanks", "pending" as const]]),
+      purchaseStates: new Map([["donation_thanks", "verifying" as const]]),
       tiers: [
         {
           productId: "donation_thanks",

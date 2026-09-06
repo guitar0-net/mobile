@@ -173,14 +173,65 @@ describe("DonationIapProvider", () => {
     expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed");
   });
 
-  test("holds a store purchase as pending until the server verifies it", async () => {
+  test("holds a store purchase as verifying until the server records it", async () => {
     mockVerifyPurchase.mockRejectedValue(new ApiError(502, "Store unavailable"));
     mockIAP({ availablePurchases: [makePurchase({ productId: "donation_thanks" })] });
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await waitFor(() => expect(mockVerifyPurchase).toHaveBeenCalled());
-    expect(result.current.purchaseStates.get("donation_thanks")).toBe("pending");
+    expect(result.current.purchaseStates.get("donation_thanks")).toBe("verifying");
+  });
+
+  test("stops calling a tier bought once the server rejects its receipt for good", async () => {
+    const finishTransaction = jest.fn().mockResolvedValue(undefined);
+    mockVerifyPurchase.mockRejectedValue(new ApiError(422, "Purchase was cancelled."));
+    mockIAP({
+      availablePurchases: [makePurchase({ productId: "donation_thanks" })],
+      finishTransaction,
+    });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.purchaseStates.has("donation_thanks")).toBe(false),
+    );
+    expect(finishTransaction).toHaveBeenCalled();
+  });
+
+  test("leaves a purchase whose payment has not cleared unverified and unfinished", async () => {
+    const finishTransaction = jest.fn().mockResolvedValue(undefined);
+    mockIAP({
+      availablePurchases: [
+        makePurchase({ productId: "donation_thanks", purchaseState: "pending" }),
+      ],
+      finishTransaction,
+    });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.purchaseStates.get("donation_thanks")).toBe(
+        "awaiting-payment",
+      ),
+    );
+    expect(mockVerifyPurchase).not.toHaveBeenCalled();
+    expect(finishTransaction).not.toHaveBeenCalled();
+  });
+
+  test("asks the store for the purchase list when a slow payment is started", async () => {
+    const getAvailablePurchases = jest.fn().mockResolvedValue(undefined);
+    const { getOptions } = mockIAP({ getAvailablePurchases });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(1));
+
+    await act(async () =>
+      getOptions().onPurchaseSuccess?.(makePurchase({ purchaseState: "pending" })),
+    );
+
+    expect(mockVerifyPurchase).not.toHaveBeenCalled();
+    expect(getAvailablePurchases).toHaveBeenCalledTimes(2);
   });
 
   test("leaves purchases of products this build doesn't sell alone", async () => {

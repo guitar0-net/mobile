@@ -31,10 +31,16 @@ export function DonationTierRow({ tier, purchaseState, isPurchasing, onPress }: 
         tintColor={colors.success}
       />
     );
-  } else if (purchaseState === "pending") {
+  } else if (purchaseState === "verifying") {
     trailing = (
       <Text variant="caption" className="text-muted-fg">
         Проверяем…
+      </Text>
+    );
+  } else if (purchaseState === "awaiting-payment") {
+    trailing = (
+      <Text variant="caption" className="text-muted-fg">
+        Ожидаем оплату
       </Text>
     );
   } else if (isPurchasing) {

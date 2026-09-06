@@ -28,7 +28,13 @@ import {
 import type { DonationPlatform } from "./verify-payload";
 import { buildVerifyPayload } from "./verify-payload";
 
-export type DonationPurchaseState = "pending" | "confirmed";
+/**
+ * `awaiting-payment` — the store is still collecting a slow payment;
+ * `verifying` — the receipt is in hand but our server has not recorded it yet;
+ * `confirmed` — the server verified it. A receipt the server rejects for good
+ * leaves the map entirely: it is no longer a reason to call the tier bought.
+ */
+export type DonationPurchaseState = "awaiting-payment" | "verifying" | "confirmed";
 
 type DonationIapSession = {
   connected: boolean;
@@ -70,6 +76,14 @@ function isStoreDisconnected(error: unknown): boolean {
   return code !== undefined && DISCONNECTED_CODES.includes(code);
 }
 
+function purchaseKey(purchase: Purchase): string {
+  return purchase.transactionId ?? purchase.id;
+}
+
+function isAwaitingPayment(purchase: Purchase): boolean {
+  return purchase.purchaseState === "pending";
+}
+
 const SessionContext = createContext<DonationIapSession | null>(null);
 
 /**
@@ -94,6 +108,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   );
   const reconcilingRef = useRef<Set<string>>(new Set());
   const reconciledRef = useRef<Set<string>>(new Set());
+  const [rejectedKeys, setRejectedKeys] = useState<ReadonlySet<string>>(new Set());
   const [storeError, setStoreError] = useState(false);
 
   const {
@@ -109,6 +124,10 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   } = useIAP({
     onPurchaseSuccess: (purchase) => {
       setPurchasingProductId(null);
+      if (isAwaitingPayment(purchase)) {
+        void refreshPurchases();
+        return;
+      }
       void reconcile(purchase);
     },
     onPurchaseError: (error) => {
@@ -148,7 +167,8 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
 
   const reconcile = useCallback(
     async (purchase: Purchase, { silent = false } = {}) => {
-      const key = purchase.transactionId ?? purchase.id;
+      if (isAwaitingPayment(purchase)) return;
+      const key = purchaseKey(purchase);
       if (reconciledRef.current.has(key) || reconcilingRef.current.has(key)) return;
       reconcilingRef.current.add(key);
       try {
@@ -159,8 +179,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           // and re-delivered by StoreKit on every launch, so a doomed receipt
           // still has to be finished.
           if (isPermanentVerifyRejection(error)) {
-            const finished = await finish(purchase);
-            if (finished) reconciledRef.current.add(key);
+            await finish(purchase);
+            reconciledRef.current.add(key);
+            setRejectedKeys((prev) => new Set(prev).add(key));
           }
           if (!silent) setErrorMessage(describeVerifyError(error));
           return;
@@ -246,15 +267,18 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const purchaseStates = useMemo(() => {
     const states = new Map<string, DonationPurchaseState>();
     for (const availablePurchase of availablePurchases) {
-      if (isDonationProduct(availablePurchase.productId)) {
-        states.set(availablePurchase.productId, "pending");
-      }
+      if (!isDonationProduct(availablePurchase.productId)) continue;
+      if (rejectedKeys.has(purchaseKey(availablePurchase))) continue;
+      states.set(
+        availablePurchase.productId,
+        isAwaitingPayment(availablePurchase) ? "awaiting-payment" : "verifying",
+      );
     }
     for (const productId of confirmedProductIds) {
       states.set(productId, "confirmed");
     }
     return states;
-  }, [confirmedProductIds, availablePurchases]);
+  }, [confirmedProductIds, availablePurchases, rejectedKeys]);
 
   const prices = useMemo(
     () => new Map(products.map((product) => [product.id, product.displayPrice])),

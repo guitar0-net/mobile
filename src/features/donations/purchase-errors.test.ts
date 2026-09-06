@@ -6,13 +6,27 @@ import { ErrorCode } from "expo-iap";
 
 import { ApiError } from "@/lib/network";
 
-import { describePurchaseError, describeVerifyError } from "./purchase-errors";
+import {
+  describePurchaseError,
+  describeVerifyError,
+  isPermanentVerifyRejection,
+} from "./purchase-errors";
 
 function makePurchaseError(code: ErrorCode) {
   return { code, message: "irrelevant" };
 }
 
 describe("describeVerifyError", () => {
+  test("says the payment is still being collected on a 409", () => {
+    expect(describeVerifyError(new ApiError(409))).toBe(
+      "Ожидаем оплату. Подтвердим, как только магазин её проведёт",
+    );
+  });
+
+  test("does not treat a 409 as a permanent rejection", () => {
+    expect(isPermanentVerifyRejection(new ApiError(409))).toBe(false);
+  });
+
   test("promises another attempt on a 502 (store unreachable)", () => {
     expect(describeVerifyError(new ApiError(502))).toBe(
       "Покупка ещё не подтверждена. Мы попробуем ещё раз позже",
