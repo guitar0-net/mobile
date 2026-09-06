@@ -23,10 +23,18 @@ function openDb(): AppDb {
   return db;
 }
 
-export async function initDb(): Promise<AppDb> {
-  const database = openDb();
-  await migrate(database, migrations);
-  return database;
+let initPromise: Promise<AppDb> | null = null;
+
+export function initDb(): Promise<AppDb> {
+  initPromise ??= (async () => {
+    const database = openDb();
+    await migrate(database, migrations);
+    return database;
+  })().catch((error: unknown) => {
+    initPromise = null;
+    throw error;
+  });
+  return initPromise;
 }
 
 export function getDb(): AppDb {
@@ -38,6 +46,7 @@ export function getDb(): AppDb {
 
 export function _resetDbForTesting(): void {
   db = null;
+  initPromise = null;
 }
 
 export {
@@ -53,6 +62,7 @@ export {
   songSchemes,
   activityEvents,
   activityDaily,
+  confirmedDonations,
   VIDEO_DOWNLOAD_STATUSES,
   ACTIVITY_EVENT_TYPES,
 } from "./schema";
@@ -82,6 +92,8 @@ export type {
   NewActivityEvent,
   ActivityDaily,
   NewActivityDaily,
+  ConfirmedDonation,
+  NewConfirmedDonation,
   VideoDownloadStatus,
   ActivityEventType,
 } from "./schema";

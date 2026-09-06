@@ -8,6 +8,7 @@ import type { Purchase, UseIAPOptions } from "expo-iap";
 import { ErrorCode, useIAP } from "expo-iap";
 import React from "react";
 
+import { _resetDbForTesting } from "@/lib/db";
 import { ApiError } from "@/lib/network";
 
 import { getActiveDonationProductIds, verifyPurchase } from "./api";
@@ -83,6 +84,7 @@ function mockIAP(overrides: Partial<IAPMock> = {}) {
 }
 
 beforeEach(() => {
+  _resetDbForTesting();
   jest.clearAllMocks();
   mockGetActiveDonationProductIds.mockResolvedValue([]);
   mockIAP();

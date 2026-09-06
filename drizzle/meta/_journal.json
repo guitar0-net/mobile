@@ -15,6 +15,13 @@
       "when": 1783238507585,
       "tag": "0001_melodic_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788708136151,
+      "tag": "0002_mature_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }
