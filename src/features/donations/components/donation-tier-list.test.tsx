@@ -21,9 +21,9 @@ function wrapper({ children }: { children: ReactNode }) {
 const defaults: ReturnType<typeof useDonationIap> = {
   tiers: [],
   isLoading: false,
-  isError: false,
+  loadError: null,
   refetch: jest.fn(),
-  ownedProductIds: new Set(),
+  purchaseStates: new Map(),
   purchasingProductId: null,
   isRestoring: false,
   errorMessage: null,
@@ -36,12 +36,30 @@ beforeEach(() => {
 });
 
 describe("DonationTierList", () => {
-  test("shows an error with a retry button when loading failed", () => {
+  test("blames the connection when the server withheld the tier list", () => {
     const refetch = jest.fn();
-    mockUseDonationIap.mockReturnValue({ ...defaults, isError: true, refetch });
+    mockUseDonationIap.mockReturnValue({ ...defaults, loadError: "catalog", refetch });
 
     render(<DonationTierList />, { wrapper });
 
+    expect(
+      screen.getByText(
+        "Не удалось загрузить варианты поддержки. Проверьте подключение к интернету",
+      ),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByText("Повторить"));
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  test("blames the store, not the connection, when the store withheld its prices", () => {
+    const refetch = jest.fn();
+    mockUseDonationIap.mockReturnValue({ ...defaults, loadError: "store", refetch });
+
+    render(<DonationTierList />, { wrapper });
+
+    expect(
+      screen.getByText("Магазин недоступен. Попробуйте ещё раз позже"),
+    ).toBeTruthy();
     fireEvent.press(screen.getByText("Повторить"));
     expect(refetch).toHaveBeenCalled();
   });
@@ -107,10 +125,10 @@ describe("DonationTierList", () => {
     expect(purchase).toHaveBeenCalledWith("donation_thanks");
   });
 
-  test("shows a checkmark for an owned tier instead of its price", () => {
+  test("shows a checkmark for a confirmed tier instead of its price", () => {
     mockUseDonationIap.mockReturnValue({
       ...defaults,
-      ownedProductIds: new Set(["donation_thanks"]),
+      purchaseStates: new Map([["donation_thanks", "confirmed" as const]]),
       tiers: [
         {
           productId: "donation_thanks",
@@ -124,12 +142,33 @@ describe("DonationTierList", () => {
     render(<DonationTierList />, { wrapper });
 
     expect(screen.queryByText("$1.00")).toBeNull();
+    expect(screen.queryByText("Проверяем…")).toBeNull();
+  });
+
+  test("says a purchase is still being checked while the server has not confirmed it", () => {
+    mockUseDonationIap.mockReturnValue({
+      ...defaults,
+      purchaseStates: new Map([["donation_thanks", "verifying" as const]]),
+      tiers: [
+        {
+          productId: "donation_thanks",
+          label: "Сказать спасибо",
+          icon: { ios: "heart.fill", android: "favorite" },
+          displayPrice: "$1.00",
+        },
+      ],
+    });
+
+    render(<DonationTierList />, { wrapper });
+
+    expect(screen.getByText("Проверяем…")).toBeTruthy();
+    expect(screen.queryByText("$1.00")).toBeNull();
   });
 
   test("shows an inline error message from the purchase hook", () => {
     mockUseDonationIap.mockReturnValue({
       ...defaults,
-      errorMessage: "Магазин временно недоступен. Попробуйте ещё раз позже",
+      errorMessage: "Покупка ещё не подтверждена. Мы попробуем ещё раз позже",
       tiers: [
         {
           productId: "donation_thanks",
@@ -143,7 +182,7 @@ describe("DonationTierList", () => {
     render(<DonationTierList />, { wrapper });
 
     expect(
-      screen.getByText("Магазин временно недоступен. Попробуйте ещё раз позже"),
+      screen.getByText("Покупка ещё не подтверждена. Мы попробуем ещё раз позже"),
     ).toBeTruthy();
   });
 

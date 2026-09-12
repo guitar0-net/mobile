@@ -8,6 +8,7 @@ import type { Purchase, UseIAPOptions } from "expo-iap";
 import { ErrorCode, useIAP } from "expo-iap";
 import React from "react";
 
+import { _resetDbForTesting } from "@/lib/db";
 import { ApiError } from "@/lib/network";
 
 import { getActiveDonationProductIds, verifyPurchase } from "./api";
@@ -83,6 +84,7 @@ function mockIAP(overrides: Partial<IAPMock> = {}) {
 }
 
 beforeEach(() => {
+  _resetDbForTesting();
   jest.clearAllMocks();
   mockGetActiveDonationProductIds.mockResolvedValue([]);
   mockIAP();
@@ -108,7 +110,7 @@ describe("useDonationIap — tiers", () => {
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
 
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.loadError).toBe("catalog"));
   });
 
   test("returns no tiers when nothing is active", async () => {
@@ -168,7 +170,7 @@ describe("useDonationIap — tiers", () => {
       });
 
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.isError).toBe(true);
+      expect(result.current.loadError).toBe("store");
     } finally {
       jest.useRealTimers();
     }
@@ -198,7 +200,7 @@ describe("useDonationIap — tiers", () => {
     act(() => result.current.refetch());
 
     await waitFor(() => expect(reconnect).toHaveBeenCalled());
-    expect(result.current.isError).toBe(false);
+    expect(result.current.loadError).toBeNull();
     expect(result.current.tiers).toEqual([]);
   });
 
@@ -212,7 +214,7 @@ describe("useDonationIap — tiers", () => {
 
     act(() => result.current.refetch());
 
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.loadError).toBe("store"));
     expect(result.current.isLoading).toBe(false);
   });
 
@@ -226,7 +228,7 @@ describe("useDonationIap — tiers", () => {
 
     act(() => result.current.refetch());
 
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.loadError).toBe("store"));
   });
 
   test("refetch(): does not reconnect a store that is already connected", async () => {
@@ -251,12 +253,12 @@ describe("useDonationIap — tiers", () => {
     mockIAP({ fetchProducts });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.loadError).toBe("store"));
 
     fetchProducts.mockClear();
     act(() => result.current.refetch());
 
-    expect(result.current.isError).toBe(false);
+    expect(result.current.loadError).toBeNull();
     expect(fetchProducts).toHaveBeenCalledWith({
       skus: ["donation_thanks"],
       type: "in-app",
@@ -314,7 +316,9 @@ describe("useDonationIap — purchase", () => {
 
     act(() => getOptions().onPurchaseSuccess?.(purchase));
 
-    await waitFor(() => expect(result.current.ownedProductIds.has("donation_thanks")));
+    await waitFor(() =>
+      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
+    );
     expect(mockVerifyPurchase).toHaveBeenCalledWith(
       expect.objectContaining({
         product_id: "donation_thanks",
@@ -352,7 +356,7 @@ describe("useDonationIap — purchase", () => {
     act(() => getOptions().onPurchaseSuccess?.(purchase));
 
     await waitFor(() =>
-      expect(result.current.ownedProductIds.has("donation_thanks")).toBe(true),
+      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
     );
     expect(result.current.errorMessage).toBeNull();
   });
@@ -417,7 +421,7 @@ describe("useDonationIap — purchase", () => {
     act(() => getOptions().onPurchaseSuccess?.(makePurchase()));
 
     await waitFor(() =>
-      expect(result.current.ownedProductIds.has("donation_thanks")).toBe(true),
+      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
     );
     expect(result.current.errorMessage).toBeNull();
   });
@@ -447,13 +451,13 @@ describe("useDonationIap — purchase", () => {
     expect(mockVerifyPurchase).toHaveBeenCalledTimes(1);
   });
 
-  test("merges purchases the store already knows about into ownedProductIds", async () => {
+  test("confirms purchases the store already knows about", async () => {
     mockIAP({ availablePurchases: [makePurchase({ productId: "donation_coffee" })] });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
 
     await waitFor(() =>
-      expect(result.current.ownedProductIds.has("donation_coffee")).toBe(true),
+      expect(result.current.purchaseStates.get("donation_coffee")).toBe("confirmed"),
     );
   });
 
@@ -543,7 +547,7 @@ describe("useDonationIap — purchase", () => {
         "Не удалось восстановить покупки. Проверьте подключение к интернету",
       ),
     );
-    expect(result.current.isError).toBe(false);
+    expect(result.current.loadError).toBeNull();
     expect(result.current.tiers).toHaveLength(1);
   });
 });

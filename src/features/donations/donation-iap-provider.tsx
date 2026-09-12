@@ -20,6 +20,11 @@ import { getDeviceId } from "@/lib/device-id";
 import { verifyPurchase } from "./api";
 import { isDonationProduct } from "./catalog";
 import {
+  type ConfirmedDonations,
+  loadConfirmedDonations,
+  saveConfirmedDonation,
+} from "./confirmed-donations";
+import {
   describePurchaseError,
   describeVerifyError,
   isPermanentVerifyRejection,
@@ -28,13 +33,21 @@ import {
 import type { DonationPlatform } from "./verify-payload";
 import { buildVerifyPayload } from "./verify-payload";
 
+/**
+ * `awaiting-payment` — the store is still collecting a slow payment;
+ * `verifying` — the receipt is in hand but our server has not recorded it yet;
+ * `confirmed` — the server verified it. A receipt the server rejects for good
+ * leaves the map entirely: it is no longer a reason to call the tier bought.
+ */
+export type DonationPurchaseState = "awaiting-payment" | "verifying" | "confirmed";
+
 type DonationIapSession = {
   connected: boolean;
   storeError: boolean;
   prices: ReadonlyMap<string, string>;
   fetchPrices: (productIds: readonly string[]) => Promise<void>;
   retryConnection: () => void;
-  ownedProductIds: Set<string>;
+  purchaseStates: ReadonlyMap<string, DonationPurchaseState>;
   purchasingProductId: string | null;
   isRestoring: boolean;
   errorMessage: string | null;
@@ -50,14 +63,30 @@ const DISCONNECTED_CODES: readonly ErrorCode[] = [
   ErrorCode.NotPrepared,
   ErrorCode.ServiceDisconnected,
   ErrorCode.InitConnection,
+  ErrorCode.ServiceError,
 ];
+
+const SERVICE_DISCONNECTED_RESPONSE_CODE = -1;
 
 // Play drops the billing service on its own — a Play Store update, a long
 // backgrounded app — and expo-iap keeps reporting `connected: true` afterwards,
 // so a dead connection only shows up as a rejection from the next store call.
 function isStoreDisconnected(error: unknown): boolean {
-  if (typeof error !== "object" || error === null || !("code" in error)) return false;
-  return DISCONNECTED_CODES.includes((error as { code: ErrorCode }).code);
+  if (typeof error !== "object" || error === null) return false;
+  const { code, responseCode } = error as {
+    code?: ErrorCode;
+    responseCode?: number;
+  };
+  if (responseCode === SERVICE_DISCONNECTED_RESPONSE_CODE) return true;
+  return code !== undefined && DISCONNECTED_CODES.includes(code);
+}
+
+function purchaseKey(purchase: Purchase): string {
+  return purchase.transactionId ?? purchase.id;
+}
+
+function isAwaitingPayment(purchase: Purchase): boolean {
+  return purchase.purchaseState === "pending";
 }
 
 const SessionContext = createContext<DonationIapSession | null>(null);
@@ -79,11 +108,13 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const [isRestoring, setIsRestoring] = useState(false);
   const restoringRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [confirmedProductIds, setConfirmedProductIds] = useState<Set<string>>(
-    new Set(),
+  const [confirmedReceipts, setConfirmedReceipts] = useState<ConfirmedDonations>(
+    new Map(),
   );
   const reconcilingRef = useRef<Set<string>>(new Set());
   const reconciledRef = useRef<Set<string>>(new Set());
+  const [rejectedKeys, setRejectedKeys] = useState<ReadonlySet<string>>(new Set());
+  const [isHydrated, setIsHydrated] = useState(false);
   const [storeError, setStoreError] = useState(false);
 
   const {
@@ -99,6 +130,10 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   } = useIAP({
     onPurchaseSuccess: (purchase) => {
       setPurchasingProductId(null);
+      if (isAwaitingPayment(purchase)) {
+        void refreshPurchases();
+        return;
+      }
       void reconcile(purchase);
     },
     onPurchaseError: (error) => {
@@ -138,34 +173,64 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
 
   const reconcile = useCallback(
     async (purchase: Purchase, { silent = false } = {}) => {
-      const key = purchase.transactionId ?? purchase.id;
+      if (isAwaitingPayment(purchase)) return;
+      const key = purchaseKey(purchase);
       if (reconciledRef.current.has(key) || reconcilingRef.current.has(key)) return;
       reconcilingRef.current.add(key);
       try {
+        let response;
         try {
-          await verifyPurchase(buildVerifyPayload(purchase, PLATFORM, deviceId));
+          response = await verifyPurchase(
+            buildVerifyPayload(purchase, PLATFORM, deviceId),
+          );
         } catch (error) {
           // An unfinished transaction is auto-refunded by Play after three days
           // and re-delivered by StoreKit on every launch, so a doomed receipt
           // still has to be finished.
           if (isPermanentVerifyRejection(error)) {
-            const finished = await finish(purchase);
-            if (finished) reconciledRef.current.add(key);
+            await finish(purchase);
+            reconciledRef.current.add(key);
+            setRejectedKeys((prev) => new Set(prev).add(key));
           }
           if (!silent) setErrorMessage(describeVerifyError(error));
           return;
         }
 
-        setConfirmedProductIds((prev) => new Set(prev).add(purchase.productId));
+        setConfirmedReceipts((prev) => new Map(prev).set(key, purchase.productId));
         setErrorMessage(null);
+        // Persisting only after the store settles the receipt keeps an
+        // unacknowledged purchase coming back until its acknowledgement lands.
         const finished = await finish(purchase);
-        if (finished) reconciledRef.current.add(key);
+        if (!finished) return;
+        reconciledRef.current.add(key);
+        await saveConfirmedDonation(
+          key,
+          purchase.productId,
+          response.verified_at,
+        ).catch(() => {});
       } finally {
         reconcilingRef.current.delete(key);
       }
     },
     [deviceId, finish],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadConfirmedDonations()
+      .then((stored) => {
+        if (cancelled) return;
+        for (const key of stored.keys()) reconciledRef.current.add(key);
+        setConfirmedReceipts((prev) => new Map([...stored, ...prev]));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsHydrated(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Re-checking purchases is background work the user never asked for, so its
   // failure must not hide the tiers. Whether the store works is decided by
@@ -224,6 +289,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   }, [connected, reconnect]);
 
   useEffect(() => {
+    // Reconciling before the stored receipts are back would re-verify every
+    // donation this device has already had confirmed.
+    if (!isHydrated) return;
     for (const availablePurchase of availablePurchases) {
       // The stores also list purchases of products this build knows nothing
       // about — retired SKUs from earlier versions — and the server has no
@@ -231,17 +299,23 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       if (!isDonationProduct(availablePurchase.productId)) continue;
       void reconcile(availablePurchase, { silent: true });
     }
-  }, [availablePurchases, reconcile]);
+  }, [availablePurchases, reconcile, isHydrated]);
 
-  const ownedProductIds = useMemo(() => {
-    const merged = new Set(confirmedProductIds);
+  const purchaseStates = useMemo(() => {
+    const states = new Map<string, DonationPurchaseState>();
     for (const availablePurchase of availablePurchases) {
-      if (isDonationProduct(availablePurchase.productId)) {
-        merged.add(availablePurchase.productId);
-      }
+      if (!isDonationProduct(availablePurchase.productId)) continue;
+      if (rejectedKeys.has(purchaseKey(availablePurchase))) continue;
+      states.set(
+        availablePurchase.productId,
+        isAwaitingPayment(availablePurchase) ? "awaiting-payment" : "verifying",
+      );
     }
-    return merged;
-  }, [confirmedProductIds, availablePurchases]);
+    for (const productId of confirmedReceipts.values()) {
+      states.set(productId, "confirmed");
+    }
+    return states;
+  }, [confirmedReceipts, availablePurchases, rejectedKeys]);
 
   const prices = useMemo(
     () => new Map(products.map((product) => [product.id, product.displayPrice])),
@@ -315,7 +389,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       prices,
       fetchPrices,
       retryConnection,
-      ownedProductIds,
+      purchaseStates,
       purchasingProductId,
       isRestoring,
       errorMessage,
@@ -328,7 +402,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       prices,
       fetchPrices,
       retryConnection,
-      ownedProductIds,
+      purchaseStates,
       purchasingProductId,
       isRestoring,
       errorMessage,

@@ -14,9 +14,11 @@ export const RESTORE_FAILED_MESSAGE =
   "Не удалось восстановить покупки. Проверьте подключение к интернету";
 
 // The server rejects the receipt itself with 400/422 (PurchaseVerificationError
-// and UnknownDonationProductError in its services.py); 502 means it only failed
-// to reach the store, which a retry can still fix.
+// and UnknownDonationProductError in its services.py); 409 means the payment
+// hasn't cleared and 502 that it only failed to reach the store, both of which
+// a later retry can still settle.
 const PERMANENT_REJECTION_STATUSES = [400, 422];
+const PAYMENT_PENDING_STATUS = 409;
 
 export function isPermanentVerifyRejection(error: unknown): boolean {
   return (
@@ -26,8 +28,11 @@ export function isPermanentVerifyRejection(error: unknown): boolean {
 
 export function describeVerifyError(error: unknown): string {
   if (error instanceof ApiError) {
+    if (error.status === PAYMENT_PENDING_STATUS) {
+      return "Ожидаем оплату. Подтвердим, как только магазин её проведёт";
+    }
     if (error.status === 502) {
-      return "Магазин временно недоступен. Попробуйте ещё раз позже";
+      return "Покупка ещё не подтверждена. Мы попробуем ещё раз позже";
     }
     if (isPermanentVerifyRejection(error)) {
       return "Не удалось подтвердить покупку";

@@ -26,7 +26,7 @@ describe("DonationTierRow", () => {
     render(
       <DonationTierRow
         tier={baseTier}
-        isOwned={false}
+        purchaseState={undefined}
         isPurchasing={false}
         onPress={jest.fn()}
       />,
@@ -39,7 +39,7 @@ describe("DonationTierRow", () => {
     render(
       <DonationTierRow
         tier={baseTier}
-        isOwned={false}
+        purchaseState={undefined}
         isPurchasing={false}
         onPress={jest.fn()}
       />,
@@ -48,16 +48,45 @@ describe("DonationTierRow", () => {
     expect(screen.getByText("$1.00")).toBeTruthy();
   });
 
-  test("shows a checkmark and hides the price once owned", () => {
+  test("shows a checkmark and hides the price once the server confirms", () => {
     render(
       <DonationTierRow
         tier={baseTier}
-        isOwned={true}
+        purchaseState="confirmed"
         isPurchasing={false}
         onPress={jest.fn()}
       />,
       { wrapper },
     );
+    expect(screen.queryByText("$1.00")).toBeNull();
+    expect(screen.queryByText("Проверяем…")).toBeNull();
+  });
+
+  test("says the purchase is still being checked while the server has not confirmed", () => {
+    render(
+      <DonationTierRow
+        tier={baseTier}
+        purchaseState="verifying"
+        isPurchasing={false}
+        onPress={jest.fn()}
+      />,
+      { wrapper },
+    );
+    expect(screen.getByText("Проверяем…")).toBeTruthy();
+    expect(screen.queryByText("$1.00")).toBeNull();
+  });
+
+  test("says it is waiting for payment while the store collects a slow one", () => {
+    render(
+      <DonationTierRow
+        tier={baseTier}
+        purchaseState="awaiting-payment"
+        isPurchasing={false}
+        onPress={jest.fn()}
+      />,
+      { wrapper },
+    );
+    expect(screen.getByText("Ожидаем оплату")).toBeTruthy();
     expect(screen.queryByText("$1.00")).toBeNull();
   });
 
@@ -65,7 +94,7 @@ describe("DonationTierRow", () => {
     render(
       <DonationTierRow
         tier={baseTier}
-        isOwned={false}
+        purchaseState={undefined}
         isPurchasing={true}
         onPress={jest.fn()}
       />,
@@ -79,7 +108,7 @@ describe("DonationTierRow", () => {
     render(
       <DonationTierRow
         tier={baseTier}
-        isOwned={false}
+        purchaseState={undefined}
         isPurchasing={false}
         onPress={onPress}
       />,
@@ -96,7 +125,24 @@ describe("DonationTierRow", () => {
     render(
       <DonationTierRow
         tier={baseTier}
-        isOwned={true}
+        purchaseState="confirmed"
+        isPurchasing={false}
+        onPress={onPress}
+      />,
+      { wrapper },
+    );
+
+    fireEvent.press(screen.getByText("Сказать спасибо"));
+
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  test("does not call onPress while a purchase is still unverified", () => {
+    const onPress = jest.fn();
+    render(
+      <DonationTierRow
+        tier={baseTier}
+        purchaseState="verifying"
         isPurchasing={false}
         onPress={onPress}
       />,

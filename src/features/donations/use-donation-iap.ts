@@ -7,18 +7,23 @@ import { useEffect, useMemo, useState } from "react";
 
 import { getActiveDonationProductIds } from "./api";
 import { type DonationTier, getVisibleTiers } from "./catalog";
-import { useDonationIapSession } from "./donation-iap-provider";
+import {
+  type DonationPurchaseState,
+  useDonationIapSession,
+} from "./donation-iap-provider";
 
 export type DonationTierView = DonationTier & {
   displayPrice: string;
 };
 
+export type DonationLoadError = "catalog" | "store";
+
 type UseDonationIapResult = {
   tiers: DonationTierView[];
   isLoading: boolean;
-  isError: boolean;
+  loadError: DonationLoadError | null;
   refetch: () => void;
-  ownedProductIds: Set<string>;
+  purchaseStates: ReadonlyMap<string, DonationPurchaseState>;
   purchasingProductId: string | null;
   isRestoring: boolean;
   errorMessage: string | null;
@@ -40,7 +45,7 @@ export function useDonationIap(): UseDonationIapResult {
     prices,
     fetchPrices,
     retryConnection,
-    ownedProductIds,
+    purchaseStates,
     purchasingProductId,
     isRestoring,
     errorMessage,
@@ -104,11 +109,15 @@ export function useDonationIap(): UseDonationIapResult {
     [visibleTiers, prices],
   );
 
+  let loadError: DonationLoadError | null = null;
+  if (productIdsQuery.isError) loadError = "catalog";
+  else if (storeUnavailable) loadError = "store";
+
   return {
     tiers,
     isLoading:
       productIdsQuery.isLoading || (hasCatalog && !fetchAttempted && !storeUnavailable),
-    isError: productIdsQuery.isError || storeUnavailable,
+    loadError,
     refetch: () => {
       setConnectionTimedOut(false);
       setRetryToken((token) => token + 1);
@@ -116,7 +125,7 @@ export function useDonationIap(): UseDonationIapResult {
       // React Query's refetch() resolves with the error instead of rejecting.
       void productIdsQuery.refetch();
     },
-    ownedProductIds,
+    purchaseStates,
     purchasingProductId,
     isRestoring,
     errorMessage,

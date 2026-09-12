@@ -183,6 +183,12 @@ export const activityDaily = sqliteTable("activity_daily", {
   updatedAt: text("updated_at").notNull(),
 });
 
+export const confirmedDonations = sqliteTable("confirmed_donations", {
+  storeTransactionId: text("store_transaction_id").primaryKey(),
+  productId: text("product_id").notNull(),
+  verifiedAt: text("verified_at").notNull(),
+});
+
 // ---------------------------------------------------------------------------
 // Inferred TypeScript row types — no hand-written interfaces
 // ---------------------------------------------------------------------------
@@ -222,3 +228,6 @@ export type NewActivityEvent = InferInsertModel<typeof activityEvents>;
 
 export type ActivityDaily = InferSelectModel<typeof activityDaily>;
 export type NewActivityDaily = InferInsertModel<typeof activityDaily>;
+
+export type ConfirmedDonation = InferSelectModel<typeof confirmedDonations>;
+export type NewConfirmedDonation = InferInsertModel<typeof confirmedDonations>;

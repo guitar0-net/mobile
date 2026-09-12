@@ -12,6 +12,7 @@ import migrations from "../../../drizzle/migrations";
 export type AppDb = ReturnType<typeof drizzle<typeof schema>>;
 
 let db: AppDb | null = null;
+let isMigrated = false;
 
 function openDb(): AppDb {
   if (!db) {
@@ -23,14 +24,23 @@ function openDb(): AppDb {
   return db;
 }
 
-export async function initDb(): Promise<AppDb> {
-  const database = openDb();
-  await migrate(database, migrations);
-  return database;
+let initPromise: Promise<AppDb> | null = null;
+
+export function initDb(): Promise<AppDb> {
+  initPromise ??= (async () => {
+    const database = openDb();
+    await migrate(database, migrations);
+    isMigrated = true;
+    return database;
+  })().catch((error: unknown) => {
+    initPromise = null;
+    throw error;
+  });
+  return initPromise;
 }
 
 export function getDb(): AppDb {
-  if (!db) {
+  if (!db || !isMigrated) {
     throw new Error("Database not initialised — call initDb() before getDb()");
   }
   return db;
@@ -38,6 +48,8 @@ export function getDb(): AppDb {
 
 export function _resetDbForTesting(): void {
   db = null;
+  initPromise = null;
+  isMigrated = false;
 }
 
 export {
@@ -53,6 +65,7 @@ export {
   songSchemes,
   activityEvents,
   activityDaily,
+  confirmedDonations,
   VIDEO_DOWNLOAD_STATUSES,
   ACTIVITY_EVENT_TYPES,
 } from "./schema";
@@ -82,6 +95,8 @@ export type {
   NewActivityEvent,
   ActivityDaily,
   NewActivityDaily,
+  ConfirmedDonation,
+  NewConfirmedDonation,
   VideoDownloadStatus,
   ActivityEventType,
 } from "./schema";

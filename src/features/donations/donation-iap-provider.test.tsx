@@ -8,6 +8,9 @@ import { ErrorCode, useIAP } from "expo-iap";
 import React from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
+import { _resetDbForTesting } from "@/lib/db";
+import { ApiError } from "@/lib/network";
+
 import { verifyPurchase } from "./api";
 import { DonationIapProvider, useDonationIapSession } from "./donation-iap-provider";
 
@@ -115,6 +118,7 @@ function captureAppStateHandlers() {
 }
 
 beforeEach(() => {
+  _resetDbForTesting();
   jest.restoreAllMocks();
   jest.clearAllMocks();
   mockIAP();
@@ -168,7 +172,91 @@ describe("DonationIapProvider", () => {
     });
 
     await waitFor(() => expect(result.current.errorMessage).toBeNull());
-    expect(result.current.ownedProductIds.has("donation_thanks")).toBe(true);
+    expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed");
+  });
+
+  test("holds a store purchase as verifying until the server records it", async () => {
+    mockVerifyPurchase.mockRejectedValue(new ApiError(502, "Store unavailable"));
+    mockIAP({ availablePurchases: [makePurchase({ productId: "donation_thanks" })] });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() => expect(mockVerifyPurchase).toHaveBeenCalled());
+    expect(result.current.purchaseStates.get("donation_thanks")).toBe("verifying");
+  });
+
+  test("does not re-verify a donation confirmed on an earlier launch", async () => {
+    const purchase = makePurchase({ productId: "donation_thanks" });
+    mockIAP({ availablePurchases: [purchase] });
+
+    const first = renderHook(() => useDonationIapSession(), { wrapper });
+    await waitFor(() =>
+      expect(first.result.current.purchaseStates.get("donation_thanks")).toBe(
+        "confirmed",
+      ),
+    );
+    first.unmount();
+    mockVerifyPurchase.mockClear();
+
+    const second = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() =>
+      expect(second.result.current.purchaseStates.get("donation_thanks")).toBe(
+        "confirmed",
+      ),
+    );
+    expect(mockVerifyPurchase).not.toHaveBeenCalled();
+  });
+
+  test("stops calling a tier bought once the server rejects its receipt for good", async () => {
+    const finishTransaction = jest.fn().mockResolvedValue(undefined);
+    mockVerifyPurchase.mockRejectedValue(new ApiError(422, "Purchase was cancelled."));
+    mockIAP({
+      availablePurchases: [makePurchase({ productId: "donation_thanks" })],
+      finishTransaction,
+    });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.purchaseStates.has("donation_thanks")).toBe(false),
+    );
+    expect(finishTransaction).toHaveBeenCalled();
+  });
+
+  test("leaves a purchase whose payment has not cleared unverified and unfinished", async () => {
+    const finishTransaction = jest.fn().mockResolvedValue(undefined);
+    mockIAP({
+      availablePurchases: [
+        makePurchase({ productId: "donation_thanks", purchaseState: "pending" }),
+      ],
+      finishTransaction,
+    });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.purchaseStates.get("donation_thanks")).toBe(
+        "awaiting-payment",
+      ),
+    );
+    expect(mockVerifyPurchase).not.toHaveBeenCalled();
+    expect(finishTransaction).not.toHaveBeenCalled();
+  });
+
+  test("asks the store for the purchase list when a slow payment is started", async () => {
+    const getAvailablePurchases = jest.fn().mockResolvedValue(undefined);
+    const { getOptions } = mockIAP({ getAvailablePurchases });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(1));
+
+    await act(async () =>
+      getOptions().onPurchaseSuccess?.(makePurchase({ purchaseState: "pending" })),
+    );
+
+    expect(mockVerifyPurchase).not.toHaveBeenCalled();
+    expect(getAvailablePurchases).toHaveBeenCalledTimes(2);
   });
 
   test("leaves purchases of products this build doesn't sell alone", async () => {
@@ -183,7 +271,7 @@ describe("DonationIapProvider", () => {
     await waitFor(() => expect(result.current.connected).toBe(true));
     expect(mockVerifyPurchase).not.toHaveBeenCalled();
     expect(finishTransaction).not.toHaveBeenCalled();
-    expect(result.current.ownedProductIds.has("premium2")).toBe(false);
+    expect(result.current.purchaseStates.has("premium2")).toBe(false);
   });
 
   test("re-checks the store's purchases when the app returns to the foreground", async () => {
@@ -292,6 +380,30 @@ describe("DonationIapProvider", () => {
     expect(result.current.storeError).toBe(false);
   });
 
+  test("reconnects when the dropped connection is only named by the Play response code", async () => {
+    const fetchProducts = jest
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("Failed to query product"), {
+          code: ErrorCode.QueryProduct,
+          responseCode: -1,
+        }),
+      )
+      .mockResolvedValue(undefined);
+    const reconnect = jest.fn().mockResolvedValue(true);
+    mockIAP({ fetchProducts, reconnect });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => {
+      await result.current.fetchPrices(["donation_thanks"]);
+    });
+
+    expect(reconnect).toHaveBeenCalledTimes(1);
+    expect(fetchProducts).toHaveBeenCalledTimes(2);
+    expect(result.current.storeError).toBe(false);
+  });
+
   test("reports why a purchase request never reached the store", async () => {
     const requestPurchase = jest.fn().mockRejectedValue(
       Object.assign(new Error("billing service gone"), {
@@ -344,6 +456,24 @@ describe("DonationIapProvider", () => {
       await result.current.fetchPrices(["donation_thanks"]);
     });
     expect(result.current.storeError).toBe(false);
+  });
+
+  test("reconnects and re-checks purchases after Play drops the billing service", async () => {
+    const getAvailablePurchases = jest
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("Play Store service is not connected"), {
+          code: ErrorCode.ServiceError,
+        }),
+      )
+      .mockResolvedValue(undefined);
+    const reconnect = jest.fn().mockResolvedValue(true);
+    mockIAP({ getAvailablePurchases, reconnect });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(2));
+    expect(reconnect).toHaveBeenCalledTimes(1);
   });
 
   test("keeps the store usable when re-checking purchases fails", async () => {
