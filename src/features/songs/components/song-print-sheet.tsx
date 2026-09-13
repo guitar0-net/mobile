@@ -11,6 +11,7 @@ import { Sheet, SheetScrollView } from "@/components/ui/sheet";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 import { Toggle } from "@/components/ui/toggle";
+import { capture, captureException } from "@/lib/analytics";
 
 import {
   usePrintSettingsStore,
@@ -84,7 +85,16 @@ export function SongPrintSheet({
         textSize,
         columnsCount,
       }),
-    onSuccess: onClose,
+    onSuccess: () => {
+      capture("song_pdf_exported", {
+        show_chords: showChords,
+        show_schemes: showSchemes,
+        show_text: showText,
+        columns_count: columnsCount,
+      });
+      onClose();
+    },
+    onError: (error) => captureException(error, { stage: "song_pdf_export" }),
   });
 
   function handleClose() {

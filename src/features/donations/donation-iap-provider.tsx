@@ -15,6 +15,7 @@ import {
 } from "react";
 import { AppState, Platform } from "react-native";
 
+import { capture } from "@/lib/analytics";
 import { getDeviceId } from "@/lib/device-id";
 
 import { verifyPurchase } from "./api";
@@ -28,6 +29,7 @@ import {
   describePurchaseError,
   describeVerifyError,
   isPermanentVerifyRejection,
+  purchaseFailureReason,
   RESTORE_FAILED_MESSAGE,
 } from "./purchase-errors";
 import type { DonationPlatform } from "./verify-payload";
@@ -138,6 +140,12 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     },
     onPurchaseError: (error) => {
       setPurchasingProductId(null);
+      capture("donation_purchase_failed", {
+        product_id: purchasingProductId,
+        device_id: deviceId,
+        stage: "store",
+        reason: purchaseFailureReason(error),
+      });
       const message = describePurchaseError(error);
       if (message) setErrorMessage(message);
     },
@@ -187,15 +195,28 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           // An unfinished transaction is auto-refunded by Play after three days
           // and re-delivered by StoreKit on every launch, so a doomed receipt
           // still has to be finished.
-          if (isPermanentVerifyRejection(error)) {
+          const isPermanent = isPermanentVerifyRejection(error);
+          if (isPermanent) {
             await finish(purchase);
             reconciledRef.current.add(key);
             setRejectedKeys((prev) => new Set(prev).add(key));
+          }
+          if (!silent || isPermanent) {
+            capture("donation_purchase_failed", {
+              product_id: purchase.productId,
+              device_id: deviceId,
+              stage: "verify",
+              reason: purchaseFailureReason(error),
+            });
           }
           if (!silent) setErrorMessage(describeVerifyError(error));
           return;
         }
 
+        capture("donation_purchase_confirmed", {
+          product_id: purchase.productId,
+          device_id: deviceId,
+        });
         setConfirmedReceipts((prev) => new Map(prev).set(key, purchase.productId));
         setErrorMessage(null);
         // Persisting only after the store settles the receipt keeps an
@@ -338,6 +359,10 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       if (purchasingProductId !== null) return;
       setErrorMessage(null);
       setPurchasingProductId(productId);
+      capture("donation_purchase_started", {
+        product_id: productId,
+        device_id: deviceId,
+      });
       void requestPurchase({
         request: {
           apple: { sku: productId },
@@ -349,11 +374,17 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         // reaches the store rejects here instead and fires no event. It is not
         // retried automatically — a second attempt could open a second dialog.
         setPurchasingProductId(null);
+        capture("donation_purchase_failed", {
+          product_id: productId,
+          device_id: deviceId,
+          stage: "store",
+          reason: purchaseFailureReason(error),
+        });
         const message = describePurchaseError(error);
         if (message) setErrorMessage(message);
       });
     },
-    [requestPurchase, purchasingProductId],
+    [requestPurchase, purchasingProductId, deviceId],
   );
 
   const restore = useCallback(() => {

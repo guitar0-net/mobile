@@ -7,6 +7,7 @@ import { createMMKV } from "react-native-mmkv";
 
 import { fetchSongIdsByLesson } from "@/features/lessons";
 import { addFavorites, completeLessons } from "@/features/settings";
+import { capture, captureException } from "@/lib/analytics";
 
 import legacyLessonMap from "./legacy-lesson-map.json";
 
@@ -85,7 +86,8 @@ export async function importLegacyProgress(): Promise<LegacyImport | null> {
   if (raw !== null) {
     try {
       settings = parseLegacyLessonSettings(raw);
-    } catch {
+    } catch (error) {
+      captureException(error, { stage: "parse_legacy_settings" });
       settings = {};
     }
   }
@@ -126,6 +128,11 @@ export async function importLegacyProgress(): Promise<LegacyImport | null> {
   // The review screen exists to uncheck wrongly imported lessons, so it only
   // earns a stop when something was actually marked complete.
   if (completedCount > 0) migrationStorage.set(KEYS.REVIEW_PENDING, true);
+
+  capture("legacy_progress_imported", {
+    completed_count: completedCount,
+    favorite_count: favorites.length,
+  });
 
   return { completedCount, favoriteCount: favorites.length };
 }

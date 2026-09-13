@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { BPM_MAX, BPM_MIN, useMetronomeStore } from "@/features/metronome";
+import { capture } from "@/lib/analytics";
 import { useColors } from "@/lib/themes";
 import { cn, withAlpha } from "@/lib/utils";
 
@@ -103,6 +104,12 @@ export function SongToolbar({
       await setMetronomePattern(beatPatternRef.current);
       await setMetronomeSound(soundPresetRef.current);
       setIsPlaying(true);
+      capture("metronome_started", {
+        bpm,
+        beats: beatPatternRef.current.length,
+        sound: soundPresetRef.current,
+        source: "song_toolbar",
+      });
     }
   }, [isPlaying, bpm, setIsPlaying]);
 

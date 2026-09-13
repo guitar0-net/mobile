@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { Alert } from "react-native";
 
 import { useWifiOnlyDownloads } from "@/features/settings";
+import { capture } from "@/lib/analytics";
 import { getDb, lessons } from "@/lib/db";
 import type { VideoDownloadStatus } from "@/lib/db";
 import { queryClient as appQueryClient } from "@/lib/network/query-client";
@@ -131,6 +132,8 @@ export function useVideoDownload(
       },
     );
 
+    capture("video_download_started", { lesson_id: lessonId });
+
     setActive(lessonId, {
       progress: 0,
       cancel: async () => {
@@ -148,6 +151,7 @@ export function useVideoDownload(
           .set({ localVideoPath: result.uri, videoDownloadStatus: "downloaded" })
           .where(eq(lessons.uuid, lessonId));
         clearActive(lessonId);
+        capture("video_download_completed", { lesson_id: lessonId });
         void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
         void queryClient.invalidateQueries({
           queryKey: ["lessons", "downloaded-videos"],
@@ -158,9 +162,13 @@ export function useVideoDownload(
       } else {
         clearActive(lessonId);
       }
-    } catch {
+    } catch (error) {
       if (!active) return;
       clearActive(lessonId);
+      capture("video_download_failed", {
+        lesson_id: lessonId,
+        reason: error instanceof Error ? error.message : "unknown",
+      });
       await getDb()
         .update(lessons)
         .set({ videoDownloadStatus: "failed" })

@@ -42,6 +42,11 @@ export function describeVerifyError(error: unknown): string {
   return "Не удалось подтвердить покупку. Проверьте подключение к интернету";
 }
 
+export function purchaseFailureReason(error: unknown): string {
+  if (error instanceof ApiError) return `http_${error.status}`;
+  return (error as PurchaseErrorLike | null)?.code ?? "unknown";
+}
+
 /** Returns null when the failure needs no message, such as a cancellation. */
 export function describePurchaseError(error: unknown): string | null {
   switch ((error as PurchaseErrorLike | null)?.code) {

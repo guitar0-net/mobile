@@ -5,6 +5,7 @@
 import { HeaderButton } from "@/components/ui/header-button";
 import { recordSongCompletion } from "@/features/activity";
 import { useProgress } from "@/features/settings";
+import { capture } from "@/lib/analytics";
 import { useColors } from "@/lib/themes";
 
 type CompleteButtonProps = {
@@ -39,6 +40,10 @@ export function CompleteButton({
         const nextCompleted = !isCompleted;
         setSongCompleted(lessonId, songId, nextCompleted);
         recordSongCompletion(lessonTitle, songId, songTitle, nextCompleted);
+        capture("song_completion_toggled", {
+          song_id: songId,
+          completed: nextCompleted,
+        });
       }}
     />
   );

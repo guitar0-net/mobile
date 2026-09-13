@@ -33,6 +33,7 @@ import { LegendDot } from "@/features/metronome/components/legend-dot";
 import { SoundSheet } from "@/features/metronome/components/sound-sheet";
 import { TapTempoSheet } from "@/features/metronome/components/tap-tempo-sheet";
 import { TimeSignatureSheet } from "@/features/metronome/components/time-signature-sheet";
+import { capture } from "@/lib/analytics";
 import { useColors } from "@/lib/themes";
 import { withAlpha } from "@/lib/utils";
 
@@ -112,6 +113,12 @@ export default function MetronomeScreen() {
       await setMetronomePattern(beatPatternRef.current);
       await setMetronomeSound(soundPresetRef.current);
       setIsPlaying(true);
+      capture("metronome_started", {
+        bpm,
+        beats: beatPatternRef.current.length,
+        sound: soundPresetRef.current,
+        source: "metronome_screen",
+      });
     }
   }, [isPlaying, bpm, setIsPlaying]);
 

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { recordLessonViewed } from "@/features/activity";
 import { useProgress } from "@/features/settings";
+import { capture } from "@/lib/analytics";
 import type { VideoDownloadStatus } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
@@ -66,6 +67,10 @@ export function VideoCard({
             onPress={() => {
               setVideoViewed(lessonId, true);
               recordLessonViewed(lessonId, title);
+              capture("lesson_video_opened", {
+                lesson_id: lessonId,
+                destination: "youtube",
+              });
               Linking.openURL(youtubeUrl).catch(() => {});
             }}
             icon={{ ios: "play.fill", android: "play_arrow" }}
@@ -82,6 +87,10 @@ export function VideoCard({
             onPress={() => {
               setVideoViewed(lessonId, true);
               recordLessonViewed(lessonId, title);
+              capture("lesson_video_opened", {
+                lesson_id: lessonId,
+                destination: isDownloaded ? "offline" : "online",
+              });
               router.push(
                 `/video/${lessonId}?source=${isDownloaded ? "offline" : "online"}`,
               );
