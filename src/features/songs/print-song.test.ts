@@ -52,9 +52,12 @@ afterEach(() => {
 
 test("posts print settings mapped to snake_case and shares the resulting PDF", async () => {
   const buffer = new ArrayBuffer(4);
-  jest
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValueOnce(new Response(buffer, { status: 200 }));
+  jest.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+    new Response(buffer, {
+      status: 200,
+      headers: { "Content-Disposition": 'inline; filename="Zvyozdochka.pdf"' },
+    }),
+  );
   mockShareAsync.mockResolvedValueOnce(undefined);
 
   await printSong("song-uuid", params);
@@ -75,9 +78,9 @@ test("posts print settings mapped to snake_case and shares the resulting PDF", a
       }),
     }),
   );
-  expect(FileSystem.File).toHaveBeenCalledWith(
+  expect(FileSystem.File).toHaveBeenLastCalledWith(
     FileSystem.Paths.cache,
-    "song-song-uuid.pdf",
+    "Zvyozdochka.pdf",
   );
   expect(mockWrite).toHaveBeenCalledWith(new Uint8Array(buffer));
   expect(mockShareAsync).toHaveBeenCalledWith("mock-file://song.pdf", {
@@ -85,6 +88,20 @@ test("posts print settings mapped to snake_case and shares the resulting PDF", a
     UTI: "com.adobe.pdf",
   });
   expect(mockDelete).toHaveBeenCalled();
+});
+
+test("names the file after the song uuid when the server sends no filename", async () => {
+  jest
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(new Response(new ArrayBuffer(4), { status: 200 }));
+  mockShareAsync.mockResolvedValueOnce(undefined);
+
+  await printSong("song-uuid", params);
+
+  expect(FileSystem.File).toHaveBeenLastCalledWith(
+    FileSystem.Paths.cache,
+    "song-song-uuid.pdf",
+  );
 });
 
 test("deletes the temp file even when sharing fails", async () => {

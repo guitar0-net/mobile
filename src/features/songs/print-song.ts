@@ -13,7 +13,7 @@ export async function printSong(
   uuid: string,
   params: PrintSettingsData,
 ): Promise<void> {
-  const buffer = await apiPostBinary(`/api/v1/songs/${uuid}/print/`, {
+  const { data, filename } = await apiPostBinary(`/api/v1/songs/${uuid}/print/`, {
     show_chords: params.showChords,
     show_schemes: params.showSchemes,
     show_text: params.showText,
@@ -24,8 +24,11 @@ export async function printSong(
     columns_count: params.columnsCount,
   });
 
-  const file = new FileSystem.File(FileSystem.Paths.cache, `song-${uuid}.pdf`);
-  file.write(new Uint8Array(buffer));
+  const file = new FileSystem.File(
+    FileSystem.Paths.cache,
+    filename ?? `song-${uuid}.pdf`,
+  );
+  file.write(new Uint8Array(data));
   try {
     await Sharing.shareAsync(file.uri, {
       mimeType: "application/pdf",

@@ -100,13 +100,24 @@ describe("apiPostBinary", () => {
     );
   });
 
-  test("returns ArrayBuffer on success", async () => {
-    const buffer = new ArrayBuffer(8);
+  test("returns the body with the filename from Content-Disposition", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(new ArrayBuffer(8), {
+        status: 200,
+        headers: { "Content-Disposition": 'inline; filename="Zvyozdochka.pdf"' },
+      }),
+    );
+    const result = await apiPostBinary("/api/v1/songs/uuid/print/", {});
+    expect(result.data.byteLength).toBe(8);
+    expect(result.filename).toBe("Zvyozdochka.pdf");
+  });
+
+  test("returns a null filename when Content-Disposition is missing", async () => {
     jest
       .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(buffer, { status: 200 }));
+      .mockResolvedValueOnce(new Response(new ArrayBuffer(8), { status: 200 }));
     const result = await apiPostBinary("/api/v1/songs/uuid/print/", {});
-    expect(result).toBeInstanceOf(ArrayBuffer);
+    expect(result.filename).toBeNull();
   });
 
   test("throws on non-OK HTTP status", async () => {
