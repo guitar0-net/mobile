@@ -16,6 +16,7 @@ export type ThemeTokens = {
   "--color-brand-red": string;
   "--color-brand-amber": string;
   "--color-brand-brown": string;
+  "--color-switch-thumb": string;
 };
 
 export type ThemeName = "light" | "dark" | "contrast-light" | "contrast-dark";
@@ -35,6 +36,7 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
     "--color-brand-red": "#C94040",
     "--color-brand-amber": "#D49A12",
     "--color-brand-brown": "#7C4030",
+    "--color-switch-thumb": "#FFFFFF",
   },
 
   dark: {
@@ -51,6 +53,7 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
     "--color-brand-red": "#E05252",
     "--color-brand-amber": "#E8AE20",
     "--color-brand-brown": "#A05540",
+    "--color-switch-thumb": "#FFFFFF",
   },
 
   "contrast-light": {
@@ -67,6 +70,7 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
     "--color-brand-red": "#000000",
     "--color-brand-amber": "#000000",
     "--color-brand-brown": "#000000",
+    "--color-switch-thumb": "#767676",
   },
 
   "contrast-dark": {
@@ -83,5 +87,6 @@ export const THEME_DEFINITIONS: Record<ThemeName, ThemeTokens> = {
     "--color-brand-red": "#FFFFFF",
     "--color-brand-amber": "#FFFFFF",
     "--color-brand-brown": "#FFFFFF",
+    "--color-switch-thumb": "#767676",
   },
 };
