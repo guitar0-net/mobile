@@ -32,6 +32,9 @@ const config = {
     // Replace react-native-audio-api with a pure JS mock — the real package
     // requires native TurboModule code unavailable in Jest.
     "^react-native-audio-api$": "<rootDir>/__mocks__/react-native-audio-api.js",
+    // Replace posthog-react-native with a stub client — the real one resolves
+    // native storage and the crash plugin while it is being constructed.
+    "^posthog-react-native$": "<rootDir>/__mocks__/posthog-react-native.js",
     // The jest-expo preset maps @/ → src/, but static assets live in the
     // project root. This more-specific entry takes precedence over the preset.
     "^@/assets/(.*)$": "<rootDir>/assets/$1",
@@ -43,6 +46,8 @@ const config = {
     "!src/app/**",
     "!src/components/app-tabs.tsx",
     "!src/lib/dev/**",
+    "!src/lib/analytics/client.ts",
+    "!src/lib/analytics/events.ts",
     "!src/features/lessons/schema.ts",
     // Thin pass-through wrapper — its only job is calling useAppSession(),
     // which is already covered behaviorally by use-app-session.test.tsx.
