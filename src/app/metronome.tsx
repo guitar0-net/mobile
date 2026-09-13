@@ -88,12 +88,15 @@ export default function MetronomeScreen() {
       setCurrentBeat(beat % beatPatternRef.current.length);
       flashTimerRef.current = setTimeout(() => setCurrentBeat(-1), 100);
     });
-    const stopSub = ExpoPrecisionMetronomeModule.addListener("onStop", ({ reason }) => {
-      if (reason === "interruption") setIsPlaying(false);
-    });
+    const playbackSub = ExpoPrecisionMetronomeModule.addListener(
+      "onPlaybackChange",
+      ({ state }) => {
+        setIsPlaying(state === "running");
+      },
+    );
     return () => {
       beatSub.remove();
-      stopSub.remove();
+      playbackSub.remove();
     };
   }, [setCurrentBeat, setIsPlaying]);
 

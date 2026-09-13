@@ -4,6 +4,7 @@
 
 import { act, fireEvent, render } from "@testing-library/react-native";
 import * as expoPrecisionMetronome from "expo-precision-metronome";
+import type { PlaybackEventPayload } from "expo-precision-metronome";
 import type { ReactNode } from "react";
 
 import { useMetronomeStore } from "@/features/metronome";
@@ -122,11 +123,11 @@ describe("SongToolbar", () => {
     expect(useMetronomeStore.getState().isPlaying).toBe(false);
   });
 
-  test("external interruption sets isPlaying to false", () => {
-    let onStopCallback: ((event: { reason: string }) => void) | null = null;
+  test("follows interruption pause and auto-resume", () => {
+    let onPlaybackChange: ((event: PlaybackEventPayload) => void) | null = null;
     metronomeMod.default.addListener.mockImplementation(
-      (event: string, callback: (event: { reason: string }) => void) => {
-        if (event === "onStop") onStopCallback = callback;
+      (event: string, callback: (event: PlaybackEventPayload) => void) => {
+        if (event === "onPlaybackChange") onPlaybackChange = callback;
         return { remove: jest.fn() };
       },
     );
@@ -145,10 +146,14 @@ describe("SongToolbar", () => {
     );
 
     act(() => {
-      onStopCallback?.({ reason: "interruption" });
+      onPlaybackChange?.({ state: "paused", reason: "interruption" });
     });
-
     expect(useMetronomeStore.getState().isPlaying).toBe(false);
+
+    act(() => {
+      onPlaybackChange?.({ state: "running", reason: "interruption" });
+    });
+    expect(useMetronomeStore.getState().isPlaying).toBe(true);
   });
 
   test("clamps BPM change to BPM_MIN", async () => {
