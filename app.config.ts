@@ -4,6 +4,17 @@
 
 import { ConfigContext, ExpoConfig } from "expo/config";
 
+// EAS_BUILD_PROFILE is set only on EAS builders, never when EAS CLI evaluates
+// this file locally.
+if (
+  process.env.EAS_BUILD_PROFILE === "production" &&
+  !process.env.EXPO_PUBLIC_POSTHOG_KEY
+) {
+  throw new Error(
+    "EXPO_PUBLIC_POSTHOG_KEY is not set in the EAS production environment: the build would ship without analytics and error tracking.",
+  );
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Гитара с нуля",
@@ -43,6 +54,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     "expo-font",
     "expo-iap",
+    "expo-localization",
     "expo-image",
     "expo-sqlite",
     "expo-video",
