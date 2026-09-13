@@ -10,7 +10,7 @@ import { useEffect } from "react";
 import { Alert } from "react-native";
 
 import { useWifiOnlyDownloads } from "@/features/settings";
-import { capture } from "@/lib/analytics";
+import { capture, captureException } from "@/lib/analytics";
 import { getDb, lessons } from "@/lib/db";
 import type { VideoDownloadStatus } from "@/lib/db";
 import { queryClient as appQueryClient } from "@/lib/network/query-client";
@@ -142,10 +142,15 @@ export function useVideoDownload(
       },
     });
 
+    let failureReason: `http_${number}` | "exception";
     try {
       const result = await resumable.downloadAsync();
       if (!active) return;
-      if (result && result.status >= 200 && result.status < 300) {
+      if (!result) {
+        clearActive(lessonId);
+        return;
+      }
+      if (result.status >= 200 && result.status < 300) {
         await getDb()
           .update(lessons)
           .set({ localVideoPath: result.uri, videoDownloadStatus: "downloaded" })
@@ -156,28 +161,26 @@ export function useVideoDownload(
         void queryClient.invalidateQueries({
           queryKey: ["lessons", "downloaded-videos"],
         });
-      } else if (result) {
-        await FileSystem.deleteAsync(result.uri, { idempotent: true });
-        throw new Error(`HTTP ${result.status}`);
-      } else {
-        clearActive(lessonId);
+        return;
       }
+      await FileSystem.deleteAsync(result.uri, { idempotent: true });
+      failureReason = `http_${result.status}`;
     } catch (error) {
       if (!active) return;
-      clearActive(lessonId);
-      capture("video_download_failed", {
-        lesson_id: lessonId,
-        reason: error instanceof Error ? error.message : "unknown",
-      });
-      await getDb()
-        .update(lessons)
-        .set({ videoDownloadStatus: "failed" })
-        .where(eq(lessons.uuid, lessonId));
-      void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
-      void queryClient.invalidateQueries({
-        queryKey: ["lessons", "downloaded-videos"],
-      });
+      captureException(error, { stage: "video_download", lesson_id: lessonId });
+      failureReason = "exception";
     }
+
+    clearActive(lessonId);
+    capture("video_download_failed", { lesson_id: lessonId, reason: failureReason });
+    await getDb()
+      .update(lessons)
+      .set({ videoDownloadStatus: "failed" })
+      .where(eq(lessons.uuid, lessonId));
+    void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
+    void queryClient.invalidateQueries({
+      queryKey: ["lessons", "downloaded-videos"],
+    });
   }
 
   async function cancelDownload() {

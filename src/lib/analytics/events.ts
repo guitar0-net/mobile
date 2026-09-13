@@ -24,7 +24,10 @@ export type AnalyticsEvents = {
 
   video_download_started: { lesson_id: string };
   video_download_completed: { lesson_id: string };
-  video_download_failed: { lesson_id: string; reason: string };
+  video_download_failed: {
+    lesson_id: string;
+    reason: `http_${number}` | "exception";
+  };
 
   metronome_started: {
     bpm: number;
@@ -40,11 +43,10 @@ export type AnalyticsEvents = {
 
   theme_changed: { mode: "light" | "dark" | "system"; high_contrast: boolean };
 
-  donation_purchase_started: { product_id: string; device_id: string };
-  donation_purchase_confirmed: { product_id: string; device_id: string };
+  donation_purchase_started: { product_id: string };
+  donation_purchase_confirmed: { product_id: string };
   donation_purchase_failed: {
     product_id: string | null;
-    device_id: string;
     stage: "store" | "verify";
     reason: string;
   };
