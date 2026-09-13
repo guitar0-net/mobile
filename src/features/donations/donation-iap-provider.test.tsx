@@ -26,6 +26,12 @@ jest.mock("./api", () => ({
 }));
 jest.mock("@/lib/device-id", () => ({ getDeviceId: () => "device-abc" }));
 
+const mockCapture = jest.fn();
+
+jest.mock("@/lib/analytics", () => ({
+  capture: (...args: unknown[]) => mockCapture(...args),
+}));
+
 const mockUseIAP = jest.mocked(useIAP);
 const mockVerifyPurchase = jest.mocked(verifyPurchase);
 
@@ -522,5 +528,65 @@ describe("DonationIapProvider", () => {
     expect(() => renderHook(() => useDonationIapSession())).toThrow(
       /DonationIapProvider/,
     );
+  });
+});
+
+describe("DonationIapProvider — analytics", () => {
+  test("reports a purchase as started, then confirmed once the store settles it", async () => {
+    const finishTransaction = jest.fn().mockResolvedValue(undefined);
+    const { getOptions } = mockIAP({ finishTransaction });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => result.current.purchase("donation_thanks"));
+    act(() => getOptions().onPurchaseSuccess?.(makePurchase()));
+
+    await waitFor(() =>
+      expect(mockCapture).toHaveBeenCalledWith("donation_purchase_confirmed", {
+        product_id: "donation_thanks",
+      }),
+    );
+    expect(mockCapture.mock.calls.map(([event]) => event)).toEqual([
+      "donation_purchase_started",
+      "donation_purchase_confirmed",
+    ]);
+  });
+
+  test("does not report a purchase as confirmed while the store refuses to finish it", async () => {
+    const finishTransaction = jest.fn().mockRejectedValue(new Error("store busy"));
+    const { getOptions } = mockIAP({ finishTransaction });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    act(() => getOptions().onPurchaseSuccess?.(makePurchase()));
+
+    await waitFor(() => expect(finishTransaction).toHaveBeenCalled());
+    await act(async () => {});
+    expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed");
+    expect(mockCapture).not.toHaveBeenCalledWith(
+      "donation_purchase_confirmed",
+      expect.anything(),
+    );
+  });
+
+  test("reports a store-side failure against the product being bought", async () => {
+    const requestPurchase = jest.fn(() => new Promise(() => {}));
+    const { getOptions } = mockIAP({ requestPurchase });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    act(() => result.current.purchase("donation_thanks"));
+    act(() =>
+      getOptions().onPurchaseError?.({
+        code: ErrorCode.AlreadyOwned,
+        message: "already owned",
+      } as never),
+    );
+
+    expect(mockCapture).toHaveBeenCalledWith("donation_purchase_failed", {
+      product_id: "donation_thanks",
+      stage: "store",
+      reason: ErrorCode.AlreadyOwned,
+    });
   });
 });

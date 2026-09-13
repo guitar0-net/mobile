@@ -142,7 +142,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       setPurchasingProductId(null);
       capture("donation_purchase_failed", {
         product_id: purchasingProductId,
-        device_id: deviceId,
         stage: "store",
         reason: purchaseFailureReason(error),
       });
@@ -204,7 +203,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           if (!silent || isPermanent) {
             capture("donation_purchase_failed", {
               product_id: purchase.productId,
-              device_id: deviceId,
               stage: "verify",
               reason: purchaseFailureReason(error),
             });
@@ -213,10 +211,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        capture("donation_purchase_confirmed", {
-          product_id: purchase.productId,
-          device_id: deviceId,
-        });
         setConfirmedReceipts((prev) => new Map(prev).set(key, purchase.productId));
         setErrorMessage(null);
         // Persisting only after the store settles the receipt keeps an
@@ -224,6 +218,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         const finished = await finish(purchase);
         if (!finished) return;
         reconciledRef.current.add(key);
+        capture("donation_purchase_confirmed", {
+          product_id: purchase.productId,
+        });
         await saveConfirmedDonation(
           key,
           purchase.productId,
@@ -361,7 +358,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       setPurchasingProductId(productId);
       capture("donation_purchase_started", {
         product_id: productId,
-        device_id: deviceId,
       });
       void requestPurchase({
         request: {
@@ -376,7 +372,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         setPurchasingProductId(null);
         capture("donation_purchase_failed", {
           product_id: productId,
-          device_id: deviceId,
           stage: "store",
           reason: purchaseFailureReason(error),
         });
@@ -384,7 +379,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         if (message) setErrorMessage(message);
       });
     },
-    [requestPurchase, purchasingProductId, deviceId],
+    [requestPurchase, purchasingProductId],
   );
 
   const restore = useCallback(() => {

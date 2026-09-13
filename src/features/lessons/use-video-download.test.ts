@@ -45,6 +45,14 @@ jest.mock("expo-network", () => ({
   NetworkStateType: { WIFI: "WIFI", CELLULAR: "CELLULAR", NONE: "NONE" },
 }));
 
+const mockCapture = jest.fn();
+const mockCaptureException = jest.fn();
+
+jest.mock("@/lib/analytics", () => ({
+  capture: (...args: unknown[]) => mockCapture(...args),
+  captureException: (...args: unknown[]) => mockCaptureException(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
@@ -120,7 +128,8 @@ test("idle → downloading → downloaded on successful download", async () => {
 });
 
 test("idle → downloading → failed on download error", async () => {
-  mockDownloadAsync.mockRejectedValue(new Error("Network error"));
+  const error = new Error("Network error");
+  mockDownloadAsync.mockRejectedValue(error);
 
   const { result } = renderHook(() => useVideoDownload("lesson-1", "idle"), {
     wrapper: createWrapper(),
@@ -136,6 +145,40 @@ test("idle → downloading → failed on download error", async () => {
     .where(eq(lessons.uuid, "lesson-1"));
   expect(row.videoDownloadStatus).toBe("failed");
   expect(result.current.status).toBe("idle"); // prop still "idle" — DB change reflected via query invalidation in real app
+  expect(mockCaptureException).toHaveBeenCalledWith(error, {
+    stage: "video_download",
+    lesson_id: "lesson-1",
+  });
+  expect(mockCapture).toHaveBeenCalledWith("video_download_failed", {
+    lesson_id: "lesson-1",
+    reason: "exception",
+  });
+});
+
+test("marks a non-2xx response as failed without reporting an exception", async () => {
+  mockDownloadAsync.mockResolvedValue({
+    uri: "/mock/documents/videos/lesson-1.mp4",
+    status: 404,
+  });
+
+  const { result } = renderHook(() => useVideoDownload("lesson-1", "idle"), {
+    wrapper: createWrapper(),
+  });
+
+  await act(async () => {
+    await result.current.startDownload();
+  });
+
+  const [row] = await getDb()
+    .select({ videoDownloadStatus: lessons.videoDownloadStatus })
+    .from(lessons)
+    .where(eq(lessons.uuid, "lesson-1"));
+  expect(row.videoDownloadStatus).toBe("failed");
+  expect(mockCapture).toHaveBeenCalledWith("video_download_failed", {
+    lesson_id: "lesson-1",
+    reason: "http_404",
+  });
+  expect(mockCaptureException).not.toHaveBeenCalled();
 });
 
 test("progress callback updates download percentage", async () => {
