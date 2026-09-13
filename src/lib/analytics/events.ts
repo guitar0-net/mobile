@@ -1,0 +1,51 @@
+// SPDX-FileCopyrightText: 2026 Andrey Kotlyar <guitar0.app@gmail.com>
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import type { SyncFailureKind } from "@/lib/sync";
+
+export type AnalyticsEvents = {
+  chord_orientation_toggled: { orientation: "horizontal" | "vertical" };
+  chord_section_visibility_toggled: { visible: boolean };
+  scheme_section_visibility_toggled: { visible: boolean };
+
+  song_completion_toggled: { song_id: string; completed: boolean };
+  lesson_favorite_toggled: { lesson_id: string; favorited: boolean };
+  lesson_video_opened: {
+    lesson_id: string;
+    destination: "youtube" | "offline" | "online";
+  };
+  song_pdf_exported: {
+    show_chords: boolean;
+    show_schemes: boolean;
+    show_text: boolean;
+    columns_count: number;
+  };
+
+  video_download_started: { lesson_id: string };
+  video_download_completed: { lesson_id: string };
+  video_download_failed: { lesson_id: string; reason: string };
+
+  metronome_started: {
+    bpm: number;
+    beats: number;
+    sound: string;
+    source: "metronome_screen" | "song_toolbar";
+  };
+  tuner_mic_permission_resolved: { granted: boolean };
+
+  initial_sync_completed: { duration_ms: number };
+  content_sync_failed: { kind: SyncFailureKind; is_first_launch: boolean };
+  legacy_progress_imported: { completed_count: number; favorite_count: number };
+
+  theme_changed: { mode: "light" | "dark" | "system"; high_contrast: boolean };
+
+  donation_purchase_started: { product_id: string; device_id: string };
+  donation_purchase_confirmed: { product_id: string; device_id: string };
+  donation_purchase_failed: {
+    product_id: string | null;
+    device_id: string;
+    stage: "store" | "verify";
+    reason: string;
+  };
+};
