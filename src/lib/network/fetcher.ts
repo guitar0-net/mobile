@@ -27,9 +27,25 @@ export async function apiFetch<T>(path: string): Promise<T> {
   return parseJson<T>(response, path);
 }
 
-export async function apiPostBinary(path: string, body: unknown): Promise<ArrayBuffer> {
+type BinaryResponse = {
+  data: ArrayBuffer;
+  filename: string | null;
+};
+
+export async function apiPostBinary(
+  path: string,
+  body: unknown,
+): Promise<BinaryResponse> {
   const response = await post(path, body);
-  return response.arrayBuffer();
+  return {
+    data: await response.arrayBuffer(),
+    filename: parseFilename(response.headers.get("Content-Disposition")),
+  };
+}
+
+function parseFilename(contentDisposition: string | null): string | null {
+  const match = contentDisposition?.match(/filename="?([^";]+)"?/i);
+  return match?.[1] ?? null;
 }
 
 export async function apiPostJson<T>(path: string, body: unknown): Promise<T> {
