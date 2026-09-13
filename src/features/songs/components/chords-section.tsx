@@ -8,6 +8,7 @@ import { SvgXml } from "react-native-svg";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { useDiagramSettings, type DiagramSize } from "@/features/settings";
+import { capture } from "@/lib/analytics";
 import { useColors } from "@/lib/themes";
 
 import { type SongDetailChord } from "../queries";
@@ -72,7 +73,10 @@ export function ChordsSection({ chords }: ChordsSectionProps) {
           variant="outline"
           size="sm"
           className="self-start"
-          onPress={() => setChordVisible(true)}
+          onPress={() => {
+            setChordVisible(true);
+            capture("chord_section_visibility_toggled", { visible: true });
+          }}
         >
           Показать аккорды
         </Button>
@@ -92,11 +96,12 @@ export function ChordsSection({ chords }: ChordsSectionProps) {
           size="icon-sm"
           variant="ghost"
           icon={orientationIcon}
-          onPress={() =>
-            setChordOrientation(
-              chordOrientation === "horizontal" ? "vertical" : "horizontal",
-            )
-          }
+          onPress={() => {
+            const orientation =
+              chordOrientation === "horizontal" ? "vertical" : "horizontal";
+            setChordOrientation(orientation);
+            capture("chord_orientation_toggled", { orientation });
+          }}
         />
         <Button
           size="icon-sm"
@@ -116,7 +121,10 @@ export function ChordsSection({ chords }: ChordsSectionProps) {
           size="icon-sm"
           variant="ghost"
           icon={{ ios: "eye.slash", android: "visibility_off" }}
-          onPress={() => setChordVisible(false)}
+          onPress={() => {
+            setChordVisible(false);
+            capture("chord_section_visibility_toggled", { visible: false });
+          }}
         />
       </SectionHeader>
       <View className="flex-row flex-wrap gap-4">

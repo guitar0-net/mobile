@@ -25,6 +25,7 @@ import {
   startPitchDetection,
 } from "@/features/tuner/pitch-detector";
 import { playTuningFork } from "@/features/tuner/sine-wave";
+import { capture } from "@/lib/analytics";
 import { useColors } from "@/lib/themes";
 
 export default function TunerScreen() {
@@ -54,6 +55,7 @@ export default function TunerScreen() {
   useEffect(() => {
     requestMicPermission().then((granted) => {
       setPermStatus(granted ? "granted" : "denied");
+      capture("tuner_mic_permission_resolved", { granted });
     });
   }, []);
 

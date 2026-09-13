@@ -7,6 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 
 import { syncAll as defaultSyncAll } from "@/features/lessons/sync";
 import type { SyncProgress } from "@/features/lessons/sync";
+import { capture } from "@/lib/analytics";
 import { initDb as defaultInitDb } from "@/lib/db";
 import type { AppDb } from "@/lib/db";
 
@@ -59,6 +60,7 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
   const [progress, setProgress] = useState<SyncProgress | null>(null);
 
   const sync = useCallback(async () => {
+    const startedAt = Date.now();
     try {
       const db = await initDb();
       const onProgress = isFirstLaunch
@@ -70,10 +72,18 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
       setLastSyncedAt(Date.now());
       setFailure(null);
       setStatus("success");
+      if (isFirstLaunch) {
+        capture("initial_sync_completed", { duration_ms: Date.now() - startedAt });
+      }
     } catch (error) {
       if (__DEV__) console.warn("[sync] failed:", error);
-      setFailure(describeSyncFailure(error));
+      const syncFailure = describeSyncFailure(error);
+      setFailure(syncFailure);
       setStatus(isFirstLaunch ? "error" : "stale");
+      capture("content_sync_failed", {
+        kind: syncFailure.kind,
+        is_first_launch: isFirstLaunch,
+      });
     }
   }, [
     initDb,

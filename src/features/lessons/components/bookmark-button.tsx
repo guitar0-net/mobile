@@ -4,6 +4,7 @@
 
 import { HeaderButton } from "@/components/ui/header-button";
 import { useFavorites } from "@/features/settings";
+import { capture } from "@/lib/analytics";
 
 type BookmarkButtonProps = {
   lessonId: string;
@@ -21,7 +22,14 @@ export function BookmarkButton({ lessonId }: BookmarkButtonProps) {
           : { ios: "bookmark", android: "bookmark_border" }
       }
       active={isBookmarked}
-      onPress={() => (isBookmarked ? removeFavorite(lessonId) : addFavorite(lessonId))}
+      onPress={() => {
+        if (isBookmarked) removeFavorite(lessonId);
+        else addFavorite(lessonId);
+        capture("lesson_favorite_toggled", {
+          lesson_id: lessonId,
+          favorited: !isBookmarked,
+        });
+      }}
     />
   );
 }

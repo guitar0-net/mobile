@@ -8,6 +8,7 @@ import { View, useWindowDimensions } from "react-native";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { useDiagramSettings, type DiagramSize } from "@/features/settings";
+import { capture } from "@/lib/analytics";
 
 import { type SongDetailScheme } from "../queries";
 import { SectionHeader } from "./section-header";
@@ -46,7 +47,10 @@ export function SchemesSection({ schemes }: { schemes: SongDetailScheme[] }) {
           variant="outline"
           size="sm"
           className="self-start"
-          onPress={() => setImageSchemeVisible(true)}
+          onPress={() => {
+            setImageSchemeVisible(true);
+            capture("scheme_section_visibility_toggled", { visible: true });
+          }}
         >
           Показать ритмические рисунки
         </Button>
@@ -75,7 +79,10 @@ export function SchemesSection({ schemes }: { schemes: SongDetailScheme[] }) {
           size="icon-sm"
           variant="ghost"
           icon={{ ios: "eye.slash", android: "visibility_off" }}
-          onPress={() => setImageSchemeVisible(false)}
+          onPress={() => {
+            setImageSchemeVisible(false);
+            capture("scheme_section_visibility_toggled", { visible: false });
+          }}
         />
       </SectionHeader>
       <View className="flex-row flex-wrap gap-4">

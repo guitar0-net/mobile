@@ -13,6 +13,7 @@ import { LottieAnimation } from "@/components/ui/lottie-animation";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 import { hasPendingLegacyReview, importLegacyProgress } from "@/features/migration";
+import { captureException } from "@/lib/analytics";
 import { useAppSync } from "@/lib/sync";
 import { useColors } from "@/lib/themes";
 
@@ -32,9 +33,10 @@ export default function LoadingScreen() {
           try {
             await importLegacyProgress();
             needsReview = hasPendingLegacyReview();
-          } catch {
+          } catch (error) {
             // A failed migration must never leave the user on the splash
             // screen, which has no way out of this state.
+            captureException(error, { stage: "legacy_import" });
           }
           if (cancelled) return;
           router.replace(needsReview ? "/migration" : "/(tabs)/home");

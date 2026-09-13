@@ -16,6 +16,7 @@ import { AboutGroup } from "@/features/settings/components/about-group";
 import { DangerZoneGroup } from "@/features/settings/components/danger-zone-group";
 import { DataGroup } from "@/features/settings/components/data-group";
 import { SupportGroup } from "@/features/settings/components/support-group";
+import { capture } from "@/lib/analytics";
 import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
 const THEME_MODE_OPTIONS: { label: string; value: ThemeMode }[] = [
@@ -47,7 +48,10 @@ export default function SettingsScreen() {
             <SegmentedControl
               options={THEME_MODE_OPTIONS}
               value={themeMode}
-              onChange={setThemeMode}
+              onChange={(mode) => {
+                setThemeMode(mode);
+                capture("theme_changed", { mode, high_contrast: highContrast });
+              }}
             />
           </View>
           <View className="h-px bg-border" />
@@ -56,7 +60,10 @@ export default function SettingsScreen() {
             icon={{ ios: "circle.lefthalf.filled", android: "contrast" }}
             label="Высокая контрастность"
             value={highContrast}
-            onChange={setHighContrast}
+            onChange={(value) => {
+              setHighContrast(value);
+              capture("theme_changed", { mode: themeMode, high_contrast: value });
+            }}
           />
         </SettingsGroup>
         <DataGroup />
