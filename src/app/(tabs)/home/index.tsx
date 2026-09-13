@@ -105,10 +105,7 @@ export default function HomeScreen() {
               <Badge variant="outline">
                 {pluralRu(currentStreak, "день", "дня", "дней")} подряд
               </Badge>
-              <Badge
-                variant="secondary"
-                icon={{ ios: "clock", android: "clock_arrow_up" }}
-              >
+              <Badge variant="secondary" icon={{ ios: "clock", android: "schedule" }}>
                 {pluralRu(Math.floor(todaySeconds / 60), "минута", "минуты", "минут")}{" "}
                 сегодня
               </Badge>

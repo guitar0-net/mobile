@@ -19,7 +19,7 @@ export default function AppTabs() {
 
       <NativeTabs.Trigger name="lessons" contentStyle={contentStyle}>
         <NativeTabs.Trigger.Label>Уроки</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="music.note.list" md="library_music" />
+        <NativeTabs.Trigger.Icon sf="checklist" md="checklist" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="progress" contentStyle={contentStyle}>
