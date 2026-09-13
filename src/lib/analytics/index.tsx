@@ -10,13 +10,13 @@ import type { AnalyticsEvents } from "./events";
 
 export type { AnalyticsEvents } from "./events";
 
-export type ExceptionProperties = Record<string, string | number | boolean | null>;
+type ExceptionProperties = Record<string, string | number | boolean | null>;
 
 export function capture<E extends keyof AnalyticsEvents>(
   event: E,
   properties: AnalyticsEvents[E],
 ): void {
-  void posthog.capture(event, properties);
+  posthog.capture(event, properties);
 }
 
 export function captureException(
