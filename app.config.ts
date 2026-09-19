@@ -28,11 +28,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     icon: "./assets/guitar0.icon",
     bundleIdentifier: "com.andreykotlyar.guitar0",
-    buildNumber: "1",
   },
   android: {
     package: "com.andreykotlyar.guitar0",
-    versionCode: 34,
     adaptiveIcon: {
       backgroundColor: "#FFFFFF",
       foregroundImage: "./assets/images/android-icon-foreground.png",
