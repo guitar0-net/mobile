@@ -98,7 +98,7 @@ export default function HomeScreen() {
 
           <View className="mb-4">
             <Text variant="caption">{formatTodayRu()}</Text>
-            <Text variant="heading" className="my-2 text-4xl">
+            <Text variant="screenTitle" className="my-2">
               {formatGreetingRu()}
             </Text>
             <View className="flex-row items-center gap-2">

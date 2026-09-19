@@ -59,7 +59,7 @@ export default function ProgressScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          <Text variant="heading" className="mb-4 text-4xl">
+          <Text variant="screenTitle" className="mb-4">
             Профиль
           </Text>
 
