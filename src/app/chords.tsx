@@ -4,12 +4,18 @@
 
 import { Stack } from "expo-router";
 
-import { ChordsScreen } from "@/features/chords";
+import { ChordsHeaderActions, ChordsScreen } from "@/features/chords";
+
+const screenOptions = {
+  title: "Аккорды",
+  headerBackTitle: "Назад",
+  headerRight: () => <ChordsHeaderActions />,
+};
 
 export default function ChordsRoute() {
   return (
     <>
-      <Stack.Screen options={{ title: "Аккорды", headerBackTitle: "Назад" }} />
+      <Stack.Screen options={screenOptions} />
       <ChordsScreen />
     </>
   );

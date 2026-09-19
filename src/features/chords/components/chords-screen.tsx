@@ -6,7 +6,6 @@ import { useMemo, useRef } from "react";
 import { Pressable, SectionList, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
-import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { useDiagramSettings, type DiagramSize } from "@/features/settings";
 import { useColors } from "@/lib/themes";
@@ -58,8 +57,7 @@ type SectionListSection = {
 
 export function ChordsScreen() {
   const { data: sections = [] } = useAllChords();
-  const { chordSize, chordOrientation, setChordSize, setChordOrientation } =
-    useDiagramSettings();
+  const { chordSize, chordOrientation } = useDiagramSettings();
   const listRef = useRef<SectionList<ChordRow[], SectionListSection>>(null);
 
   const sectionData = useMemo<SectionListSection[]>(
@@ -67,91 +65,54 @@ export function ChordsScreen() {
     [sections],
   );
 
-  const orientationIcon =
-    chordOrientation === "vertical"
-      ? { ios: "arrow.clockwise" as const, android: "rotate_right" as const }
-      : { ios: "arrow.counterclockwise" as const, android: "rotate_left" as const };
-
   return (
-    <View className="flex-1 bg-background">
-      <View className="flex-row items-center justify-end gap-2 border-b border-border px-4 py-2">
-        <Button
-          testID="btn-orientation"
-          size="icon-sm"
-          variant="ghost"
-          icon={orientationIcon}
-          onPress={() =>
-            setChordOrientation(
-              chordOrientation === "horizontal" ? "vertical" : "horizontal",
-            )
-          }
-        />
-        <Button
-          testID="btn-size-minus"
-          size="icon-sm"
-          variant="ghost"
-          icon={{ ios: "minus", android: "remove" }}
-          onPress={() => setChordSize((chordSize - 1) as DiagramSize)}
-          disabled={chordSize === 1}
-        />
-        <Button
-          testID="btn-size-plus"
-          size="icon-sm"
-          variant="ghost"
-          icon={{ ios: "plus", android: "add" }}
-          onPress={() => setChordSize((chordSize + 1) as DiagramSize)}
-          disabled={chordSize === 5}
-        />
-      </View>
+    <View className="flex-1 flex-row bg-background">
+      <SectionList<ChordRow[], SectionListSection>
+        ref={listRef}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
+        sections={sectionData}
+        keyExtractor={() => "chords"}
+        stickySectionHeadersEnabled
+        renderSectionHeader={({ section }) => (
+          <View className="bg-background py-3">
+            <Text variant="heading" className="text-xl">
+              {section.note}
+            </Text>
+          </View>
+        )}
+        renderItem={({ item: chords }) => (
+          <View className="flex-row flex-wrap gap-4 pb-6">
+            {chords.map((chord) => (
+              <ChordCard
+                key={chord.id}
+                chord={chord}
+                orientation={chordOrientation}
+                size={chordSize}
+              />
+            ))}
+          </View>
+        )}
+      />
 
-      <View className="flex-1 flex-row">
-        <SectionList<ChordRow[], SectionListSection>
-          ref={listRef}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
-          sections={sectionData}
-          keyExtractor={() => "chords"}
-          stickySectionHeadersEnabled
-          renderSectionHeader={({ section }) => (
-            <View className="bg-background py-3">
-              <Text variant="heading" className="text-xl">
-                {section.note}
-              </Text>
-            </View>
-          )}
-          renderItem={({ item: chords }) => (
-            <View className="flex-row flex-wrap gap-4 pb-6">
-              {chords.map((chord) => (
-                <ChordCard
-                  key={chord.id}
-                  chord={chord}
-                  orientation={chordOrientation}
-                  size={chordSize}
-                />
-              ))}
-            </View>
-          )}
-        />
-
-        <View className="items-center justify-center py-4 pr-2">
-          {sections.map((section, index) => (
-            <Pressable
-              key={section.note}
-              onPress={() =>
-                listRef.current?.scrollToLocation({
-                  sectionIndex: index,
-                  itemIndex: 0,
-                  animated: true,
-                })
-              }
-              className="px-2 py-0.5"
-            >
-              <Text className="font-sans-semibold text-xs text-primary">
-                {section.note}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+      <View className="items-center justify-center py-4 pr-2">
+        {sections.map((section, index) => (
+          <Pressable
+            key={section.note}
+            onPress={() =>
+              listRef.current?.scrollToLocation({
+                sectionIndex: index,
+                itemIndex: 0,
+                animated: true,
+              })
+            }
+            className="px-2 py-0.5"
+          >
+            <Text className="font-sans-semibold text-xs text-primary">
+              {section.note}
+            </Text>
+          </Pressable>
+        ))}
       </View>
     </View>
   );
