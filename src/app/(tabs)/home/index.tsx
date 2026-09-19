@@ -84,7 +84,7 @@ export default function HomeScreen() {
           <View className="mb-6 flex-row items-center justify-between gap-2">
             <View className="flex flex-1 flex-row items-center gap-2">
               <AppIcon size={32} />
-              <Text variant="logo" className="flex-1 text-4xl leading-snug">
+              <Text variant="logo" className="flex-1">
                 Гитара с нуля
               </Text>
             </View>

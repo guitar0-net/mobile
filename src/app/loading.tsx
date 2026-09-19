@@ -58,70 +58,75 @@ export default function LoadingScreen() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView className="flex-1 items-center px-8">
-        <View className="w-full flex-1 items-center justify-center gap-10">
-          <View className="items-center gap-3">
-            <LottieAnimation
-              source={require("@/assets/animations/download.lottie")}
-              size={120}
-            />
-            <Text variant="logo" className="text-4xl text-primary">
-              Гитара с нуля
-            </Text>
-          </View>
+        <View className="w-full flex-1 items-center justify-end gap-3 pb-5">
+          <LottieAnimation
+            source={require("@/assets/animations/download.lottie")}
+            size={120}
+          />
+          <Text
+            variant="logo"
+            className="w-full text-center"
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            Гитара с нуля
+          </Text>
+        </View>
 
-          <View className="w-full items-center gap-3">
-            {status === "loading" && isFirstLaunch && (
-              <>
+        <View className="w-full flex-1 items-center gap-3 pt-5">
+          {status === "loading" && isFirstLaunch && (
+            <>
+              <View className="h-8 w-full justify-center">
                 <View className="h-1.5 w-full overflow-hidden rounded-full border border-border">
                   <View
                     className="h-full rounded-full bg-primary"
                     style={{ width: `${percentage}%` }}
                   />
                 </View>
-                <Text className="text-sm text-muted-fg">
-                  {progress
-                    ? `Загружаем уроки... ${percentage}%`
-                    : "Загружаем уроки..."}
-                </Text>
-              </>
-            )}
+              </View>
+              <Text className="text-sm text-muted-fg">
+                {progress ? `Загружаем уроки... ${percentage}%` : "Загружаем уроки..."}
+              </Text>
+            </>
+          )}
 
-            {status === "loading" && !isFirstLaunch && (
-              <>
+          {status === "loading" && !isFirstLaunch && (
+            <>
+              <View className="h-8 justify-center">
                 <ActivityIndicator size="small" color={colors.primary} />
-                <Text className="text-sm text-muted-fg">Синхронизация...</Text>
-              </>
-            )}
+              </View>
+              <Text className="text-sm text-muted-fg">Синхронизация...</Text>
+            </>
+          )}
 
-            {status === "success" && (
-              <StatusMessage variant="success">Синхронизировано</StatusMessage>
-            )}
+          {status === "success" && (
+            <StatusMessage variant="success">Синхронизировано</StatusMessage>
+          )}
 
-            {status === "stale" && failure !== null && (
-              <StatusMessage
-                variant="warning"
-                icon={
-                  failure.kind === "offline"
-                    ? { ios: "wifi.slash", android: "wifi_off" }
-                    : undefined
-                }
-              >
-                {failure.label}
+          {status === "stale" && failure !== null && (
+            <StatusMessage
+              variant="warning"
+              icon={
+                failure.kind === "offline"
+                  ? { ios: "wifi.slash", android: "wifi_off" }
+                  : undefined
+              }
+            >
+              {failure.label}
+            </StatusMessage>
+          )}
+
+          {status === "error" && failure !== null && (
+            <>
+              <StatusMessage variant="error">
+                Не удалось загрузить данные.{"\n"}
+                {`${failure.reason}.`}
               </StatusMessage>
-            )}
-
-            {status === "error" && failure !== null && (
-              <>
-                <StatusMessage variant="error">
-                  Не удалось загрузить данные.{"\n"}
-                  {`${failure.reason}.`}
-                </StatusMessage>
-                <Button variant="ghost" size="sm" onPress={retry}>
-                  Повторить
-                </Button>
-              </>
-            )}
-          </View>
+              <Button variant="ghost" size="sm" onPress={retry}>
+                Повторить
+              </Button>
+            </>
+          )}
         </View>
 
         <Text className="pb-2 text-xs text-muted-fg">

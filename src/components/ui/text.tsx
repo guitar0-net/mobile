@@ -13,7 +13,7 @@ type Props = TextProps & {
    * - `body`    — Geist Regular, base size, foreground color (default)
    * - `heading` — Geist SemiBold, xl size, foreground color
    * - `caption` — Geist Regular, sm size, muted color
-   * - `logo`    — Debby, 2xl size
+   * - `logo`    — Debby, 4xl size
    */
   variant?: TextVariant;
   className?: string;
@@ -23,7 +23,7 @@ const VARIANT_CLASSES: Record<TextVariant, string> = {
   body: "font-sans text-base text-foreground",
   heading: "font-sans-semibold text-xl text-foreground",
   caption: "font-sans text-sm text-muted-fg",
-  logo: "font-logo text-2xl text-primary leading-snug",
+  logo: "font-logo text-4xl leading-snug text-primary",
 };
 
 export function Text({ variant = "body", className, ...props }: Props) {
