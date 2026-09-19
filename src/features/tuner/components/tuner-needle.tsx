@@ -15,7 +15,6 @@ import { useColors } from "@/lib/themes";
 import { withAlpha } from "@/lib/utils";
 
 const AnimatedLine = Animated.createAnimatedComponent(Line);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // SVG coordinate system: viewBox 0 0 200 125
 const CX = 100;
