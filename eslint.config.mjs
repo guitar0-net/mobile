@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import tsPlugin from "@typescript-eslint/eslint-plugin";
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 import expo from "eslint-config-expo/flat.js";
 import prettierConfig from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
 import globals from "globals";
 
 const eslintConfig = defineConfig([
+  globalIgnores([".expo/"]),
   ...expo,
   prettierConfig,
   {
@@ -54,6 +55,12 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+    },
+  },
+  {
+    files: ["*.js", "__mocks__/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ]);

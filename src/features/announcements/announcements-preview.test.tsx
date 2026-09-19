@@ -12,8 +12,10 @@ import { ThemeProvider } from "@/lib/themes";
 import { AnnouncementsPreview } from "./announcements-preview";
 import { getAnnouncements } from "./api";
 
+const mockPush = jest.fn();
+
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 jest.mock("./api", () => ({
@@ -75,13 +77,9 @@ describe("AnnouncementsPreview", () => {
   });
 
   test("see-all button navigates to announcements screen", async () => {
-    const pushMock = jest.fn();
-    (require("expo-router") as { useRouter: () => { push: jest.Mock } }).useRouter =
-      () => ({ push: pushMock });
-
     mockGetAnnouncements.mockResolvedValue({ results: [], count: 0 });
     render(<AnnouncementsPreview />, { wrapper });
     fireEvent.press(screen.getByText("Все"));
-    expect(pushMock).toHaveBeenCalledWith("/home/announcements");
+    expect(mockPush).toHaveBeenCalledWith("/home/announcements");
   });
 });
