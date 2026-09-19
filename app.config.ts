@@ -19,6 +19,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Гитара с нуля",
   slug: "Guitar0",
+  owner: "kotlyar",
   version: "5.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -74,5 +75,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "https://api.guitar0.net",
+    eas: {
+      projectId: "914c0e3e-0a72-4499-bd36-d85af91934b8",
+    },
   },
 });
