@@ -25,7 +25,8 @@ path = [
   "patches/react-native-css-interop+0.2.4.patch",
   "src/lib/network/api.types.ts",
   "src/features/migration/legacy-lesson-map.json",
-  "drizzle/**"
+  "drizzle/**",
+  "eas.json"
 ]
 precedence = "closest"
 SPDX-FileCopyrightText = "2026 Andrey Kotlyar <guitar0.app@gmail.com>"
