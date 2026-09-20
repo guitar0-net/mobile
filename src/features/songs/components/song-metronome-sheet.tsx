@@ -85,9 +85,11 @@ export function SongMetronomeSheet({
         </Text>
 
         <View className="mb-5 flex-row flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onPress={() => onBpmChange(songBpm)}>
-            Темп песни: {songBpm} BPM
-          </Button>
+          {songBpm > 0 && (
+            <Button variant="outline" size="sm" onPress={() => onBpmChange(songBpm)}>
+              Темп песни: {songBpm} BPM
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
