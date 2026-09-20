@@ -17,17 +17,25 @@ import {
   fetchCourseLessons,
   MAIN_COURSE_ID,
   useContinueLesson,
+  useDownloadedVideos,
 } from "@/features/lessons";
 import { CourseProgressCard } from "@/features/lessons/components/course-progress-card";
 import { LessonListItem } from "@/features/lessons/components/lesson-list-item";
-import { useHideCompletedLessons, useProgress } from "@/features/settings";
+import {
+  useFavorites,
+  useHideCompletedLessons,
+  useProgress,
+} from "@/features/settings";
 import { cn } from "@/lib/utils";
 
 export default function LessonsScreen() {
   const router = useRouter();
   const [selectedCourse, setSelectedCourse] = useState(MAIN_COURSE_ID);
   const { progress } = useProgress();
+  const { favorites } = useFavorites();
   const { hideCompletedLessons, setHideCompletedLessons } = useHideCompletedLessons();
+  const { data: downloadedVideos } = useDownloadedVideos();
+  const downloadedLessonIds = new Set(downloadedVideos?.map((v) => v.lessonUuid));
 
   const coursesQuery = useQuery({
     queryKey: ["courses"],
@@ -152,6 +160,8 @@ export default function LessonsScreen() {
                 lesson={lesson}
                 state={state}
                 completedSongIds={progress[lesson.lessonUuid]?.completedSongIds ?? []}
+                isFavorite={favorites.includes(lesson.lessonUuid)}
+                isDownloaded={downloadedLessonIds.has(lesson.lessonUuid)}
                 onPress={() =>
                   router.push(
                     `/lesson/${lesson.lessonUuid}?courseId=${selectedCourse}&order=${lesson.order}&total=${allLessons.length}`,
