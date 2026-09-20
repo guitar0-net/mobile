@@ -65,9 +65,9 @@ beforeEach(() => {
 });
 
 describe("SongToolbar", () => {
-  test("shows BPM from store", () => {
+  test("opens at the song BPM, not the remembered one", () => {
     useMetronomeStore.setState({ bpm: 110 });
-    const { getAllByText } = render(
+    const { getAllByText, queryByText } = render(
       <SongToolbar
         songBpm={90}
         autoScrollSpeedIndex={0}
@@ -78,8 +78,24 @@ describe("SongToolbar", () => {
       />,
       { wrapper },
     );
+    expect(getAllByText("90").length).toBeGreaterThan(0);
+    expect(queryByText("110")).toBeNull();
+  });
+
+  test("falls back to the remembered BPM when the song has none", () => {
+    useMetronomeStore.setState({ bpm: 110 });
+    const { getAllByText } = render(
+      <SongToolbar
+        songBpm={0}
+        autoScrollSpeedIndex={0}
+        onAutoScrollCycle={jest.fn()}
+        songUuid="song-test"
+        hasChords={true}
+        hasSchemes={true}
+      />,
+      { wrapper },
+    );
     expect(getAllByText("110").length).toBeGreaterThan(0);
-    expect(getAllByText("BPM").length).toBeGreaterThan(0);
   });
 
   test("pressing play starts the metronome and sets isPlaying", async () => {
@@ -98,7 +114,7 @@ describe("SongToolbar", () => {
     await act(async () => {
       fireEvent.press(playButton);
     });
-    expect(metronomeMod.start).toHaveBeenCalledWith(92);
+    expect(metronomeMod.start).toHaveBeenCalledWith(90);
     expect(useMetronomeStore.getState().isPlaying).toBe(true);
   });
 
@@ -159,7 +175,25 @@ describe("SongToolbar", () => {
   test("clamps BPM change to BPM_MIN", async () => {
     // handleBpmChange is passed down to the sheet (always rendered)
     // Trigger it via the sheet's −10 button when bpm is near BPM_MIN
-    useMetronomeStore.setState({ bpm: 25 });
+    const { getByText, getAllByText } = render(
+      <SongToolbar
+        songBpm={25}
+        autoScrollSpeedIndex={0}
+        onAutoScrollCycle={jest.fn()}
+        songUuid="song-test"
+        hasChords={true}
+        hasSchemes={true}
+      />,
+      { wrapper },
+    );
+    await act(async () => {
+      fireEvent.press(getByText("−10"));
+    });
+    expect(getAllByText("20").length).toBeGreaterThan(0);
+  });
+
+  test("BPM changed inside a song does not overwrite the remembered tempo", async () => {
+    useMetronomeStore.setState({ bpm: 110 });
     const { getByText } = render(
       <SongToolbar
         songBpm={90}
@@ -172,8 +206,8 @@ describe("SongToolbar", () => {
       { wrapper },
     );
     await act(async () => {
-      fireEvent.press(getByText("−10"));
+      fireEvent.press(getByText("+10"));
     });
-    expect(useMetronomeStore.getState().bpm).toBe(20);
+    expect(useMetronomeStore.getState().bpm).toBe(110);
   });
 });

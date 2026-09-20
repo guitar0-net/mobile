@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
-import { BPM_MAX, BPM_MIN, useMetronomeStore } from "@/features/metronome";
+import { clampBpm, useMetronomeStore } from "@/features/metronome";
 import { capture } from "@/lib/analytics";
 import { useColors } from "@/lib/themes";
 import { cn, withAlpha } from "@/lib/utils";
@@ -50,15 +50,17 @@ export function SongToolbar({
   hasSchemes,
 }: Props) {
   const {
-    bpm,
     beatPattern,
     soundPreset,
     isPlaying,
     currentBeat,
-    setBpm,
     setIsPlaying,
     setCurrentBeat,
   } = useMetronomeStore();
+
+  const [bpm, setBpm] = useState(() =>
+    clampBpm(songBpm > 0 ? songBpm : useMetronomeStore.getState().bpm),
+  );
 
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -118,11 +120,11 @@ export function SongToolbar({
 
   const handleBpmChange = useCallback(
     async (newBpm: number) => {
-      const clamped = Math.max(BPM_MIN, Math.min(BPM_MAX, Math.round(newBpm)));
+      const clamped = clampBpm(newBpm);
       setBpm(clamped);
       if (isPlaying) await setMetronomeBpm(clamped);
     },
-    [isPlaying, setBpm],
+    [isPlaying],
   );
 
   const beatPulse = useSharedValue(0);
