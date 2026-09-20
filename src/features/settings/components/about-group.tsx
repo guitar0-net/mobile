@@ -17,10 +17,6 @@ const GITHUB_URL = "https://github.com/guitar0-net";
 const CONTACT_EMAIL = "guitar0.app@gmail.com";
 const TAPS_TO_UNLOCK = 7;
 const VERSION_ICON: SymbolViewProps["name"] = { ios: "info.circle", android: "info" };
-const GUITARIST_ICON: SymbolViewProps["name"] = {
-  ios: "guitars.fill",
-  android: "music_note",
-};
 
 function openContactEmail() {
   Linking.openURL(`mailto:${CONTACT_EMAIL}`).catch(() => {
@@ -53,11 +49,11 @@ export function AboutGroup() {
         onPress={handleVersionPress}
       >
         <View className="h-9 w-9 items-center justify-center rounded-lg">
-          <SymbolView
-            name={guitaristUnlocked ? GUITARIST_ICON : VERSION_ICON}
-            size={18}
-            tintColor={colors.foreground}
-          />
+          {guitaristUnlocked ? (
+            <Text className="text-lg">🎸</Text>
+          ) : (
+            <SymbolView name={VERSION_ICON} size={18} tintColor={colors.foreground} />
+          )}
         </View>
         <View className="flex-1">
           <Text>Версия</Text>

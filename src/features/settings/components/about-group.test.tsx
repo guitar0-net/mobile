@@ -30,12 +30,10 @@ function pressVersion(times: number) {
   for (let i = 0; i < times; i++) fireEvent.press(screen.getByText("Версия"));
 }
 
-function versionIcon() {
-  return screen.UNSAFE_getAllByType(SymbolView)[0]?.props.name;
+function infoIconShown() {
+  const icon = screen.UNSAFE_getAllByType(SymbolView)[0]?.props.name;
+  return icon?.ios === "info.circle";
 }
-
-const INFO_ICON = { ios: "info.circle", android: "info" };
-const GUITAR_ICON = { ios: "guitars.fill", android: "music_note" };
 
 describe("AboutGroup", () => {
   test("shows the app version from expo config", () => {
@@ -61,21 +59,23 @@ describe("AboutGroup", () => {
 
     pressVersion(6);
     expect(alert).not.toHaveBeenCalled();
-    expect(versionIcon()).toEqual(INFO_ICON);
+    expect(screen.queryByText("🎸")).toBeNull();
+    expect(infoIconShown()).toBe(true);
 
     pressVersion(1);
     expect(alert).toHaveBeenCalledWith("Вы стали гитаристом 🎸", "Теперь официально.");
-    expect(versionIcon()).toEqual(GUITAR_ICON);
+    expect(screen.getByText("🎸")).toBeTruthy();
+    expect(infoIconShown()).toBe(false);
   });
 
-  test("keeps the guitar icon after a remount and greets a repeat tapper at once", () => {
+  test("keeps the guitar emoji after a remount and greets a repeat tapper at once", () => {
     render(<AboutGroup />, { wrapper });
     pressVersion(7);
     screen.unmount();
 
     const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
     render(<AboutGroup />, { wrapper });
-    expect(versionIcon()).toEqual(GUITAR_ICON);
+    expect(screen.getByText("🎸")).toBeTruthy();
 
     pressVersion(1);
     expect(alert).toHaveBeenCalledWith("Вы уже гитарист 🎸");
