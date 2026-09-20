@@ -74,6 +74,13 @@ describe("SongMetronomeSheet", () => {
     expect(onBpmChange).toHaveBeenCalledWith(90);
   });
 
+  test("hides the 'Темп песни' button when the song has no BPM", () => {
+    const { queryByText } = render(<SongMetronomeSheet {...baseProps} songBpm={0} />, {
+      wrapper,
+    });
+    expect(queryByText(/Темп песни/)).toBeNull();
+  });
+
   test("'−10' button calls onBpmChange with bpm − 10", () => {
     const onBpmChange = jest.fn();
     const { getByText } = render(
