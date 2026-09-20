@@ -49,6 +49,9 @@ type SettingsData = {
 
   // Video downloads
   wifiOnlyDownloads: boolean;
+
+  // Easter egg
+  guitaristUnlocked: boolean;
 };
 
 type SettingsActions = {
@@ -74,6 +77,9 @@ type SettingsActions = {
 
   // Video downloads
   setWifiOnlyDownloads: (value: boolean) => void;
+
+  // Easter egg
+  unlockGuitarist: () => void;
 };
 
 export type SettingsState = SettingsData & SettingsActions;
@@ -95,6 +101,7 @@ const KEYS = {
   PROGRESS: "settings.progress",
   HIDE_COMPLETED_LESSONS: "settings.hideCompletedLessons",
   WIFI_ONLY_DOWNLOADS: "settings.wifiOnlyDownloads",
+  GUITARIST_UNLOCKED: "settings.guitaristUnlocked",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -160,6 +167,7 @@ export function readDefaults(): SettingsData {
     ),
     hideCompletedLessons: storage.getBoolean(KEYS.HIDE_COMPLETED_LESSONS) ?? false,
     wifiOnlyDownloads: storage.getBoolean(KEYS.WIFI_ONLY_DOWNLOADS) ?? false,
+    guitaristUnlocked: storage.getBoolean(KEYS.GUITARIST_UNLOCKED) ?? false,
   };
 }
 
@@ -296,6 +304,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setWifiOnlyDownloads: (wifiOnlyDownloads) => {
     storage.set(KEYS.WIFI_ONLY_DOWNLOADS, wifiOnlyDownloads);
     set({ wifiOnlyDownloads });
+  },
+
+  unlockGuitarist: () => {
+    storage.set(KEYS.GUITARIST_UNLOCKED, true);
+    set({ guitaristUnlocked: true });
   },
 }));
 

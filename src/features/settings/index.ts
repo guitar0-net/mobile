@@ -101,3 +101,12 @@ export function useWifiOnlyDownloads() {
     })),
   );
 }
+
+export function useGuitarist() {
+  return useSettingsStore(
+    useShallow((s) => ({
+      guitaristUnlocked: s.guitaristUnlocked,
+      unlockGuitarist: s.unlockGuitarist,
+    })),
+  );
+}
