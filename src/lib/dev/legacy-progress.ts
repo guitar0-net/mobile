@@ -50,10 +50,10 @@ export async function seedLegacyProgress(): Promise<LegacySeed> {
   const completed = pks.slice(0, SEEDED_COMPLETED);
   const favorites = pks.slice(SEEDED_COMPLETED, SEEDED_COMPLETED + SEEDED_FAVORITES);
 
-  const settings: Record<string, { isComplete: boolean; isFavorite: boolean }> = {};
-  for (const pk of completed) settings[pk] = { isComplete: true, isFavorite: false };
-  for (const pk of favorites) settings[pk] = { isComplete: false, isFavorite: true };
-  settings[UNMAPPED_PK] = { isComplete: true, isFavorite: true };
+  const settings: Record<string, { isComplite: boolean; isFavorite: boolean }> = {};
+  for (const pk of completed) settings[pk] = { isComplite: true, isFavorite: false };
+  for (const pk of favorites) settings[pk] = { isComplite: false, isFavorite: true };
+  settings[UNMAPPED_PK] = { isComplite: true, isFavorite: true };
 
   await AsyncStorage.setItem(
     LEGACY_ROOT_KEY,
