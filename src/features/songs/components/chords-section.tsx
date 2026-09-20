@@ -3,13 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { View } from "react-native";
-import { SvgXml } from "react-native-svg";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
+import { ChordDiagram } from "@/features/chords";
 import { useDiagramSettings, type DiagramSize } from "@/features/settings";
 import { capture } from "@/lib/analytics";
-import { useColors } from "@/lib/themes";
 
 import { type SongDetailChord } from "../queries";
 import { SectionHeader } from "./section-header";
@@ -17,44 +16,6 @@ import { SectionHeader } from "./section-header";
 type ChordsSectionProps = {
   chords: SongDetailChord[];
 };
-
-const CHORD_WIDTH = {
-  vertical: { 1: 101, 2: 115, 3: 130, 4: 144, 5: 173 },
-  horizontal: { 1: 133, 2: 189, 3: 244, 4: 289, 5: 355 },
-} as const;
-
-// Heights derived from SVG viewBox ratios: horizontal 217×88 (×0.4055), vertical 91×214 (×2.352)
-const CHORD_HEIGHT = {
-  vertical: { 1: 237, 2: 271, 3: 305, 4: 338, 5: 407 },
-  horizontal: { 1: 54, 2: 77, 3: 99, 4: 117, 5: 144 },
-} as const;
-
-function ChordCard({
-  chord,
-  orientation,
-  size,
-}: {
-  chord: SongDetailChord;
-  orientation: "horizontal" | "vertical";
-  size: DiagramSize;
-}) {
-  const colors = useColors();
-  const svg =
-    orientation === "horizontal"
-      ? (chord.svgHorizontal ?? chord.svgVertical)
-      : (chord.svgVertical ?? chord.svgHorizontal);
-  const width = CHORD_WIDTH[orientation][size];
-  const height = CHORD_HEIGHT[orientation][size];
-
-  return (
-    <View className="items-center">
-      <Text variant="caption">{chord.title}</Text>
-      {svg && (
-        <SvgXml xml={svg} width={width} height={height} color={colors.foreground} />
-      )}
-    </View>
-  );
-}
 
 export function ChordsSection({ chords }: ChordsSectionProps) {
   const {
@@ -129,12 +90,14 @@ export function ChordsSection({ chords }: ChordsSectionProps) {
       </SectionHeader>
       <View className="flex-row flex-wrap gap-4">
         {chords.map((chord) => (
-          <ChordCard
-            key={chord.id}
-            chord={chord}
-            orientation={chordOrientation}
-            size={chordSize}
-          />
+          <View key={chord.id} className="items-center">
+            <Text variant="caption">{chord.title}</Text>
+            <ChordDiagram
+              chord={chord}
+              orientation={chordOrientation}
+              size={chordSize}
+            />
+          </View>
         ))}
       </View>
     </View>
