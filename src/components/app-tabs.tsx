@@ -11,7 +11,11 @@ export default function AppTabs() {
   const contentStyle = { backgroundColor: colors.background };
 
   return (
-    <NativeTabs backgroundColor={colors.surface} disableTransparentOnScrollEdge>
+    <NativeTabs
+      backgroundColor={colors.surface}
+      tintColor={colors.primary}
+      disableTransparentOnScrollEdge
+    >
       <NativeTabs.Trigger name="home" contentStyle={contentStyle}>
         <NativeTabs.Trigger.Label>Главная</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="house" md="home" />
