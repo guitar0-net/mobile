@@ -58,7 +58,7 @@ function tryParse<T>(raw: string | undefined, fallback: T): T {
   }
 }
 
-function clampBpm(bpm: number): number {
+export function clampBpm(bpm: number): number {
   return Math.max(BPM_MIN, Math.min(BPM_MAX, Math.round(bpm)));
 }
 

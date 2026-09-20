@@ -21,8 +21,7 @@ import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { SettingsRow } from "@/components/ui/settings-row";
 import { Text } from "@/components/ui/text";
 import {
-  BPM_MAX,
-  BPM_MIN,
+  clampBpm,
   getSizeName,
   getTempoName,
   useMetronomeStore,
@@ -127,7 +126,7 @@ export default function MetronomeScreen() {
 
   const handleBpmChange = useCallback(
     async (newBpm: number) => {
-      const clamped = Math.max(BPM_MIN, Math.min(BPM_MAX, Math.round(newBpm)));
+      const clamped = clampBpm(newBpm);
       setBpm(clamped);
       if (isPlaying) await setMetronomeBpm(clamped);
     },
