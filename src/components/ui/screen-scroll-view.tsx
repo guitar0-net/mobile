@@ -4,16 +4,30 @@
 
 import { forwardRef } from "react";
 import { ScrollView, type ScrollViewProps } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export const ScreenScrollView = forwardRef<ScrollView, ScrollViewProps>(
-  function ScreenScrollView(props, ref) {
-    return (
-      <ScrollView
-        ref={ref}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-        {...props}
-      />
-    );
-  },
-);
+type Props = ScrollViewProps & {
+  bottomSafeArea?: boolean;
+};
+
+export const ScreenScrollView = forwardRef<ScrollView, Props>(function ScreenScrollView(
+  { bottomSafeArea = true, ...props },
+  ref,
+) {
+  const scrollView = (
+    <ScrollView
+      ref={ref}
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="automatic"
+      {...props}
+    />
+  );
+
+  if (!bottomSafeArea) return scrollView;
+
+  return (
+    <SafeAreaView edges={["bottom"]} className="flex-1">
+      {scrollView}
+    </SafeAreaView>
+  );
+});

@@ -80,7 +80,11 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <ScreenScrollView className="flex-1" contentContainerClassName="px-4 pb-6">
+        <ScreenScrollView
+          bottomSafeArea={false}
+          className="flex-1"
+          contentContainerClassName="px-4 pb-6"
+        >
           <View className="mb-6 flex-row items-center justify-between gap-2">
             <View className="flex flex-1 flex-row items-center gap-2">
               <AppIcon size={32} />

@@ -54,6 +54,7 @@ export default function ProgressScreen() {
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
         <ScreenScrollView
+          bottomSafeArea={false}
           className="flex-1"
           contentContainerClassName="px-4 pb-6"
           onScroll={handleScroll}
