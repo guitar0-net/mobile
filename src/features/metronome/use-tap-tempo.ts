@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { BPM_MAX, BPM_MIN } from "./store";
+import { clampBpm } from "./store";
 
 const TAP_RESET_MS = 3500;
 
@@ -37,7 +37,7 @@ export function useTapTempo(onBpmChange: (bpm: number) => void) {
     if (taps.length >= 2) {
       const elapsed = taps[taps.length - 1] - taps[0];
       const bpm = Math.round(((taps.length - 1) * 60000) / elapsed);
-      const clamped = Math.max(BPM_MIN, Math.min(BPM_MAX, bpm));
+      const clamped = clampBpm(bpm);
       setTapBpm(clamped);
       onBpmChange(clamped);
     }

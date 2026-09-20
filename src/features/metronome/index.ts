@@ -2,7 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-export { useMetronomeStore, BPM_MIN, BPM_MAX, type SavedPattern } from "./store";
+export {
+  useMetronomeStore,
+  clampBpm,
+  BPM_MIN,
+  BPM_MAX,
+  type SavedPattern,
+} from "./store";
 export {
   getTempoName,
   getSizeName,
