@@ -2,8 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-export { fetchChordsCount, fetchAllChords, useAllChords } from "./queries";
-export type { ChordRow, ChordSection } from "./queries";
+export {
+  fetchChordsCount,
+  fetchChordIndex,
+  fetchChordsByTitle,
+  useChordIndex,
+  useChordsByTitle,
+} from "./queries";
+export type { ChordRow, ChordNoteGroup, Note } from "./queries";
 export { ChordDiagram } from "./components/chord-diagram";
 export { ChordsScreen } from "./components/chords-screen";
 export { ChordsHeaderActions } from "./components/chords-header-actions";

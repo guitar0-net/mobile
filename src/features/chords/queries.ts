@@ -2,18 +2,30 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useQuery } from "@tanstack/react-query";
-import { count } from "drizzle-orm";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { asc, eq } from "drizzle-orm";
 
 import { chords, getDb } from "@/lib/db";
 
-export async function fetchChordsCount(): Promise<number> {
-  const result = await getDb().select({ count: count() }).from(chords);
-  return result[0]?.count ?? 0;
-}
-
 const NOTE_ORDER = ["C", "D", "E", "F", "G", "A", "H"] as const;
-type Note = (typeof NOTE_ORDER)[number];
+export type Note = (typeof NOTE_ORDER)[number];
+
+const VARIANT_ORDER = [
+  "",
+  "m",
+  "7",
+  "m7",
+  "#",
+  "#m",
+  "#7",
+  "#m7",
+  "b",
+  "bm",
+  "b7",
+  "bm7",
+];
+
+const TITLE_PATTERN = /^([CDEFGAH])(.*)$/;
 
 export type ChordRow = {
   id: number;
@@ -21,58 +33,83 @@ export type ChordRow = {
   musicalTitle: string;
   svgHorizontal: string | null;
   svgVertical: string | null;
-  startFret: number | null;
-  hasBarre: boolean;
-  orderInNote: number | null;
 };
 
-export type ChordSection = {
+export type ChordNoteGroup = {
   note: Note;
-  chords: ChordRow[];
+  variants: string[];
 };
 
-export async function fetchAllChords(): Promise<ChordSection[]> {
-  const db = getDb();
+function parseTitle(title: string): { note: Note; variant: string } | null {
+  const match = TITLE_PATTERN.exec(title);
+  if (!match) return null;
+  return { note: match[1] as Note, variant: match[2] };
+}
 
-  const rows = await db
+function compareVariants(a: string, b: string): number {
+  const rankA = VARIANT_ORDER.indexOf(a);
+  const rankB = VARIANT_ORDER.indexOf(b);
+  if (rankA !== rankB) {
+    if (rankA === -1) return 1;
+    if (rankB === -1) return -1;
+    return rankA - rankB;
+  }
+  return a.localeCompare(b);
+}
+
+export async function fetchChordsCount(): Promise<number> {
+  const rows = await getDb().select({ title: chords.title }).from(chords);
+  return rows.filter((row) => parseTitle(row.title) !== null).length;
+}
+
+/**
+ * Notes and their chord variants, without any SVG payload — enough to drive
+ * both selector toolbars. `note + variant` is always an existing chord title.
+ */
+export async function fetchChordIndex(): Promise<ChordNoteGroup[]> {
+  const rows = await getDb().select({ title: chords.title }).from(chords);
+
+  const grouped = new Map<Note, Set<string>>();
+  for (const row of rows) {
+    const parsed = parseTitle(row.title);
+    if (!parsed) continue;
+    const variants = grouped.get(parsed.note) ?? new Set<string>();
+    variants.add(parsed.variant);
+    grouped.set(parsed.note, variants);
+  }
+
+  return NOTE_ORDER.filter((note) => grouped.has(note)).map((note) => ({
+    note,
+    variants: [...grouped.get(note)!].sort(compareVariants),
+  }));
+}
+
+export async function fetchChordsByTitle(title: string): Promise<ChordRow[]> {
+  return getDb()
     .select({
       id: chords.id,
       title: chords.title,
       musicalTitle: chords.musicalTitle,
       svgHorizontal: chords.svgHorizontal,
       svgVertical: chords.svgVertical,
-      startFret: chords.startFret,
-      hasBarre: chords.hasBarre,
-      orderInNote: chords.orderInNote,
     })
-    .from(chords);
-
-  const grouped = new Map<Note, ChordRow[]>();
-  for (const row of rows) {
-    const note = row.title[0]?.toUpperCase() as Note;
-    if (!NOTE_ORDER.includes(note)) continue;
-    if (!grouped.has(note)) grouped.set(note, []);
-    grouped.get(note)!.push(row);
-  }
-
-  for (const sectionChords of grouped.values()) {
-    sectionChords.sort((a, b) => {
-      if (a.orderInNote === null && b.orderInNote === null) return 0;
-      if (a.orderInNote === null) return 1;
-      if (b.orderInNote === null) return -1;
-      return a.orderInNote - b.orderInNote;
-    });
-  }
-
-  return NOTE_ORDER.filter((note) => grouped.has(note)).map((note) => ({
-    note,
-    chords: grouped.get(note)!,
-  }));
+    .from(chords)
+    .where(eq(chords.title, title))
+    .orderBy(asc(chords.id));
 }
 
-export function useAllChords() {
+export function useChordIndex() {
   return useQuery({
-    queryKey: ["all-chords"],
-    queryFn: fetchAllChords,
+    queryKey: ["chords", "index"],
+    queryFn: fetchChordIndex,
+  });
+}
+
+export function useChordsByTitle(title: string) {
+  return useQuery({
+    queryKey: ["chords", "by-title", title],
+    queryFn: () => fetchChordsByTitle(title),
+    enabled: title !== "",
+    placeholderData: keepPreviousData,
   });
 }
