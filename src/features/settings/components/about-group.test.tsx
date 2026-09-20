@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { SymbolView } from "expo-symbols";
 import type { ReactNode } from "react";
 import { Alert, Linking } from "react-native";
 
@@ -29,6 +30,13 @@ function pressVersion(times: number) {
   for (let i = 0; i < times; i++) fireEvent.press(screen.getByText("Версия"));
 }
 
+function versionIcon() {
+  return screen.UNSAFE_getAllByType(SymbolView)[0]?.props.name;
+}
+
+const INFO_ICON = { ios: "info.circle", android: "info" };
+const GUITAR_ICON = { ios: "guitars.fill", android: "music_note" };
+
 describe("AboutGroup", () => {
   test("shows the app version from expo config", () => {
     render(<AboutGroup />, { wrapper });
@@ -53,21 +61,21 @@ describe("AboutGroup", () => {
 
     pressVersion(6);
     expect(alert).not.toHaveBeenCalled();
-    expect(screen.queryByText("🎸")).toBeNull();
+    expect(versionIcon()).toEqual(INFO_ICON);
 
     pressVersion(1);
     expect(alert).toHaveBeenCalledWith("Вы стали гитаристом 🎸", "Теперь официально.");
-    expect(screen.getByText("🎸")).toBeTruthy();
+    expect(versionIcon()).toEqual(GUITAR_ICON);
   });
 
-  test("keeps the guitarist mark after a remount and greets a repeat tapper at once", () => {
+  test("keeps the guitar icon after a remount and greets a repeat tapper at once", () => {
     render(<AboutGroup />, { wrapper });
     pressVersion(7);
     screen.unmount();
 
     const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
     render(<AboutGroup />, { wrapper });
-    expect(screen.getByText("🎸")).toBeTruthy();
+    expect(versionIcon()).toEqual(GUITAR_ICON);
 
     pressVersion(1);
     expect(alert).toHaveBeenCalledWith("Вы уже гитарист 🎸");
