@@ -17,15 +17,25 @@ type Props = {
   lesson: CourseLessonRow;
   state: LessonState;
   completedSongIds: string[];
+  isFavorite: boolean;
+  isDownloaded: boolean;
   onPress: () => void;
 };
 
-export function LessonListItem({ lesson, state, completedSongIds, onPress }: Props) {
+export function LessonListItem({
+  lesson,
+  state,
+  completedSongIds,
+  isFavorite,
+  isDownloaded,
+  onPress,
+}: Props) {
   const colors = useColors();
 
   const isContinue = state === "continue";
   const isCompleted = state === "completed";
   const isInProgress = state === "in-progress";
+  const markerTint = isContinue ? colors.primaryFg : colors.mutedFg;
 
   const statusLabel = isCompleted
     ? "Пройден"
@@ -107,12 +117,23 @@ export function LessonListItem({ lesson, state, completedSongIds, onPress }: Pro
         )}
       </View>
 
-      {isContinue && (
-        <SymbolView
-          name={{ ios: "play.fill", android: "play_arrow" }}
-          size={20}
-          tintColor={colors.primaryFg}
-        />
+      {(isFavorite || isDownloaded) && (
+        <View className="items-center gap-1">
+          {isFavorite && (
+            <SymbolView
+              name={{ ios: "bookmark.fill", android: "bookmark" }}
+              size={16}
+              tintColor={markerTint}
+            />
+          )}
+          {isDownloaded && (
+            <SymbolView
+              name={{ ios: "arrow.down.to.line", android: "download" }}
+              size={16}
+              tintColor={markerTint}
+            />
+          )}
+        </View>
       )}
     </Pressable>
   );
