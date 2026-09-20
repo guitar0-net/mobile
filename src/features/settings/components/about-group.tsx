@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Constants from "expo-constants";
-import { SymbolView } from "expo-symbols";
+import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { useRef } from "react";
 import { Alert, Linking, Pressable, View } from "react-native";
 
@@ -16,6 +16,11 @@ import { useColors } from "@/lib/themes";
 const GITHUB_URL = "https://github.com/guitar0-net";
 const CONTACT_EMAIL = "guitar0.app@gmail.com";
 const TAPS_TO_UNLOCK = 7;
+const VERSION_ICON: SymbolViewProps["name"] = { ios: "info.circle", android: "info" };
+const GUITARIST_ICON: SymbolViewProps["name"] = {
+  ios: "guitars.fill",
+  android: "music_note",
+};
 
 function openContactEmail() {
   Linking.openURL(`mailto:${CONTACT_EMAIL}`).catch(() => {
@@ -49,7 +54,7 @@ export function AboutGroup() {
       >
         <View className="h-9 w-9 items-center justify-center rounded-lg">
           <SymbolView
-            name={{ ios: "info.circle", android: "info" }}
+            name={guitaristUnlocked ? GUITARIST_ICON : VERSION_ICON}
             size={18}
             tintColor={colors.foreground}
           />
@@ -57,10 +62,7 @@ export function AboutGroup() {
         <View className="flex-1">
           <Text>Версия</Text>
         </View>
-        <View className="flex-row items-center gap-1.5">
-          {guitaristUnlocked && <Text variant="caption">🎸</Text>}
-          {version !== undefined && <Text variant="caption">{version}</Text>}
-        </View>
+        {version !== undefined && <Text variant="caption">{version}</Text>}
       </Pressable>
       <View className="h-px bg-border" />
       <SettingsRow
