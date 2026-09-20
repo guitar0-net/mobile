@@ -71,7 +71,11 @@ export default function LessonsScreen() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <ScreenScrollView className="flex-1" contentContainerClassName="pb-6">
+        <ScreenScrollView
+          bottomSafeArea={false}
+          className="flex-1"
+          contentContainerClassName="pb-6"
+        >
           <Text variant="screenTitle" className="px-4">
             Уроки
           </Text>

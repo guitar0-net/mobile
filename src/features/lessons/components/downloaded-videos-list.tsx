@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { FlatList, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
 
@@ -21,20 +22,22 @@ export function DownloadedVideosList() {
   }
 
   return (
-    <FlatList
-      className="flex-1 bg-background"
-      contentContainerClassName="px-4"
-      contentInsetAdjustmentBehavior="automatic"
-      data={data ?? []}
-      keyExtractor={(item) => item.lessonUuid}
-      renderItem={({ item }) => (
-        <DownloadedVideoItem
-          lessonUuid={item.lessonUuid}
-          title={item.title}
-          sizeBytes={item.sizeBytes}
-        />
-      )}
-      ItemSeparatorComponent={() => <View className="h-px bg-border" />}
-    />
+    <SafeAreaView edges={["bottom"]} className="flex-1">
+      <FlatList
+        className="flex-1 bg-background"
+        contentContainerClassName="px-4"
+        contentInsetAdjustmentBehavior="automatic"
+        data={data ?? []}
+        keyExtractor={(item) => item.lessonUuid}
+        renderItem={({ item }) => (
+          <DownloadedVideoItem
+            lessonUuid={item.lessonUuid}
+            title={item.title}
+            sizeBytes={item.sizeBytes}
+          />
+        )}
+        ItemSeparatorComponent={() => <View className="h-px bg-border" />}
+      />
+    </SafeAreaView>
   );
 }

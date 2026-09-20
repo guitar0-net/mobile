@@ -117,6 +117,7 @@ export default function DevToolsScreen() {
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
         <ScreenScrollView
+          bottomSafeArea={false}
           className="flex-1"
           contentContainerClassName="px-4 pt-4 pb-6 gap-6"
         >

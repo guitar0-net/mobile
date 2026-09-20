@@ -62,6 +62,7 @@ export default function AnnouncementDetailScreen() {
     <>
       <Stack.Screen options={{ title: announcement.title }} />
       <ScreenScrollView
+        bottomSafeArea={false}
         className="flex-1 bg-background"
         contentContainerClassName="px-4 pb-6 pt-4"
       >

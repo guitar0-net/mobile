@@ -6,13 +6,30 @@ import BottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
   BottomSheetScrollView,
+  type BottomSheetScrollViewMethods,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { useCallback, useEffect, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useRef } from "react";
+import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/lib/themes";
 
-export { BottomSheetScrollView as SheetScrollView };
+type SheetScrollViewProps = React.ComponentProps<typeof BottomSheetScrollView>;
+
+export const SheetScrollView = forwardRef<
+  BottomSheetScrollViewMethods,
+  SheetScrollViewProps
+>(function SheetScrollView({ children, ...props }, ref) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <BottomSheetScrollView ref={ref} {...props}>
+      {children}
+      <View style={{ height: insets.bottom }} />
+    </BottomSheetScrollView>
+  );
+});
 
 type Props = {
   visible: boolean;
@@ -30,6 +47,7 @@ type Props = {
 export function Sheet({ visible, onClose, size = "auto", children }: Props) {
   const ref = useRef<BottomSheet>(null);
   const colors = useColors();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
@@ -65,7 +83,13 @@ export function Sheet({ visible, onClose, size = "auto", children }: Props) {
       enablePanDownToClose
       onClose={onClose}
     >
-      {isLarge ? children : <BottomSheetView>{children}</BottomSheetView>}
+      {isLarge ? (
+        children
+      ) : (
+        <BottomSheetView style={{ paddingBottom: insets.bottom }}>
+          {children}
+        </BottomSheetView>
+      )}
     </BottomSheet>
   );
 }

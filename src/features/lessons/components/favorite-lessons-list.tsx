@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { FlatList, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
 
@@ -23,13 +24,15 @@ export function FavoriteLessonsList() {
   }
 
   return (
-    <FlatList
-      className="flex-1 bg-background"
-      contentContainerClassName="gap-2 p-4"
-      contentInsetAdjustmentBehavior="automatic"
-      data={lessons}
-      keyExtractor={(item) => item.lessonUuid}
-      renderItem={({ item }) => <FavoriteLessonCard lesson={item} />}
-    />
+    <SafeAreaView edges={["bottom"]} className="flex-1">
+      <FlatList
+        className="flex-1 bg-background"
+        contentContainerClassName="gap-2 p-4"
+        contentInsetAdjustmentBehavior="automatic"
+        data={lessons}
+        keyExtractor={(item) => item.lessonUuid}
+        renderItem={({ item }) => <FavoriteLessonCard lesson={item} />}
+      />
+    </SafeAreaView>
   );
 }

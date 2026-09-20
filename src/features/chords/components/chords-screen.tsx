@@ -4,6 +4,7 @@
 
 import { useMemo, useRef } from "react";
 import { Pressable, SectionList, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 
 import { Text } from "@/components/ui/text";
@@ -66,7 +67,7 @@ export function ChordsScreen() {
   );
 
   return (
-    <View className="flex-1 flex-row bg-background">
+    <SafeAreaView edges={["bottom"]} className="flex-1 flex-row bg-background">
       <SectionList<ChordRow[], SectionListSection>
         ref={listRef}
         style={{ flex: 1 }}
@@ -114,6 +115,6 @@ export function ChordsScreen() {
           </Pressable>
         ))}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
