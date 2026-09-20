@@ -28,7 +28,9 @@ export type LegacyImport = {
   favoriteCount: number;
 };
 
-type LegacyLessonSetting = { isComplete?: boolean; isFavorite?: boolean };
+// 4.x spelled the completion flag "isComplite" — a typo in the shipped
+// storage format, so the key must be matched exactly as it was written.
+type LegacyLessonSetting = { isComplite?: boolean; isFavorite?: boolean };
 
 function parseLegacyLessonSettings(raw: string): Record<string, LegacyLessonSetting> {
   const root: unknown = JSON.parse(raw);
@@ -92,7 +94,7 @@ export async function importLegacyProgress(): Promise<LegacyImport | null> {
     }
   }
 
-  const completed = toLessonUuids(settings, "isComplete");
+  const completed = toLessonUuids(settings, "isComplite");
   const favorites = toLessonUuids(settings, "isFavorite");
 
   let completedCount = 0;
