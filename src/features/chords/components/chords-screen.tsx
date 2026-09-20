@@ -5,24 +5,12 @@
 import { useMemo, useRef } from "react";
 import { Pressable, SectionList, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgXml } from "react-native-svg";
 
 import { Text } from "@/components/ui/text";
 import { useDiagramSettings, type DiagramSize } from "@/features/settings";
-import { useColors } from "@/lib/themes";
 
 import { useAllChords, type ChordRow, type ChordSection } from "../queries";
-
-const CHORD_WIDTH = {
-  vertical: { 1: 101, 2: 115, 3: 130, 4: 144, 5: 173 },
-  horizontal: { 1: 133, 2: 189, 3: 244, 4: 289, 5: 355 },
-} as const;
-
-// Heights derived from SVG viewBox ratios: horizontal 217×88 (×0.4055), vertical 91×214 (×2.352)
-const CHORD_HEIGHT = {
-  vertical: { 1: 237, 2: 271, 3: 305, 4: 338, 5: 407 },
-  horizontal: { 1: 54, 2: 77, 3: 99, 4: 117, 5: 144 },
-} as const;
+import { ChordDiagram } from "./chord-diagram";
 
 function ChordCard({
   chord,
@@ -33,20 +21,10 @@ function ChordCard({
   orientation: "horizontal" | "vertical";
   size: DiagramSize;
 }) {
-  const colors = useColors();
-  const svg =
-    orientation === "horizontal"
-      ? (chord.svgHorizontal ?? chord.svgVertical)
-      : (chord.svgVertical ?? chord.svgHorizontal);
-  const width = CHORD_WIDTH[orientation][size];
-  const height = CHORD_HEIGHT[orientation][size];
-
   return (
     <View className="items-center">
       <Text variant="caption">{chord.title}</Text>
-      {svg && (
-        <SvgXml xml={svg} width={width} height={height} color={colors.foreground} />
-      )}
+      <ChordDiagram chord={chord} orientation={orientation} size={size} />
     </View>
   );
 }
