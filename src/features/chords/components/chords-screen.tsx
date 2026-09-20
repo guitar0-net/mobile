@@ -2,97 +2,85 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useMemo, useRef } from "react";
-import { Pressable, SectionList, View } from "react-native";
+import { useState } from "react";
+import { ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ChipBar } from "@/components/ui/chip-bar";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
-import { useDiagramSettings, type DiagramSize } from "@/features/settings";
+import { useDiagramSettings } from "@/features/settings";
 
-import { useAllChords, type ChordRow, type ChordSection } from "../queries";
+import { useChordIndex, useChordsByTitle, type Note } from "../queries";
 import { ChordDiagram } from "./chord-diagram";
 
-function ChordCard({
-  chord,
-  orientation,
-  size,
-}: {
-  chord: ChordRow;
-  orientation: "horizontal" | "vertical";
-  size: DiagramSize;
-}) {
-  return (
-    <View className="items-center">
-      <Text variant="caption">{chord.title}</Text>
-      <ChordDiagram chord={chord} orientation={orientation} size={size} />
-    </View>
-  );
-}
-
-type SectionListSection = {
-  note: ChordSection["note"];
-  data: [ChordRow[]];
-};
-
 export function ChordsScreen() {
-  const { data: sections = [] } = useAllChords();
+  const { data: index = [] } = useChordIndex();
   const { chordSize, chordOrientation } = useDiagramSettings();
-  const listRef = useRef<SectionList<ChordRow[], SectionListSection>>(null);
+  const [pickedNote, setPickedNote] = useState<Note | null>(null);
+  const [pickedVariant, setPickedVariant] = useState("");
 
-  const sectionData = useMemo<SectionListSection[]>(
-    () => sections.map((s) => ({ note: s.note, data: [s.chords] })),
-    [sections],
-  );
+  const group = index.find((entry) => entry.note === pickedNote) ?? index[0];
+  const variants = group?.variants ?? [];
+  const variant = variants.includes(pickedVariant)
+    ? pickedVariant
+    : (variants[0] ?? "");
+  const title = group ? group.note + variant : "";
+
+  const { data: chords = [] } = useChordsByTitle(title);
+
+  const shownTitle = chords[0]?.title ?? title;
+  const musicalTitle = chords[0]?.musicalTitle;
+  const heading = musicalTitle ? `${shownTitle} · ${musicalTitle}` : shownTitle;
+
+  if (!group) {
+    return (
+      <SafeAreaView
+        edges={["bottom"]}
+        className="flex-1 items-center justify-center gap-3 bg-background px-8"
+      >
+        <StatusMessage variant="warning">
+          Аккорды ещё не загружены. Они появятся после первой синхронизации.
+        </StatusMessage>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView edges={["bottom"]} className="flex-1 flex-row bg-background">
-      <SectionList<ChordRow[], SectionListSection>
-        ref={listRef}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
-        sections={sectionData}
-        keyExtractor={() => "chords"}
-        stickySectionHeadersEnabled
-        renderSectionHeader={({ section }) => (
-          <View className="bg-background py-3">
-            <Text variant="heading" className="text-xl">
-              {section.note}
-            </Text>
-          </View>
-        )}
-        renderItem={({ item: chords }) => (
-          <View className="flex-row flex-wrap gap-4 pb-6">
-            {chords.map((chord) => (
-              <ChordCard
-                key={chord.id}
-                chord={chord}
-                orientation={chordOrientation}
-                size={chordSize}
-              />
-            ))}
-          </View>
-        )}
-      />
-
-      <View className="items-center justify-center py-4 pr-2">
-        {sections.map((section, index) => (
-          <Pressable
-            key={section.note}
-            onPress={() =>
-              listRef.current?.scrollToLocation({
-                sectionIndex: index,
-                itemIndex: 0,
-                animated: true,
-              })
-            }
-            className="px-2 py-0.5"
-          >
-            <Text className="font-sans-semibold text-xs text-primary">
-              {section.note}
-            </Text>
-          </Pressable>
-        ))}
+    <SafeAreaView edges={["bottom"]} className="flex-1 bg-background">
+      <View className="gap-3 px-4 py-3">
+        <SegmentedControl
+          options={index.map((entry) => ({ label: entry.note, value: entry.note }))}
+          value={group.note}
+          onChange={setPickedNote}
+        />
+        <ChipBar
+          testID="chord-variants"
+          options={variants.map((item) => ({
+            label: item === "" ? group.note : item,
+            value: item,
+          }))}
+          value={variant}
+          onChange={setPickedVariant}
+        />
       </View>
+
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+        <Text testID="chord-title" variant="heading" className="mb-4 text-center">
+          {heading}
+        </Text>
+        <View className="flex-row flex-wrap justify-center gap-4">
+          {chords.map((chord) => (
+            <ChordDiagram
+              key={chord.id}
+              chord={chord}
+              orientation={chordOrientation}
+              size={chordSize}
+            />
+          ))}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
