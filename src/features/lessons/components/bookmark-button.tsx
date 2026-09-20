@@ -18,7 +18,7 @@ export function BookmarkButton({ lessonId }: BookmarkButtonProps) {
     <HeaderButton
       icon={
         isBookmarked
-          ? { ios: "bookmark.fill", android: "bookmark" }
+          ? { ios: "bookmark.fill", android: "bookmark_added" }
           : { ios: "bookmark", android: "bookmark_border" }
       }
       active={isBookmarked}
