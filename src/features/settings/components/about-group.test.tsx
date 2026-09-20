@@ -60,7 +60,7 @@ describe("AboutGroup", () => {
     expect(screen.getByText("🎸")).toBeTruthy();
   });
 
-  test("keeps the guitarist mark after a remount and greets a repeat tapper", () => {
+  test("keeps the guitarist mark after a remount and greets a repeat tapper at once", () => {
     render(<AboutGroup />, { wrapper });
     pressVersion(7);
     screen.unmount();
@@ -69,7 +69,7 @@ describe("AboutGroup", () => {
     render(<AboutGroup />, { wrapper });
     expect(screen.getByText("🎸")).toBeTruthy();
 
-    pressVersion(7);
+    pressVersion(1);
     expect(alert).toHaveBeenCalledWith("Вы уже гитарист 🎸");
   });
 

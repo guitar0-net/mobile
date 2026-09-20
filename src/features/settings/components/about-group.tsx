@@ -30,14 +30,13 @@ export function AboutGroup() {
   const taps = useRef(0);
 
   function handleVersionPress() {
-    taps.current += 1;
-    if (taps.current < TAPS_TO_UNLOCK) return;
-    taps.current = 0;
-
     if (guitaristUnlocked) {
       Alert.alert("Вы уже гитарист 🎸");
       return;
     }
+    taps.current += 1;
+    if (taps.current < TAPS_TO_UNLOCK) return;
+    taps.current = 0;
     unlockGuitarist();
     Alert.alert("Вы стали гитаристом 🎸", "Теперь официально.");
   }
