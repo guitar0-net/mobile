@@ -3,31 +3,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { forwardRef } from "react";
-import { ScrollView, type ScrollViewProps } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ScrollView, View, type ScrollViewProps } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = ScrollViewProps & {
   bottomSafeArea?: boolean;
 };
 
 export const ScreenScrollView = forwardRef<ScrollView, Props>(function ScreenScrollView(
-  { bottomSafeArea = true, ...props },
+  { bottomSafeArea = true, children, ...props },
   ref,
 ) {
-  const scrollView = (
+  const insets = useSafeAreaInsets();
+
+  return (
     <ScrollView
       ref={ref}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="automatic"
       {...props}
-    />
-  );
-
-  if (!bottomSafeArea) return scrollView;
-
-  return (
-    <SafeAreaView edges={["bottom"]} className="flex-1">
-      {scrollView}
-    </SafeAreaView>
+    >
+      {children}
+      {bottomSafeArea && <View style={{ height: insets.bottom }} />}
+    </ScrollView>
   );
 });

@@ -35,7 +35,11 @@ export default function MigrationScreen() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView className="flex-1">
-        <ScreenScrollView contentContainerClassName="px-4 pb-6 pt-4 gap-6">
+        <ScreenScrollView
+          bottomSafeArea={false}
+          className="flex-1"
+          contentContainerClassName="px-4 pb-6 pt-4 gap-6"
+        >
           <View className="gap-2">
             <Text variant="heading" className="text-2xl">
               Прогресс перенесён
