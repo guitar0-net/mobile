@@ -132,6 +132,7 @@ export async function syncAll(
   } = await getSyncData(since);
 
   const localImagePaths = new Map<number, string>();
+  await onProgress?.({ stage: "downloading", total: schemes.length, completed: 0 });
   for (const scheme of schemes) {
     const localImagePath = await withImageRetries(() =>
       downloadImage(scheme.id, scheme.image),

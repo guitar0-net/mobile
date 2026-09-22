@@ -1025,7 +1025,7 @@ describe("atomic write and progress stages", () => {
     ]);
   });
 
-  test("reports each downloaded image, then the saving stage", async () => {
+  test("reports the image download start, each downloaded image, then the saving stage", async () => {
     const db = await initDb();
     const onProgress = jest.fn();
 
@@ -1036,6 +1036,7 @@ describe("atomic write and progress stages", () => {
     });
 
     expect(onProgress.mock.calls.map(([progress]) => progress)).toEqual([
+      { stage: "downloading", total: 2, completed: 0 },
       { stage: "downloading", total: 2, completed: 1 },
       { stage: "downloading", total: 2, completed: 2 },
       { stage: "saving" },
