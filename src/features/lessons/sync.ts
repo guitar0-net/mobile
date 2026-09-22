@@ -17,6 +17,7 @@ import {
   songSchemes as songSchemesTable,
   songs as songsTable,
 } from "@/lib/db";
+import { RequestTimeoutError } from "@/lib/network";
 import type { components } from "@/lib/network/api.types";
 
 import { getSyncData as defaultGetSyncData } from "./api";
@@ -33,16 +34,46 @@ export type SyncDeps = {
   downloadImage: (schemeId: number, url: string) => Promise<string>;
 };
 
+const IMAGE_STALL_TIMEOUT_MS = 20_000;
+const IMAGE_RETRY_DELAYS_MS = [1_000, 3_000];
+
 async function defaultDownloadImage(schemeId: number, url: string): Promise<string> {
   const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
   const absoluteUrl = url.startsWith("http") ? url : `${baseUrl}${url}`;
   const imagesDir = new Directory(Paths.document, "images");
   imagesDir.create({ intermediates: true, idempotent: true });
   const dest = new FSFile(imagesDir, `${schemeId}.png`);
-  const downloaded = await FSFile.downloadFileAsync(absoluteUrl, dest, {
-    idempotent: true,
-  });
-  return downloaded.uri;
+
+  const controller = new AbortController();
+  let stallTimer = setTimeout(() => controller.abort(), IMAGE_STALL_TIMEOUT_MS);
+  const resetStallTimer = () => {
+    clearTimeout(stallTimer);
+    stallTimer = setTimeout(() => controller.abort(), IMAGE_STALL_TIMEOUT_MS);
+  };
+  try {
+    const downloaded = await FSFile.downloadFileAsync(absoluteUrl, dest, {
+      idempotent: true,
+      signal: controller.signal,
+      onProgress: resetStallTimer,
+    });
+    return downloaded.uri;
+  } catch (error) {
+    if (controller.signal.aborted) throw new RequestTimeoutError(absoluteUrl);
+    throw error;
+  } finally {
+    clearTimeout(stallTimer);
+  }
+}
+
+async function withImageRetries<T>(attempt: () => Promise<T>): Promise<T> {
+  for (const delayMs of IMAGE_RETRY_DELAYS_MS) {
+    try {
+      return await attempt();
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  return attempt();
 }
 
 async function deleteJunctionsForLesson(db: AppDb, lessonUuid: string): Promise<void> {
@@ -132,7 +163,9 @@ export async function syncAll(
 
   // Phase 2: Download and upsert schemes — no FK dependencies on songs.
   for (const scheme of schemes) {
-    const localImagePath = await downloadImage(scheme.id, scheme.image);
+    const localImagePath = await withImageRetries(() =>
+      downloadImage(scheme.id, scheme.image),
+    );
     await db
       .insert(schemesTable)
       .values({

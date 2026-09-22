@@ -14,6 +14,7 @@ import {
   songSchemes,
   songs,
 } from "@/lib/db";
+import { RequestTimeoutError } from "@/lib/network";
 import type { components } from "@/lib/network/api.types";
 
 import { resetDbForTesting } from "./__tests__/testing";
@@ -565,25 +566,27 @@ test("retry after crash completes without duplicating already-committed lessons"
   const db = await initDb();
   const crash = new Error("simulated crash");
   const schemeId = 99;
+  jest.useFakeTimers();
 
-  await expect(
-    syncAll(db, null, undefined, {
-      getSyncData: () =>
-        Promise.resolve(
-          makeSyncResponse({
-            lesson_uuids: ["l1", "l2"],
-            lessons: [makeLesson("l1"), makeLesson("l2")],
-            songs: [
-              makeSong("s-l1", "l1"),
-              makeSong("s-l2", "l2", { scheme_ids: [schemeId] }),
-            ],
-            schemes: [makeScheme(schemeId, { image: "https://example.com/l2.png" })],
-          }),
-        ),
-      downloadImage: (_id, url) =>
-        url.includes("l2") ? Promise.reject(crash) : Promise.resolve("/local/img.png"),
-    }),
-  ).rejects.toThrow("simulated crash");
+  const crashed = syncAll(db, null, undefined, {
+    getSyncData: () =>
+      Promise.resolve(
+        makeSyncResponse({
+          lesson_uuids: ["l1", "l2"],
+          lessons: [makeLesson("l1"), makeLesson("l2")],
+          songs: [
+            makeSong("s-l1", "l1"),
+            makeSong("s-l2", "l2", { scheme_ids: [schemeId] }),
+          ],
+          schemes: [makeScheme(schemeId, { image: "https://example.com/l2.png" })],
+        }),
+      ),
+    downloadImage: (_id, url) =>
+      url.includes("l2") ? Promise.reject(crash) : Promise.resolve("/local/img.png"),
+  }).catch((err: unknown) => err);
+  await jest.advanceTimersByTimeAsync(4_000);
+  jest.useRealTimers();
+  expect(await crashed).toBe(crash);
 
   await syncAll(db, null, undefined, {
     getSyncData: () =>
@@ -849,7 +852,7 @@ describe("defaultDownloadImage via syncAll (no downloadImage dep)", () => {
     expect(fsModule.File.downloadFileAsync).toHaveBeenCalledWith(
       "https://cdn.example.com/scheme.png",
       expect.anything(),
-      { idempotent: true },
+      expect.objectContaining({ idempotent: true }),
     );
     const [row] = await db.select().from(schemes);
     expect(row.localImagePath).toBe("/local/scheme.png");
@@ -867,8 +870,116 @@ describe("defaultDownloadImage via syncAll (no downloadImage dep)", () => {
     expect(fsModule.File.downloadFileAsync).toHaveBeenCalledWith(
       "https://api.test.com/media/scheme-2.png",
       expect.anything(),
-      { idempotent: true },
+      expect.objectContaining({ idempotent: true }),
     );
     delete process.env.EXPO_PUBLIC_API_URL;
+  });
+});
+
+describe("scheme image download resilience", () => {
+  const fsModule = jest.requireMock("expo-file-system") as any;
+
+  type DownloadOptions = {
+    signal: AbortSignal;
+    onProgress: () => void;
+  };
+
+  function stallUntilAborted(_url: string, _dest: unknown, options: DownloadOptions) {
+    return new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => reject(new Error("AbortError")));
+    });
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    fsModule.Directory.mockReturnValue({ create: jest.fn() });
+    fsModule.File.mockImplementation(() => ({}));
+    fsModule.File.downloadFileAsync.mockReset();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test("retries a failed image download and completes the sync", async () => {
+    const db = await initDb();
+    const downloadImage = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("java.net.SocketTimeoutException: timeout"))
+      .mockRejectedValueOnce(new Error("java.net.SocketTimeoutException: timeout"))
+      .mockResolvedValueOnce("/local/1.png");
+
+    const result = syncAll(db, null, undefined, {
+      getSyncData: () =>
+        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1)] })),
+      downloadImage,
+    });
+    await jest.advanceTimersByTimeAsync(4_000);
+    await result;
+
+    expect(downloadImage).toHaveBeenCalledTimes(3);
+    const [row] = await db.select().from(schemes);
+    expect(row.localImagePath).toBe("/local/1.png");
+  });
+
+  test("fails the sync with the last error after three failed attempts", async () => {
+    const db = await initDb();
+    const downloadImage = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("first"))
+      .mockRejectedValueOnce(new Error("second"))
+      .mockRejectedValueOnce(new Error("third"));
+
+    const result = syncAll(db, null, undefined, {
+      getSyncData: () =>
+        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1)] })),
+      downloadImage,
+    }).catch((err: unknown) => err);
+    await jest.advanceTimersByTimeAsync(4_000);
+
+    expect(await result).toEqual(new Error("third"));
+    expect(downloadImage).toHaveBeenCalledTimes(3);
+  });
+
+  test("aborts a download that receives no data for 20 seconds", async () => {
+    const db = await initDb();
+    fsModule.File.downloadFileAsync.mockImplementation(stallUntilAborted);
+
+    const result = syncAll(db, null, undefined, {
+      getSyncData: () =>
+        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1)] })),
+    }).catch((err: unknown) => err);
+    await jest.advanceTimersByTimeAsync(3 * 20_000 + 4_000);
+
+    expect(await result).toBeInstanceOf(RequestTimeoutError);
+    expect(fsModule.File.downloadFileAsync).toHaveBeenCalledTimes(3);
+  });
+
+  test("keeps a slow download alive while data keeps arriving", async () => {
+    const db = await initDb();
+    fsModule.File.downloadFileAsync.mockImplementation(
+      (_url: string, _dest: unknown, options: DownloadOptions) =>
+        new Promise((resolve, reject) => {
+          options.signal.addEventListener("abort", () =>
+            reject(new Error("AbortError")),
+          );
+          const chunks = setInterval(options.onProgress, 15_000);
+          setTimeout(() => {
+            clearInterval(chunks);
+            resolve({ uri: "/local/slow.png" });
+          }, 50_000);
+        }),
+    );
+
+    const result = syncAll(db, null, undefined, {
+      getSyncData: () =>
+        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1)] })),
+    });
+    await jest.advanceTimersByTimeAsync(50_000);
+    await result;
+
+    expect(fsModule.File.downloadFileAsync).toHaveBeenCalledTimes(1);
+    const [row] = await db.select().from(schemes);
+    expect(row.localImagePath).toBe("/local/slow.png");
   });
 });
