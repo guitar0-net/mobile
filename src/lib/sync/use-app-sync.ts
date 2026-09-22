@@ -7,7 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 
 import { syncAll as defaultSyncAll } from "@/features/lessons/sync";
 import type { SyncProgress } from "@/features/lessons/sync";
-import { capture } from "@/lib/analytics";
+import { capture, captureException } from "@/lib/analytics";
 import { initDb as defaultInitDb } from "@/lib/db";
 import type { AppDb } from "@/lib/db";
 
@@ -84,6 +84,13 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
         kind: syncFailure.kind,
         is_first_launch: isFirstLaunch,
       });
+      if (isFirstLaunch || syncFailure.kind !== "offline") {
+        captureException(error, {
+          stage: "content_sync",
+          kind: syncFailure.kind,
+          is_first_launch: isFirstLaunch,
+        });
+      }
     }
   }, [
     initDb,

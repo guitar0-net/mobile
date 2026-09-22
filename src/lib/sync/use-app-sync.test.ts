@@ -4,12 +4,19 @@
 
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
-import { ApiError } from "@/lib/network";
+import { ApiError, RequestTimeoutError } from "@/lib/network";
 
 import { resetSyncForTesting } from "./__tests__/testing";
 import { useSyncStore } from "./store";
 import { useAppSync } from "./use-app-sync";
 import type { AppSyncDeps } from "./use-app-sync";
+
+const mockCaptureException = jest.fn();
+
+jest.mock("@/lib/analytics", () => ({
+  capture: jest.fn(),
+  captureException: (...args: unknown[]) => mockCaptureException(...args),
+}));
 
 const mockDb = {} as Parameters<AppSyncDeps["syncAll"]>[0];
 
@@ -23,6 +30,7 @@ function makeDeps(overrides?: Partial<AppSyncDeps>): AppSyncDeps {
 
 beforeEach(() => {
   resetSyncForTesting();
+  mockCaptureException.mockClear();
 });
 
 describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
@@ -242,6 +250,11 @@ describe("useAppSync — failure classification", () => {
     expect(result.current.failure?.reason).toBe("Проверьте подключение к интернету");
   });
 
+  test("reports a request timeout as offline", async () => {
+    const result = await failWith(new RequestTimeoutError("/api/v1/sync/lessons/"));
+    expect(result.current.failure?.kind).toBe("offline");
+  });
+
   test("does not blame the network for a local failure", async () => {
     const deps = makeDeps({ initDb: jest.fn().mockRejectedValue(new Error("DB")) });
     const { result } = renderHook(() => useAppSync(deps));
@@ -265,5 +278,40 @@ describe("useAppSync — failure classification", () => {
 
     await waitFor(() => expect(result.current.status).toBe("success"));
     expect(result.current.failure).toBeNull();
+  });
+});
+
+describe("useAppSync — error reporting", () => {
+  async function failWith(error: unknown) {
+    const deps = makeDeps({ syncAll: jest.fn().mockRejectedValue(error) });
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.failure).not.toBeNull());
+  }
+
+  test("reports every first-launch failure with its classification", async () => {
+    const error = new TypeError("Network request failed");
+    await failWith(error);
+    expect(mockCaptureException).toHaveBeenCalledWith(error, {
+      stage: "content_sync",
+      kind: "offline",
+      is_first_launch: true,
+    });
+  });
+
+  test("reports an unexpected background failure", async () => {
+    useSyncStore.setState({ isInitialSyncDone: true, contentVersion: "v0.9" });
+    const error = new Error("Unable to download file");
+    await failWith(error);
+    expect(mockCaptureException).toHaveBeenCalledWith(error, {
+      stage: "content_sync",
+      kind: "unknown",
+      is_first_launch: false,
+    });
+  });
+
+  test("stays quiet about a background sync that failed for lack of network", async () => {
+    useSyncStore.setState({ isInitialSyncDone: true, contentVersion: "v0.9" });
+    await failWith(new TypeError("Network request failed"));
+    expect(mockCaptureException).not.toHaveBeenCalled();
   });
 });
