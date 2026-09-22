@@ -11,10 +11,11 @@ import { useSyncStore } from "./store";
 import { useAppSync } from "./use-app-sync";
 import type { AppSyncDeps } from "./use-app-sync";
 
+const mockCapture = jest.fn();
 const mockCaptureException = jest.fn();
 
 jest.mock("@/lib/analytics", () => ({
-  capture: jest.fn(),
+  capture: (...args: unknown[]) => mockCapture(...args),
   captureException: (...args: unknown[]) => mockCaptureException(...args),
 }));
 
@@ -30,6 +31,7 @@ function makeDeps(overrides?: Partial<AppSyncDeps>): AppSyncDeps {
 
 beforeEach(() => {
   resetSyncForTesting();
+  mockCapture.mockClear();
   mockCaptureException.mockClear();
 });
 
@@ -194,15 +196,19 @@ describe("useAppSync — returning user (isInitialSyncDone=true)", () => {
     const deps = makeDeps();
     const { result } = renderHook(() => useAppSync(deps));
     await waitFor(() => expect(result.current.status).toBe("success"));
-    expect(deps.syncAll).toHaveBeenCalledWith(mockDb, "v0.9", undefined);
+    expect(deps.syncAll).toHaveBeenCalledWith(mockDb, "v0.9", expect.any(Function));
   });
 
-  test("does not pass onProgress on subsequent launch", async () => {
-    const deps = makeDeps();
+  test("does not show progress on subsequent launch", async () => {
+    const deps = makeDeps({
+      syncAll: jest.fn().mockImplementation(async (_db, _since, onProgress) => {
+        await onProgress?.({ stage: "downloading", total: 5, completed: 3 });
+        return "v1.0";
+      }),
+    });
     const { result } = renderHook(() => useAppSync(deps));
     await waitFor(() => expect(result.current.status).toBe("success"));
-    const [, , onProgress] = (deps.syncAll as jest.Mock).mock.calls[0];
-    expect(onProgress).toBeUndefined();
+    expect(result.current.progress).toBeNull();
   });
 
   test("transitions to stale when sync fails (not error)", async () => {
@@ -318,6 +324,9 @@ describe("useAppSync — error reporting", () => {
       stage: "content_sync",
       kind: "offline",
       is_first_launch: true,
+      error_name: "TypeError",
+      duration_ms: expect.any(Number),
+      sync_step: "fetching",
     });
   });
 
@@ -329,6 +338,9 @@ describe("useAppSync — error reporting", () => {
       stage: "content_sync",
       kind: "unknown",
       is_first_launch: false,
+      error_name: "Error",
+      duration_ms: expect.any(Number),
+      sync_step: "fetching",
     });
   });
 
@@ -336,5 +348,58 @@ describe("useAppSync — error reporting", () => {
     useSyncStore.setState({ isInitialSyncDone: true, contentVersion: "v0.9" });
     await failWith(new TypeError("Network request failed"));
     expect(mockCaptureException).not.toHaveBeenCalled();
+  });
+});
+
+describe("useAppSync — failure analytics", () => {
+  function syncFailedProps(): Record<string, unknown> {
+    const call = mockCapture.mock.calls.find(
+      ([event]) => event === "content_sync_failed",
+    );
+    return call?.[1];
+  }
+
+  async function runFailing(deps: AppSyncDeps) {
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.failure).not.toBeNull());
+  }
+
+  test("tells a timeout apart from an unreachable server in background syncs", async () => {
+    useSyncStore.setState({ isInitialSyncDone: true, contentVersion: "v0.9" });
+    await runFailing(
+      makeDeps({
+        syncAll: jest
+          .fn()
+          .mockRejectedValue(new RequestTimeoutError("/api/v1/sync/lessons/")),
+      }),
+    );
+    expect(syncFailedProps()).toMatchObject({
+      kind: "offline",
+      error_name: "RequestTimeoutError",
+      sync_step: "fetching",
+    });
+  });
+
+  test("records how far the image download got before failing", async () => {
+    await runFailing(
+      makeDeps({
+        syncAll: jest.fn().mockImplementation(async (_db, _since, onProgress) => {
+          await onProgress?.({ stage: "downloading", total: 135, completed: 42 });
+          throw new RequestTimeoutError("/media/lesson_schemes/a.jpg");
+        }),
+      }),
+    );
+    expect(syncFailedProps()).toMatchObject({
+      sync_step: "downloading",
+      images_completed: 42,
+      images_total: 135,
+    });
+  });
+
+  test("attributes a database failure to initialization, not the network", async () => {
+    await runFailing(
+      makeDeps({ initDb: jest.fn().mockRejectedValue(new Error("DB")) }),
+    );
+    expect(syncFailedProps()).toMatchObject({ kind: "unknown", sync_step: "init" });
   });
 });
