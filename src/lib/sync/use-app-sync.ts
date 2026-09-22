@@ -31,9 +31,13 @@ export type AppSyncDeps = {
   syncAll: (
     db: AppDb,
     since: string | null,
-    onProgress?: (progress: SyncProgress) => void,
+    onProgress?: (progress: SyncProgress) => void | Promise<void>,
   ) => Promise<string | null>;
 };
+
+function waitForPaint(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+}
 
 export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
   const { initDb = defaultInitDb, syncAll = defaultSyncAll } = deps ?? {};
@@ -64,7 +68,10 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
     try {
       const db = await initDb();
       const onProgress = isFirstLaunch
-        ? (p: SyncProgress) => setProgress(p)
+        ? (p: SyncProgress) => {
+            setProgress(p);
+            return p.stage === "saving" ? waitForPaint() : undefined;
+          }
         : undefined;
       const version = await syncAll(db, contentVersion || null, onProgress);
       if (version != null) setContentVersion(version);

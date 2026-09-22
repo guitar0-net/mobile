@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
 import { LottieAnimation } from "@/components/ui/lottie-animation";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 import { hasPendingLegacyReview, importLegacyProgress } from "@/features/migration";
@@ -50,10 +51,15 @@ export default function LoadingScreen() {
       clearTimeout(t);
     };
   }, [status, router]);
-  const percentage =
-    progress && progress.total > 0
-      ? Math.round((progress.completed / progress.total) * 100)
-      : 0;
+
+  let progressValue: number | undefined;
+  let progressLabel = "Подключаемся к серверу...";
+  if (progress?.stage === "downloading") {
+    progressValue = progress.total > 0 ? progress.completed / progress.total : 1;
+    progressLabel = `Загружаем уроки... ${Math.round(progressValue * 100)}%`;
+  } else if (progress?.stage === "saving") {
+    progressLabel = "Сохраняем уроки...";
+  }
 
   return (
     <View className="flex-1 bg-background">
@@ -77,16 +83,9 @@ export default function LoadingScreen() {
           {status === "loading" && isFirstLaunch && (
             <>
               <View className="h-8 w-full justify-center">
-                <View className="h-1.5 w-full overflow-hidden rounded-full border border-border">
-                  <View
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${percentage}%` }}
-                  />
-                </View>
+                <ProgressBar value={progressValue} />
               </View>
-              <Text className="text-sm text-muted-fg">
-                {progress ? `Загружаем уроки... ${percentage}%` : "Загружаем уроки..."}
-              </Text>
+              <Text className="text-sm text-muted-fg">{progressLabel}</Text>
             </>
           )}
 

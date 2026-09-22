@@ -24,10 +24,8 @@ import { getSyncData as defaultGetSyncData } from "./api";
 
 type SyncLessonsResponse = components["schemas"]["SyncLessonsResponse"];
 
-export type SyncProgress = {
-  total: number;
-  completed: number;
-};
+export type SyncProgress =
+  { stage: "downloading"; total: number; completed: number } | { stage: "saving" };
 
 export type SyncDeps = {
   getSyncData: (since: string | null) => Promise<SyncLessonsResponse>;
@@ -76,43 +74,46 @@ async function withImageRetries<T>(attempt: () => Promise<T>): Promise<T> {
   return attempt();
 }
 
-async function deleteJunctionsForLesson(db: AppDb, lessonUuid: string): Promise<void> {
-  await db.delete(lessonSongsTable).where(eq(lessonSongsTable.lessonUuid, lessonUuid));
-}
+type SyncTx = Parameters<Parameters<AppDb["transaction"]>[0]>[0];
 
-async function deleteOrphanedSongs(db: AppDb): Promise<void> {
-  const linkedUuids = db
+function deleteOrphanedSongs(tx: SyncTx): void {
+  const linkedUuids = tx
     .select({ uuid: lessonSongsTable.songUuid })
     .from(lessonSongsTable);
-  await db
-    .delete(songChordsTable)
-    .where(notInArray(songChordsTable.songUuid, linkedUuids));
-  await db
-    .delete(songSchemesTable)
-    .where(notInArray(songSchemesTable.songUuid, linkedUuids));
-  await db.delete(songsTable).where(notInArray(songsTable.uuid, linkedUuids));
+  tx.delete(songChordsTable)
+    .where(notInArray(songChordsTable.songUuid, linkedUuids))
+    .run();
+  tx.delete(songSchemesTable)
+    .where(notInArray(songSchemesTable.songUuid, linkedUuids))
+    .run();
+  tx.delete(songsTable).where(notInArray(songsTable.uuid, linkedUuids)).run();
 }
 
-async function deleteRemovedLessons(db: AppDb, serverUuids: string[]): Promise<void> {
+function deleteRemovedLessons(tx: SyncTx, serverUuids: string[]): void {
   if (serverUuids.length === 0) {
-    await db.delete(lessonSongsTable);
-    await db.delete(lessonsTable);
+    tx.delete(lessonSongsTable).run();
+    tx.delete(lessonsTable).run();
     return;
   }
-  const toDelete = await db
+  const toDelete = tx
     .select({ uuid: lessonsTable.uuid })
     .from(lessonsTable)
-    .where(notInArray(lessonsTable.uuid, serverUuids));
+    .where(notInArray(lessonsTable.uuid, serverUuids))
+    .all();
   for (const { uuid } of toDelete) {
-    await db.delete(lessonSongsTable).where(eq(lessonSongsTable.lessonUuid, uuid));
-    await db.delete(lessonsTable).where(eq(lessonsTable.uuid, uuid));
+    tx.delete(lessonSongsTable).where(eq(lessonSongsTable.lessonUuid, uuid)).run();
+    tx.delete(lessonsTable).where(eq(lessonsTable.uuid, uuid)).run();
   }
 }
 
+/**
+ * Downloads every scheme image first, then writes the whole payload in one
+ * transaction, so an interrupted sync never leaves partially applied content.
+ */
 export async function syncAll(
   db: AppDb,
   since: string | null,
-  onProgress?: (progress: SyncProgress) => void,
+  onProgress?: (progress: SyncProgress) => void | Promise<void>,
   deps?: Partial<SyncDeps>,
 ): Promise<string | null> {
   const { getSyncData = defaultGetSyncData, downloadImage = defaultDownloadImage } =
@@ -130,12 +131,32 @@ export async function syncAll(
     course_lessons,
   } = await getSyncData(since);
 
-  // Phase 1: Upsert chords — no FK dependencies, must exist before song_chords.
-  for (const chord of chords) {
-    await db
-      .insert(chordsTable)
-      .values({
-        id: chord.id,
+  const localImagePaths = new Map<number, string>();
+  for (const scheme of schemes) {
+    const localImagePath = await withImageRetries(() =>
+      downloadImage(scheme.id, scheme.image),
+    );
+    localImagePaths.set(scheme.id, localImagePath);
+    await onProgress?.({
+      stage: "downloading",
+      total: schemes.length,
+      completed: localImagePaths.size,
+    });
+  }
+
+  await onProgress?.({ stage: "saving" });
+
+  const songsByLesson = new Map<string, typeof songs>();
+  for (const song of songs) {
+    const bucket = songsByLesson.get(song.lesson_uuid) ?? [];
+    bucket.push(song);
+    songsByLesson.set(song.lesson_uuid, bucket);
+  }
+  const now = new Date().toISOString();
+
+  db.transaction((tx) => {
+    for (const chord of chords) {
+      const values = {
         title: chord.title,
         musicalTitle: chord.musical_title,
         svgHorizontal: chord.svg_horizontal,
@@ -143,139 +164,87 @@ export async function syncAll(
         startFret: chord.start_fret,
         hasBarre: chord.has_barre ?? false,
         orderInNote: chord.order_in_note,
-      })
-      .onConflictDoUpdate({
-        target: chordsTable.id,
-        set: {
-          title: chord.title,
-          musicalTitle: chord.musical_title,
-          svgHorizontal: chord.svg_horizontal,
-          svgVertical: chord.svg_vertical,
-          startFret: chord.start_fret,
-          hasBarre: chord.has_barre ?? false,
-          orderInNote: chord.order_in_note,
-        },
-      });
-  }
+      };
+      tx.insert(chordsTable)
+        .values({ id: chord.id, ...values })
+        .onConflictDoUpdate({ target: chordsTable.id, set: values })
+        .run();
+    }
 
-  const total = schemes.length;
-  let completed = 0;
-
-  // Phase 2: Download and upsert schemes — no FK dependencies on songs.
-  for (const scheme of schemes) {
-    const localImagePath = await withImageRetries(() =>
-      downloadImage(scheme.id, scheme.image),
-    );
-    await db
-      .insert(schemesTable)
-      .values({
-        id: scheme.id,
+    for (const scheme of schemes) {
+      const values = {
         image: scheme.image,
         inscription: scheme.inscription ?? null,
         height: scheme.height ?? null,
         width: scheme.width ?? null,
-        localImagePath,
-      })
-      .onConflictDoUpdate({
-        target: schemesTable.id,
-        set: {
-          image: scheme.image,
-          inscription: scheme.inscription ?? null,
-          height: scheme.height ?? null,
-          width: scheme.width ?? null,
-          localImagePath,
-        },
-      });
-    onProgress?.({ total, completed: ++completed });
-  }
+        localImagePath: localImagePaths.get(scheme.id) ?? null,
+      };
+      tx.insert(schemesTable)
+        .values({ id: scheme.id, ...values })
+        .onConflictDoUpdate({ target: schemesTable.id, set: values })
+        .run();
+    }
 
-  // Build lookup: lesson_uuid → songs[] for per-lesson processing.
-  const songsByLesson = new Map<string, typeof songs>();
-  for (const song of songs) {
-    const bucket = songsByLesson.get(song.lesson_uuid) ?? [];
-    bucket.push(song);
-    songsByLesson.set(song.lesson_uuid, bucket);
-  }
-
-  // Phase 3: Per-lesson — upsert, delete stale songs, insert fresh songs/junctions.
-  const now = new Date().toISOString();
-
-  for (const lesson of lessons) {
-    await db
-      .insert(lessonsTable)
-      .values({
-        uuid: lesson.uuid,
+    for (const lesson of lessons) {
+      const values = {
         title: lesson.title,
         description: lesson.description,
         videoUrl: lesson.video_url,
         duration: lesson.duration,
         updatedAt: lesson.updated_at,
         syncedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: lessonsTable.uuid,
-        set: {
-          title: lesson.title,
-          description: lesson.description,
-          videoUrl: lesson.video_url,
-          duration: lesson.duration,
-          updatedAt: lesson.updated_at,
-          syncedAt: now,
-        },
-      });
+      };
+      tx.insert(lessonsTable)
+        .values({ uuid: lesson.uuid, ...values })
+        .onConflictDoUpdate({ target: lessonsTable.uuid, set: values })
+        .run();
 
-    await deleteJunctionsForLesson(db, lesson.uuid);
+      tx.delete(lessonSongsTable)
+        .where(eq(lessonSongsTable.lessonUuid, lesson.uuid))
+        .run();
 
-    for (const song of songsByLesson.get(lesson.uuid) ?? []) {
-      await db
-        .insert(songsTable)
-        .values({
-          uuid: song.uuid,
+      for (const song of songsByLesson.get(lesson.uuid) ?? []) {
+        const songValues = {
           title: song.title,
           text: song.text,
           metronome: song.metronome,
-        })
-        .onConflictDoUpdate({
-          target: songsTable.uuid,
-          set: { title: song.title, text: song.text, metronome: song.metronome },
-        });
+        };
+        tx.insert(songsTable)
+          .values({ uuid: song.uuid, ...songValues })
+          .onConflictDoUpdate({ target: songsTable.uuid, set: songValues })
+          .run();
 
-      await db.delete(songChordsTable).where(eq(songChordsTable.songUuid, song.uuid));
-      for (const chordId of song.chord_ids) {
-        await db
-          .insert(songChordsTable)
-          .values({ songUuid: song.uuid, chordId })
-          .onConflictDoNothing();
+        tx.delete(songChordsTable).where(eq(songChordsTable.songUuid, song.uuid)).run();
+        for (const chordId of song.chord_ids) {
+          tx.insert(songChordsTable)
+            .values({ songUuid: song.uuid, chordId })
+            .onConflictDoNothing()
+            .run();
+        }
+
+        tx.delete(songSchemesTable)
+          .where(eq(songSchemesTable.songUuid, song.uuid))
+          .run();
+        for (const schemeId of song.scheme_ids) {
+          tx.insert(songSchemesTable)
+            .values({ songUuid: song.uuid, schemeId })
+            .onConflictDoNothing()
+            .run();
+        }
+
+        tx.insert(lessonSongsTable)
+          .values({ lessonUuid: lesson.uuid, songUuid: song.uuid })
+          .onConflictDoNothing()
+          .run();
       }
-
-      await db.delete(songSchemesTable).where(eq(songSchemesTable.songUuid, song.uuid));
-      for (const schemeId of song.scheme_ids) {
-        await db
-          .insert(songSchemesTable)
-          .values({ songUuid: song.uuid, schemeId })
-          .onConflictDoNothing();
-      }
-
-      await db
-        .insert(lessonSongsTable)
-        .values({ lessonUuid: lesson.uuid, songUuid: song.uuid })
-        .onConflictDoNothing();
     }
-  }
 
-  // Phase 4: Prune lessons removed from the server, then orphaned songs.
-  await deleteRemovedLessons(db, lesson_uuids);
-  await deleteOrphanedSongs(db);
+    deleteRemovedLessons(tx, lesson_uuids);
+    deleteOrphanedSongs(tx);
 
-  // Phase 5: Replace course_lessons (always full set), upsert courses, prune.
-  // Wrapped in a transaction so a crash between delete and re-insert never
-  // leaves the client with an empty course_lessons table.
-  await db.transaction(async (tx) => {
-    await tx.delete(courseLessonsTable);
-
+    tx.delete(courseLessonsTable).run();
     for (const course of courses) {
-      await tx
-        .insert(coursesTable)
+      tx.insert(coursesTable)
         .values({
           uuid: course.uuid,
           title: course.title,
@@ -290,23 +259,24 @@ export async function syncAll(
             description: course.description,
             updatedAt: course.updated_at,
           },
-        });
+        })
+        .run();
     }
-
     if (course_lessons.length > 0) {
-      await tx.insert(courseLessonsTable).values(
-        course_lessons.map((cl) => ({
-          courseUuid: cl.course_uuid,
-          lessonUuid: cl.lesson_uuid,
-          order: cl.order,
-        })),
-      );
+      tx.insert(courseLessonsTable)
+        .values(
+          course_lessons.map((cl) => ({
+            courseUuid: cl.course_uuid,
+            lessonUuid: cl.lesson_uuid,
+            order: cl.order,
+          })),
+        )
+        .run();
     }
-
     if (course_uuids.length === 0) {
-      await tx.delete(coursesTable);
+      tx.delete(coursesTable).run();
     } else {
-      await tx.delete(coursesTable).where(notInArray(coursesTable.uuid, course_uuids));
+      tx.delete(coursesTable).where(notInArray(coursesTable.uuid, course_uuids)).run();
     }
   });
 
