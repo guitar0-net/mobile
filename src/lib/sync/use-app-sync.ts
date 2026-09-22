@@ -35,6 +35,19 @@ export type AppSyncDeps = {
   ) => Promise<string | null>;
 };
 
+type SyncStep =
+  | { sync_step: "init" | "fetching" | "saving" }
+  | { sync_step: "downloading"; images_completed: number; images_total: number };
+
+function describeSyncStep(progress: SyncProgress): SyncStep {
+  if (progress.stage === "saving") return { sync_step: "saving" };
+  return {
+    sync_step: "downloading",
+    images_completed: progress.completed,
+    images_total: progress.total,
+  };
+}
+
 function waitForPaint(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
 }
@@ -65,14 +78,16 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
 
   const sync = useCallback(async () => {
     const startedAt = Date.now();
+    let step: SyncStep = { sync_step: "init" };
     try {
       const db = await initDb();
-      const onProgress = isFirstLaunch
-        ? (p: SyncProgress) => {
-            setProgress(p);
-            return p.stage === "saving" ? waitForPaint() : undefined;
-          }
-        : undefined;
+      step = { sync_step: "fetching" };
+      const onProgress = (p: SyncProgress) => {
+        step = describeSyncStep(p);
+        if (!isFirstLaunch) return;
+        setProgress(p);
+        return p.stage === "saving" ? waitForPaint() : undefined;
+      };
       const version = await syncAll(db, contentVersion || null, onProgress);
       if (version != null) setContentVersion(version);
       setIsInitialSyncDone(true);
@@ -87,16 +102,16 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
       const syncFailure = describeSyncFailure(error);
       setFailure(syncFailure);
       setStatus(isFirstLaunch ? "error" : "stale");
-      capture("content_sync_failed", {
+      const details = {
         kind: syncFailure.kind,
         is_first_launch: isFirstLaunch,
-      });
+        error_name: error instanceof Error ? error.name : typeof error,
+        duration_ms: Date.now() - startedAt,
+        ...step,
+      };
+      capture("content_sync_failed", details);
       if (isFirstLaunch || syncFailure.kind !== "offline") {
-        captureException(error, {
-          stage: "content_sync",
-          kind: syncFailure.kind,
-          is_first_launch: isFirstLaunch,
-        });
+        captureException(error, { stage: "content_sync", ...details });
       }
     }
   }, [
