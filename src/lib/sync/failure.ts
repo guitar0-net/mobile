@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { ApiError } from "@/lib/network";
+import { ApiError, RequestTimeoutError } from "@/lib/network";
 
 export type SyncFailureKind = "offline" | "busy" | "server" | "rejected" | "unknown";
 
@@ -51,6 +51,7 @@ export function describeSyncFailure(error: unknown): SyncFailure {
     if (error.status >= 500) return FAILURES.server;
     return FAILURES.rejected;
   }
+  if (error instanceof RequestTimeoutError) return FAILURES.offline;
   // RN's fetch rejects with a TypeError only when the request never reached the server.
   if (error instanceof TypeError) return FAILURES.offline;
   return FAILURES.unknown;
