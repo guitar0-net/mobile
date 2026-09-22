@@ -45,7 +45,7 @@
     "expo-keep-awake": "~57.0.0",
     "expo-linking": "~57.0.10",
     "expo-network": "~57.0.2",
-    "expo-precision-metronome": "^2.0.0",
+    "expo-precision-metronome": "2.0.1",
     "expo-router": "~57.0.22",
     "expo-screen-orientation": "~57.0.2",
     "expo-sharing": "~57.0.21",
