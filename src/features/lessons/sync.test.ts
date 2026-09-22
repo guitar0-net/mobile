@@ -983,3 +983,87 @@ describe("scheme image download resilience", () => {
     expect(row.localImagePath).toBe("/local/slow.png");
   });
 });
+
+describe("atomic write and progress stages", () => {
+  test("a failing write leaves the previously synced content untouched", async () => {
+    const db = await initDb();
+    await syncAll(db, null, undefined, {
+      getSyncData: () =>
+        Promise.resolve(
+          makeSyncResponse({
+            lesson_uuids: ["l1"],
+            lessons: [makeLesson("l1", { title: "Старое название" })],
+            course_uuids: ["c1"],
+            courses: [makeCourse("c1")],
+            course_lessons: [makeCourseLesson("c1", "l1", 1)],
+          }),
+        ),
+      downloadImage: noopDownload,
+    });
+
+    const error = await syncAll(db, null, undefined, {
+      getSyncData: () =>
+        Promise.resolve(
+          makeSyncResponse({
+            lesson_uuids: ["l1"],
+            lessons: [makeLesson("l1", { title: "Новое название" })],
+            course_uuids: ["c1"],
+            courses: [makeCourse("c1")],
+            course_lessons: [makeCourseLesson("c1", "missing-lesson", 1)],
+          }),
+        ),
+      downloadImage: noopDownload,
+    }).catch((err: unknown) => err);
+
+    expect((error as Error).message).toBe("FOREIGN KEY constraint failed");
+
+    const [lesson] = await db.select().from(lessons);
+    expect(lesson.title).toBe("Старое название");
+    const memberships = await db.select().from(courseLessons);
+    expect(memberships).toEqual([
+      expect.objectContaining({ courseUuid: "c1", lessonUuid: "l1" }),
+    ]);
+  });
+
+  test("reports each downloaded image, then the saving stage", async () => {
+    const db = await initDb();
+    const onProgress = jest.fn();
+
+    await syncAll(db, null, onProgress, {
+      getSyncData: () =>
+        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1), makeScheme(2)] })),
+      downloadImage: noopDownload,
+    });
+
+    expect(onProgress.mock.calls.map(([progress]) => progress)).toEqual([
+      { stage: "downloading", total: 2, completed: 1 },
+      { stage: "downloading", total: 2, completed: 2 },
+      { stage: "saving" },
+    ]);
+  });
+
+  test("starts writing only after the saving stage has been acknowledged", async () => {
+    const db = await initDb();
+    let acknowledgeSaving = () => {};
+    const onProgress = (progress: { stage: string }) =>
+      progress.stage === "saving"
+        ? new Promise<void>((resolve) => {
+            acknowledgeSaving = resolve;
+          })
+        : undefined;
+
+    const result = syncAll(db, null, onProgress, {
+      getSyncData: () =>
+        Promise.resolve(
+          makeSyncResponse({ lesson_uuids: ["l1"], lessons: [makeLesson("l1")] }),
+        ),
+      downloadImage: noopDownload,
+    });
+    await new Promise<void>((resolve) => setImmediate(() => resolve()));
+
+    expect(await db.select().from(lessons)).toHaveLength(0);
+    acknowledgeSaving();
+    await result;
+    expect(await db.select().from(lessons)).toHaveLength(1);
+  });
+});

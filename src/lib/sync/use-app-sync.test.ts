@@ -65,7 +65,7 @@ describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
   test("updates progress state via onProgress callback", async () => {
     const deps = makeDeps({
       syncAll: jest.fn().mockImplementation(async (_db, _since, onProgress) => {
-        onProgress?.({ total: 5, completed: 3 });
+        onProgress?.({ stage: "downloading", total: 5, completed: 3 });
         return "v1.0";
       }),
     });
@@ -76,7 +76,30 @@ describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
       return state;
     });
     await waitFor(() => expect(result.current.status).toBe("success"));
-    expect(progressValues).toContainEqual({ total: 5, completed: 3 });
+    expect(progressValues).toContainEqual({
+      stage: "downloading",
+      total: 5,
+      completed: 3,
+    });
+  });
+
+  test("renders the saving stage before the save starts", async () => {
+    const rendered: unknown[] = [];
+    let renderedWhenSaveStarts: unknown;
+    const deps = makeDeps({
+      syncAll: jest.fn().mockImplementation(async (_db, _since, onProgress) => {
+        await onProgress?.({ stage: "saving" });
+        renderedWhenSaveStarts = rendered.at(-1);
+        return "v1.0";
+      }),
+    });
+    const { result } = renderHook(() => {
+      const state = useAppSync(deps);
+      rendered.push(state.progress);
+      return state;
+    });
+    await waitFor(() => expect(result.current.status).toBe("success"));
+    expect(renderedWhenSaveStarts).toEqual({ stage: "saving" });
   });
 
   test("transitions to error when sync fails on first launch", async () => {
