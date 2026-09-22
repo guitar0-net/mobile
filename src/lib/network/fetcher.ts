@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+const REQUEST_TIMEOUT_MS = 60_000;
+
 function getBaseUrl(): string {
   const url = process.env.EXPO_PUBLIC_API_URL;
   if (!url) throw new Error("EXPO_PUBLIC_API_URL is not configured");
@@ -21,10 +23,15 @@ export class ApiError extends Error {
   }
 }
 
+export class RequestTimeoutError extends Error {
+  constructor(target: string) {
+    super(`Request timed out: ${target}`);
+    this.name = "RequestTimeoutError";
+  }
+}
+
 export async function apiFetch<T>(path: string): Promise<T> {
-  const response = await fetch(`${getBaseUrl()}${path}`);
-  await throwIfNotOk(response);
-  return parseJson<T>(response, path);
+  return request(path, undefined, (response) => parseJson<T>(response, path));
 }
 
 type BinaryResponse = {
@@ -36,11 +43,10 @@ export async function apiPostBinary(
   path: string,
   body: unknown,
 ): Promise<BinaryResponse> {
-  const response = await post(path, body);
-  return {
+  return request(path, jsonPost(body), async (response) => ({
     data: await response.arrayBuffer(),
     filename: parseFilename(response.headers.get("Content-Disposition")),
-  };
+  }));
 }
 
 function parseFilename(contentDisposition: string | null): string | null {
@@ -49,18 +55,35 @@ function parseFilename(contentDisposition: string | null): string | null {
 }
 
 export async function apiPostJson<T>(path: string, body: unknown): Promise<T> {
-  const response = await post(path, body);
-  return parseJson<T>(response, path);
+  return request(path, jsonPost(body), (response) => parseJson<T>(response, path));
 }
 
-async function post(path: string, body: unknown): Promise<Response> {
-  const response = await fetch(`${getBaseUrl()}${path}`, {
+function jsonPost(body: unknown): RequestInit {
+  return {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  });
-  await throwIfNotOk(response);
-  return response;
+  };
+}
+
+async function request<T>(
+  path: string,
+  init: RequestInit | undefined,
+  read: (response: Response) => Promise<T>,
+): Promise<T> {
+  const url = `${getBaseUrl()}${path}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    await throwIfNotOk(response);
+    return await read(response);
+  } catch (error) {
+    if (controller.signal.aborted) throw new RequestTimeoutError(path);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function throwIfNotOk(response: Response): Promise<void> {

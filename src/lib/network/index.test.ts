@@ -2,7 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { ApiError, apiFetch, apiPostBinary, apiPostJson } from "./index";
+import {
+  ApiError,
+  RequestTimeoutError,
+  apiFetch,
+  apiPostBinary,
+  apiPostJson,
+} from "./index";
 
 const BASE_URL = "https://test.example.com";
 
@@ -32,7 +38,10 @@ describe("apiFetch", () => {
       }),
     );
     await apiFetch("/api/v1/test/");
-    expect(globalThis.fetch).toHaveBeenCalledWith(`${BASE_URL}/api/v1/test/`);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${BASE_URL}/api/v1/test/`,
+      expect.anything(),
+    );
   });
 
   test("returns parsed JSON on success", async () => {
@@ -80,6 +89,67 @@ describe("apiFetch", () => {
     );
     await expect(apiFetch("/api/v1/broken/")).rejects.toThrow(
       "Failed to parse JSON response for /api/v1/broken/",
+    );
+  });
+});
+
+describe("request timeout", () => {
+  function stallUntilAborted() {
+    jest.spyOn(globalThis, "fetch").mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new TypeError("Aborted")),
+          );
+        }),
+    );
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test("gives up on a server that never answers after 60 seconds", async () => {
+    stallUntilAborted();
+    const result = apiFetch("/api/v1/sync/lessons/").catch((err: unknown) => err);
+
+    await jest.advanceTimersByTimeAsync(60_000);
+
+    const error = await result;
+    expect(error).toBeInstanceOf(RequestTimeoutError);
+    expect((error as Error).message).toBe("Request timed out: /api/v1/sync/lessons/");
+  });
+
+  test("keeps waiting for a slow server short of the timeout", async () => {
+    stallUntilAborted();
+    const onSettled = jest.fn();
+    void apiFetch("/any").then(onSettled, onSettled);
+
+    await jest.advanceTimersByTimeAsync(59_000);
+
+    expect(onSettled).not.toHaveBeenCalled();
+  });
+
+  test("applies the timeout to POST requests too", async () => {
+    stallUntilAborted();
+    const result = apiPostJson("/any", {}).catch((err: unknown) => err);
+
+    await jest.advanceTimersByTimeAsync(60_000);
+
+    expect(await result).toBeInstanceOf(RequestTimeoutError);
+  });
+
+  test("passes a network failure through unchanged", async () => {
+    jest
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new TypeError("Network request failed"));
+
+    await expect(apiFetch("/any")).rejects.toThrow(
+      new TypeError("Network request failed"),
     );
   });
 });

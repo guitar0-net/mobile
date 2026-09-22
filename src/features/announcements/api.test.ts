@@ -56,6 +56,7 @@ describe("getAnnouncements", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/announcements/?limit=10&offset=0`,
+      expect.anything(),
     );
   });
 
@@ -73,6 +74,7 @@ describe("getAnnouncements", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/announcements/?limit=5&offset=20`,
+      expect.anything(),
     );
   });
 
@@ -116,6 +118,7 @@ describe("getAnnouncement", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/announcements/ann-1/`,
+      expect.anything(),
     );
   });
 

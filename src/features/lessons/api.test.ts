@@ -77,7 +77,10 @@ describe("getLessons", () => {
 
     await getLessons();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(`${BASE_URL}/api/v1/lessons/`);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${BASE_URL}/api/v1/lessons/`,
+      expect.anything(),
+    );
   });
 
   test("throws on a non-OK HTTP response", async () => {
@@ -153,6 +156,7 @@ describe("getLesson", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/lessons/${uuid}/`,
+      expect.anything(),
     );
   });
 
@@ -215,7 +219,10 @@ describe("getSyncData", () => {
 
     await getSyncData(null);
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(`${BASE_URL}/api/v1/sync/lessons/`);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${BASE_URL}/api/v1/sync/lessons/`,
+      expect.anything(),
+    );
   });
 
   test("appends encoded since parameter when provided", async () => {
@@ -230,6 +237,7 @@ describe("getSyncData", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/sync/lessons/?since=2026-01-01T00%3A00%3A00Z`,
+      expect.anything(),
     );
   });
 });
