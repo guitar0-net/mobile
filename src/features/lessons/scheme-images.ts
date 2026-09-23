@@ -241,6 +241,13 @@ export function startSchemeImageSync(): Promise<void> {
   return activePass;
 }
 
+/** Like `startSchemeImageSync`, but skips the pass when every image is known to be on disk. */
+export function resumeSchemeImageSync(): Promise<void> {
+  const { isCounted, pending } = useStatusStore.getState();
+  if (isCounted && pending === 0) return Promise.resolve();
+  return startSchemeImageSync();
+}
+
 export function useSchemeImageStatus(): SchemeImageStatus {
   useEffect(() => {
     if (useStatusStore.getState().isCounted) return;
