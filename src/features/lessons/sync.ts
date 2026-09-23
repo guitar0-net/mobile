@@ -125,12 +125,19 @@ export async function syncAll(
         .run();
     }
 
-    for (const scheme of schemes) {
-      const existing = tx
-        .select({ image: schemesTable.image, fileName: schemesTable.localImagePath })
+    const existingSchemes = new Map(
+      tx
+        .select({
+          id: schemesTable.id,
+          image: schemesTable.image,
+          fileName: schemesTable.localImagePath,
+        })
         .from(schemesTable)
-        .where(eq(schemesTable.id, scheme.id))
-        .get();
+        .all()
+        .map((row) => [row.id, row]),
+    );
+    for (const scheme of schemes) {
+      const existing = existingSchemes.get(scheme.id);
       const isImageChanged = existing != null && existing.image !== scheme.image;
       if (isImageChanged && existing.fileName) staleImageFiles.push(existing.fileName);
       const values = {
