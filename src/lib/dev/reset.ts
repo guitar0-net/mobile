@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { deleteAllSchemeImages } from "@/features/lessons/scheme-images";
 import {
   chords,
   courseLessons,
@@ -32,6 +33,7 @@ export async function resetAllData(): Promise<void> {
     await tx.delete(chords);
     await tx.delete(schemes);
   });
+  deleteAllSchemeImages();
   syncStorage.clearAll();
   useSyncStore.setState(readDefaults());
 }
