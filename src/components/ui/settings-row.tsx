@@ -24,8 +24,9 @@ type ToggleRowProps = BaseProps & {
   onChange: (value: boolean) => void;
 };
 type ExternalRowProps = BaseProps & { type: "external"; onPress?: () => void };
+type InfoRowProps = BaseProps & { type: "info" };
 
-type Props = NavRowProps | ToggleRowProps | ExternalRowProps;
+type Props = NavRowProps | ToggleRowProps | ExternalRowProps | InfoRowProps;
 
 export function SettingsRow(props: Props) {
   const { icon, iconBgColor, label, sublabel } = props;
