@@ -39,6 +39,13 @@ export type AnalyticsEvents = {
 
   initial_sync_completed: { duration_ms: number };
   content_sync_failed: { kind: SyncFailureKind; is_first_launch: boolean };
+  scheme_images_drained: { downloaded: number; passes: number; duration_ms: number };
+  scheme_images_sweep_failed: {
+    error_name: string;
+    error_message: string;
+    pending: number;
+    downloaded: number;
+  };
   legacy_progress_imported: { completed_count: number; favorite_count: number };
 
   theme_changed: { mode: "light" | "dark" | "system"; high_contrast: boolean };

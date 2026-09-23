@@ -7,6 +7,12 @@ export const MAIN_COURSE_ID = "6236a799-32b4-4e98-b9b2-9ade9ba83b47";
 export { syncAll } from "./sync";
 export type { SyncProgress, SyncDeps } from "./sync";
 export {
+  startSchemeImageSync,
+  useSchemeImageSource,
+  useSchemeImageStatus,
+} from "./scheme-images";
+export type { SchemeImageStatus } from "./scheme-images";
+export {
   fetchAllLessonSongCounts,
   fetchCourses,
   fetchCourseLessons,
