@@ -23,10 +23,13 @@ import { deleteSchemeImageFiles } from "./scheme-images";
 
 type SyncLessonsResponse = components["schemas"]["SyncLessonsResponse"];
 
-export type SyncProgress = { stage: "saving" };
+export type SyncProgress = { stage: "fetching"; bytes: number } | { stage: "saving" };
 
 export type SyncDeps = {
-  getSyncData: (since: string | null) => Promise<SyncLessonsResponse>;
+  getSyncData: (
+    since: string | null,
+    onBytes: (received: number) => void,
+  ) => Promise<SyncLessonsResponse>;
 };
 
 type SyncTx = Parameters<Parameters<AppDb["transaction"]>[0]>[0];
@@ -95,7 +98,10 @@ export async function syncAll(
     course_uuids,
     courses,
     course_lessons,
-  } = await getSyncData(since);
+  } = await getSyncData(
+    since,
+    (bytes) => void onProgress?.({ stage: "fetching", bytes }),
+  );
 
   await onProgress?.({ stage: "saving" });
 
