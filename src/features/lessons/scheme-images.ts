@@ -5,7 +5,7 @@
 import { and, count, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { Directory, File, Paths } from "expo-file-system";
 import type { ImageSource } from "expo-image";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
@@ -264,12 +264,17 @@ export function useSchemeImageStatus(): SchemeImageStatus {
 
 type DisplayedScheme = SchemeRef & { localImagePath: string | null };
 
+export type SchemeImageState =
+  | { state: "ready"; source: ImageSource | number }
+  | { state: "loading" }
+  | { state: "failed"; retry: () => void };
+
 /**
- * Picks what to show for a scheme: the downloaded file, else the image bundled
- * with the app, else the server URL. A scheme shown without a downloaded file
- * gets one download attempt.
+ * Shows the downloaded file, else the image bundled with the app. Otherwise
+ * downloads the file and reports `loading` until it is saved, or `failed`
+ * with a `retry` that also resumes the background pass.
  */
-export function useSchemeImageSource(scheme: DisplayedScheme): ImageSource | number {
+export function useSchemeImage(scheme: DisplayedScheme): SchemeImageState {
   const { id, image, localImagePath } = scheme;
   const saved = useStatusStore((state) => state.saved[id]);
   const localFile = useMemo(() => {
@@ -278,14 +283,31 @@ export function useSchemeImageSource(scheme: DisplayedScheme): ImageSource | num
     const file = new File(imagesDir(), fileName);
     return file.exists ? file : null;
   }, [saved, localImagePath]);
+  const [attempt, setAttempt] = useState(0);
+  const [failedAttempt, setFailedAttempt] = useState<string | null>(null);
+  const attemptKey = `${id}:${image}:${attempt}`;
 
   useEffect(() => {
     if (localFile) return;
-    download({ id, image }).catch(() => {});
-  }, [localFile, id, image]);
+    let isCurrent = true;
+    download({ id, image }).catch(() => {
+      if (isCurrent) setFailedAttempt(attemptKey);
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, [localFile, id, image, attemptKey]);
 
-  if (localFile) return { uri: localFile.uri };
-  return BUNDLED_SCHEME_IMAGES[id] ?? { uri: remoteUrl(image) };
+  const retry = useCallback(() => {
+    setAttempt((value) => value + 1);
+    void resumeSchemeImageSync();
+  }, []);
+
+  if (localFile) return { state: "ready", source: { uri: localFile.uri } };
+  const bundled = BUNDLED_SCHEME_IMAGES[id];
+  if (bundled !== undefined) return { state: "ready", source: bundled };
+  if (failedAttempt === attemptKey) return { state: "failed", retry };
+  return { state: "loading" };
 }
 
 export function deleteSchemeImageFiles(fileNames: string[]): void {

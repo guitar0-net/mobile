@@ -8,10 +8,10 @@ export { syncAll } from "./sync";
 export type { SyncProgress, SyncDeps } from "./sync";
 export {
   startSchemeImageSync,
-  useSchemeImageSource,
+  useSchemeImage,
   useSchemeImageStatus,
 } from "./scheme-images";
-export type { SchemeImageStatus } from "./scheme-images";
+export type { SchemeImageState, SchemeImageStatus } from "./scheme-images";
 export {
   fetchAllLessonSongCounts,
   fetchCourses,
