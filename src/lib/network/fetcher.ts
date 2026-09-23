@@ -38,19 +38,21 @@ export async function apiFetch<T>(path: string): Promise<T> {
 }
 
 /**
- * Like `apiFetch`, but reports the body bytes received so far and gives up
- * only after 30 seconds without new data, so a slow download is never cut off.
+ * Like `apiFetch`, but reports the body bytes received so far. Gives up if the
+ * response doesn't start within `responseTimeoutMs`, or once the body goes
+ * 30 seconds without new data, so a slow download is never cut off.
  */
 export async function apiFetchStreaming<T>(
   path: string,
   onBytes: (received: number) => void,
+  responseTimeoutMs: number,
 ): Promise<T> {
   const url = `${getBaseUrl()}${path}`;
   const controller = new AbortController();
-  let stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
+  let timer = setTimeout(() => controller.abort(), responseTimeoutMs);
   const resetStallTimer = () => {
-    clearTimeout(stallTimer);
-    stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
   };
   try {
     const response = await asNetworkError(
@@ -67,7 +69,7 @@ export async function apiFetchStreaming<T>(
     if (controller.signal.aborted) throw new RequestTimeoutError(path);
     throw error;
   } finally {
-    clearTimeout(stallTimer);
+    clearTimeout(timer);
   }
 }
 
