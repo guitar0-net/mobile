@@ -14,22 +14,21 @@ import {
   songSchemes,
   songs,
 } from "@/lib/db";
-import { RequestTimeoutError } from "@/lib/network";
 import type { components } from "@/lib/network/api.types";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { syncAll } from "./sync";
 
-jest.mock("expo-file-system", () => {
-  const mockDir = { create: jest.fn() };
-  const MockDir = jest.fn(() => mockDir);
-  const MockFSFile = Object.assign(jest.fn(), { downloadFileAsync: jest.fn() });
-  return {
-    Paths: { document: "/mock/documents" },
-    Directory: MockDir,
-    File: MockFSFile,
-  };
-});
+const mockDeletedFiles: string[] = [];
+
+jest.mock("expo-file-system", () => ({
+  Paths: { document: "/documents" },
+  Directory: jest.fn(),
+  File: jest.fn((_dir: unknown, name: string) => ({
+    exists: true,
+    delete: () => mockDeletedFiles.push(name),
+  })),
+}));
 
 type SyncLessonsResponse = components["schemas"]["SyncLessonsResponse"];
 type LessonSync = components["schemas"]["LessonFlat"];
@@ -126,14 +125,9 @@ function makeSyncResponse(
   };
 }
 
-const noopDownload = jest
-  .fn<Promise<string>, [number, string]>()
-  .mockResolvedValue("/local/1.png");
-
 beforeEach(() => {
   resetDbForTesting();
-  jest.resetAllMocks();
-  noopDownload.mockResolvedValue("/local/1.png");
+  mockDeletedFiles.length = 0;
 });
 
 // ---------------------------------------------------------------------------
@@ -151,7 +145,6 @@ test("1 lesson in response → 1 row inserted in lessons table", async () => {
           lessons: [makeLesson("lesson-1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(lessons);
@@ -169,7 +162,6 @@ test("lesson row stores server updated_at, not client clock", async () => {
           lessons: [makeLesson("l1", { updated_at: "2026-03-15T10:00:00Z" })],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const [row] = await db.select({ updatedAt: lessons.updatedAt }).from(lessons);
@@ -187,7 +179,6 @@ test("3 lessons in response → 3 rows in lessons table", async () => {
           lessons: ["a", "b", "c"].map((id) => makeLesson(id)),
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(lessons);
@@ -200,7 +191,6 @@ test("syncAll returns the version string from the server", async () => {
   const version = await syncAll(db, null, undefined, {
     getSyncData: () =>
       Promise.resolve(makeSyncResponse({ version: "2026-06-01T12:00:00Z" })),
-    downloadImage: noopDownload,
   });
 
   expect(version).toBe("2026-06-01T12:00:00Z");
@@ -211,7 +201,6 @@ test("syncAll returns null version when server has no lessons", async () => {
 
   const version = await syncAll(db, null, undefined, {
     getSyncData: () => Promise.resolve(makeSyncResponse({ version: null })),
-    downloadImage: noopDownload,
   });
 
   expect(version).toBeNull();
@@ -233,7 +222,6 @@ test("lesson with 2 songs → 2 rows in songs table linked to the lesson", async
           songs: [makeSong("song-1", "l1"), makeSong("song-2", "l1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const songRows = await db.select().from(songs);
@@ -262,7 +250,6 @@ test("chord is upserted into chords table", async () => {
           chords: [chord],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(chords);
@@ -287,7 +274,6 @@ test("chord shared across two songs appears once in chords table", async () => {
           chords: [chord],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(chords);
@@ -311,7 +297,6 @@ test("chord SVG is updated on re-sync", async () => {
           chords: [chord],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const updated = { ...chord, svg_horizontal: "<svg>v2</svg>" };
@@ -326,7 +311,6 @@ test("chord SVG is updated on re-sync", async () => {
           chords: [updated],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const [row] = await db.select({ svgHorizontal: chords.svgHorizontal }).from(chords);
@@ -337,11 +321,8 @@ test("chord SVG is updated on re-sync", async () => {
 // Scheme persistence
 // ---------------------------------------------------------------------------
 
-test("scheme image is downloaded and localImagePath written to SQLite", async () => {
+test("scheme is written without touching the network for its image", async () => {
   const db = await initDb();
-  const downloadImage = jest
-    .fn<Promise<string>, [number, string]>()
-    .mockResolvedValue("/local/images/42.png");
   const scheme = makeScheme(42, { image: "https://example.com/scheme.png" });
 
   await syncAll(db, null, undefined, {
@@ -354,15 +335,81 @@ test("scheme image is downloaded and localImagePath written to SQLite", async ()
           schemes: [scheme],
         }),
       ),
-    downloadImage,
   });
 
-  expect(downloadImage).toHaveBeenCalledWith(42, "https://example.com/scheme.png");
   const [row] = await db.select().from(schemes);
-  expect(row.localImagePath).toBe("/local/images/42.png");
-  expect(row.inscription).toBe("Scheme 42");
-  expect(row.height).toBe(200);
-  expect(row.width).toBe(300);
+  expect(row).toEqual({
+    id: 42,
+    image: "https://example.com/scheme.png",
+    inscription: "Scheme 42",
+    height: 200,
+    width: 300,
+    localImagePath: null,
+  });
+});
+
+describe("downloaded scheme images across syncs", () => {
+  function responseWith(
+    scheme: SchemeSync,
+    songs = [makeSong("s1", "l1", { scheme_ids: [scheme.id] })],
+  ) {
+    return makeSyncResponse({
+      lesson_uuids: ["l1"],
+      lessons: [makeLesson("l1")],
+      songs,
+      schemes: [scheme],
+    });
+  }
+
+  async function syncWithDownloadedImage(scheme: SchemeSync) {
+    const db = await initDb();
+    await syncAll(db, null, undefined, {
+      getSyncData: () => Promise.resolve(responseWith(scheme)),
+    });
+    await db.update(schemes).set({ localImagePath: `${scheme.id}.jpg` });
+    return db;
+  }
+
+  test("keeps the downloaded file when the image URL is unchanged", async () => {
+    const scheme = makeScheme(7, { image: "/media/a.jpg", inscription: "Old" });
+    const db = await syncWithDownloadedImage(scheme);
+
+    await syncAll(db, "v1", undefined, {
+      getSyncData: () =>
+        Promise.resolve(responseWith({ ...scheme, inscription: "New" })),
+    });
+
+    const [row] = await db.select().from(schemes);
+    expect(row.inscription).toBe("New");
+    expect(row.localImagePath).toBe("7.jpg");
+    expect(mockDeletedFiles).toEqual([]);
+  });
+
+  test("queues the scheme again and deletes the old file when the image URL changes", async () => {
+    const scheme = makeScheme(7, { image: "/media/a.jpg" });
+    const db = await syncWithDownloadedImage(scheme);
+
+    await syncAll(db, "v1", undefined, {
+      getSyncData: () =>
+        Promise.resolve(responseWith({ ...scheme, image: "/media/b.jpg" })),
+    });
+
+    const [row] = await db.select().from(schemes);
+    expect(row.localImagePath).toBeNull();
+    expect(mockDeletedFiles).toEqual(["7.jpg"]);
+  });
+
+  test("removes a scheme no song uses any more, together with its file", async () => {
+    const scheme = makeScheme(7, { image: "/media/a.jpg" });
+    const db = await syncWithDownloadedImage(scheme);
+
+    await syncAll(db, "v1", undefined, {
+      getSyncData: () => Promise.resolve(responseWith(scheme, [makeSong("s1", "l1")])),
+    });
+
+    expect(await db.select().from(schemes)).toEqual([]);
+    expect(mockDeletedFiles).toEqual(["7.jpg"]);
+  });
 });
 
 test("scheme shared across two songs appears once in schemes, twice in song_schemes", async () => {
@@ -382,7 +429,6 @@ test("scheme shared across two songs appears once in schemes, twice in song_sche
           schemes: [scheme],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const schemeRows = await db.select().from(schemes);
@@ -407,7 +453,6 @@ test("existing lesson is updated with new title on second sync", async () => {
           lessons: [makeLesson("l1", { title: "Старое название" })],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
@@ -418,7 +463,6 @@ test("existing lesson is updated with new title on second sync", async () => {
           lessons: [makeLesson("l1", { title: "Новое название" })],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const [row] = await db.select({ title: lessons.title }).from(lessons);
@@ -437,7 +481,6 @@ test("updated lesson keeps only the new songs, removing old ones", async () => {
           songs: [makeSong("old-song", "l1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
@@ -449,7 +492,6 @@ test("updated lesson keeps only the new songs, removing old ones", async () => {
           songs: [makeSong("new-song", "l1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select({ uuid: songs.uuid }).from(songs);
@@ -472,7 +514,6 @@ test("lesson absent from lesson_uuids is deleted from SQLite", async () => {
           lessons: [makeLesson("l1"), makeLesson("l2")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
@@ -483,7 +524,6 @@ test("lesson absent from lesson_uuids is deleted from SQLite", async () => {
           lessons: [],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select({ uuid: lessons.uuid }).from(lessons);
@@ -503,13 +543,11 @@ test("songs of a deleted lesson are also removed", async () => {
           songs: [makeSong("s1", "l1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
     getSyncData: () =>
       Promise.resolve(makeSyncResponse({ lesson_uuids: [], lessons: [] })),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(songs);
@@ -528,7 +566,6 @@ test("syncAll passes since to getSyncData", async () => {
 
   await syncAll(db, "2026-05-01T00:00:00Z", undefined, {
     getSyncData,
-    downloadImage: noopDownload,
   });
 
   expect(getSyncData).toHaveBeenCalledWith("2026-05-01T00:00:00Z");
@@ -545,67 +582,15 @@ test("delta sync with empty lessons list does not create duplicate rows", async 
           lessons: [makeLesson("l1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, "2026-01-01T00:00:00Z", undefined, {
     getSyncData: () =>
       Promise.resolve(makeSyncResponse({ lesson_uuids: ["l1"], lessons: [] })),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(lessons);
   expect(rows).toHaveLength(1);
-});
-
-// ---------------------------------------------------------------------------
-// Crash resilience
-// ---------------------------------------------------------------------------
-
-test("retry after crash completes without duplicating already-committed lessons", async () => {
-  const db = await initDb();
-  const crash = new Error("simulated crash");
-  const schemeId = 99;
-  jest.useFakeTimers();
-
-  const crashed = syncAll(db, null, undefined, {
-    getSyncData: () =>
-      Promise.resolve(
-        makeSyncResponse({
-          lesson_uuids: ["l1", "l2"],
-          lessons: [makeLesson("l1"), makeLesson("l2")],
-          songs: [
-            makeSong("s-l1", "l1"),
-            makeSong("s-l2", "l2", { scheme_ids: [schemeId] }),
-          ],
-          schemes: [makeScheme(schemeId, { image: "https://example.com/l2.png" })],
-        }),
-      ),
-    downloadImage: (_id, url) =>
-      url.includes("l2") ? Promise.reject(crash) : Promise.resolve("/local/img.png"),
-  }).catch((err: unknown) => err);
-  await jest.advanceTimersByTimeAsync(4_000);
-  jest.useRealTimers();
-  expect(await crashed).toBe(crash);
-
-  await syncAll(db, null, undefined, {
-    getSyncData: () =>
-      Promise.resolve(
-        makeSyncResponse({
-          lesson_uuids: ["l1", "l2"],
-          lessons: [makeLesson("l1"), makeLesson("l2")],
-          songs: [
-            makeSong("s-l1", "l1"),
-            makeSong("s-l2", "l2", { scheme_ids: [schemeId] }),
-          ],
-          schemes: [makeScheme(schemeId, { image: "https://example.com/l2.png" })],
-        }),
-      ),
-    downloadImage: noopDownload,
-  });
-
-  const finalRows = await db.select().from(lessons);
-  expect(finalRows).toHaveLength(2);
 });
 
 // ---------------------------------------------------------------------------
@@ -626,7 +611,6 @@ test("song_chords rows for removed song are deleted on lesson update", async () 
           chords: [chord],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
@@ -638,7 +622,6 @@ test("song_chords rows for removed song are deleted on lesson update", async () 
           songs: [makeSong("s-new", "l1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const junctionRows = await db.select().from(songChords);
@@ -659,7 +642,6 @@ test("song_schemes rows for removed song are deleted on lesson update", async ()
           schemes: [scheme],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
@@ -671,7 +653,6 @@ test("song_schemes rows for removed song are deleted on lesson update", async ()
           songs: [makeSong("s-new", "l1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const junctionRows = await db.select().from(songSchemes);
@@ -693,7 +674,6 @@ test("1 course in response → 1 row inserted in courses table", async () => {
           courses: [makeCourse("course-1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(courses);
@@ -718,7 +698,6 @@ test("course with 2 lessons → 2 rows in course_lessons table", async () => {
           ],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(courseLessons);
@@ -739,7 +718,6 @@ test("existing course is updated with new title on second sync", async () => {
           courses: [makeCourse("c1", { title: "Старое название" })],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
@@ -750,7 +728,6 @@ test("existing course is updated with new title on second sync", async () => {
           courses: [makeCourse("c1", { title: "Новое название" })],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const [row] = await db.select({ title: courses.title }).from(courses);
@@ -771,7 +748,6 @@ test("re-sync replaces course lesson memberships", async () => {
           course_lessons: [makeCourseLesson("c1", "l1", 1)],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
@@ -785,7 +761,6 @@ test("re-sync replaces course lesson memberships", async () => {
           course_lessons: [makeCourseLesson("c1", "l2", 1)],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select().from(courseLessons);
@@ -808,7 +783,6 @@ test("course absent from course_uuids is deleted from SQLite", async () => {
           courses: [makeCourse("c1"), makeCourse("c2")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   await syncAll(db, null, undefined, {
@@ -819,169 +793,11 @@ test("course absent from course_uuids is deleted from SQLite", async () => {
           courses: [makeCourse("c1")],
         }),
       ),
-    downloadImage: noopDownload,
   });
 
   const rows = await db.select({ uuid: courses.uuid }).from(courses);
   expect(rows).toHaveLength(1);
   expect(rows[0].uuid).toBe("c1");
-});
-
-// ---------------------------------------------------------------------------
-// defaultDownloadImage — uses real implementation (expo-file-system mocked)
-// ---------------------------------------------------------------------------
-
-describe("defaultDownloadImage via syncAll (no downloadImage dep)", () => {
-  const fsModule = jest.requireMock("expo-file-system") as any;
-
-  beforeEach(() => {
-    const mockDir = { create: jest.fn() };
-    fsModule.Directory.mockReturnValue(mockDir);
-    fsModule.File.mockImplementation(() => ({}));
-    fsModule.File.downloadFileAsync.mockResolvedValue({ uri: "/local/scheme.png" });
-  });
-
-  test("downloads scheme with absolute URL unchanged", async () => {
-    const db = await initDb();
-    const scheme = makeScheme(1, { image: "https://cdn.example.com/scheme.png" });
-
-    await syncAll(db, null, undefined, {
-      getSyncData: () => Promise.resolve(makeSyncResponse({ schemes: [scheme] })),
-    });
-
-    expect(fsModule.File.downloadFileAsync).toHaveBeenCalledWith(
-      "https://cdn.example.com/scheme.png",
-      expect.anything(),
-      expect.objectContaining({ idempotent: true }),
-    );
-    const [row] = await db.select().from(schemes);
-    expect(row.localImagePath).toBe("/local/scheme.png");
-  });
-
-  test("prepends base URL for relative scheme image path", async () => {
-    process.env.EXPO_PUBLIC_API_URL = "https://api.test.com";
-    const db = await initDb();
-    const scheme = makeScheme(2, { image: "/media/scheme-2.png" });
-
-    await syncAll(db, null, undefined, {
-      getSyncData: () => Promise.resolve(makeSyncResponse({ schemes: [scheme] })),
-    });
-
-    expect(fsModule.File.downloadFileAsync).toHaveBeenCalledWith(
-      "https://api.test.com/media/scheme-2.png",
-      expect.anything(),
-      expect.objectContaining({ idempotent: true }),
-    );
-    delete process.env.EXPO_PUBLIC_API_URL;
-  });
-});
-
-describe("scheme image download resilience", () => {
-  const fsModule = jest.requireMock("expo-file-system") as any;
-
-  type DownloadOptions = {
-    signal: AbortSignal;
-    onProgress: () => void;
-  };
-
-  function stallUntilAborted(_url: string, _dest: unknown, options: DownloadOptions) {
-    return new Promise((_resolve, reject) => {
-      options.signal.addEventListener("abort", () => reject(new Error("AbortError")));
-    });
-  }
-
-  beforeEach(() => {
-    jest.useFakeTimers();
-    fsModule.Directory.mockReturnValue({ create: jest.fn() });
-    fsModule.File.mockImplementation(() => ({}));
-    fsModule.File.downloadFileAsync.mockReset();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  test("retries a failed image download and completes the sync", async () => {
-    const db = await initDb();
-    const downloadImage = jest
-      .fn()
-      .mockRejectedValueOnce(new Error("java.net.SocketTimeoutException: timeout"))
-      .mockRejectedValueOnce(new Error("java.net.SocketTimeoutException: timeout"))
-      .mockResolvedValueOnce("/local/1.png");
-
-    const result = syncAll(db, null, undefined, {
-      getSyncData: () =>
-        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1)] })),
-      downloadImage,
-    });
-    await jest.advanceTimersByTimeAsync(4_000);
-    await result;
-
-    expect(downloadImage).toHaveBeenCalledTimes(3);
-    const [row] = await db.select().from(schemes);
-    expect(row.localImagePath).toBe("/local/1.png");
-  });
-
-  test("fails the sync with the last error after three failed attempts", async () => {
-    const db = await initDb();
-    const downloadImage = jest
-      .fn()
-      .mockRejectedValueOnce(new Error("first"))
-      .mockRejectedValueOnce(new Error("second"))
-      .mockRejectedValueOnce(new Error("third"));
-
-    const result = syncAll(db, null, undefined, {
-      getSyncData: () =>
-        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1)] })),
-      downloadImage,
-    }).catch((err: unknown) => err);
-    await jest.advanceTimersByTimeAsync(4_000);
-
-    expect(await result).toEqual(new Error("third"));
-    expect(downloadImage).toHaveBeenCalledTimes(3);
-  });
-
-  test("aborts a download that receives no data for 20 seconds", async () => {
-    const db = await initDb();
-    fsModule.File.downloadFileAsync.mockImplementation(stallUntilAborted);
-
-    const result = syncAll(db, null, undefined, {
-      getSyncData: () =>
-        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1)] })),
-    }).catch((err: unknown) => err);
-    await jest.advanceTimersByTimeAsync(3 * 20_000 + 4_000);
-
-    expect(await result).toBeInstanceOf(RequestTimeoutError);
-    expect(fsModule.File.downloadFileAsync).toHaveBeenCalledTimes(3);
-  });
-
-  test("keeps a slow download alive while data keeps arriving", async () => {
-    const db = await initDb();
-    fsModule.File.downloadFileAsync.mockImplementation(
-      (_url: string, _dest: unknown, options: DownloadOptions) =>
-        new Promise((resolve, reject) => {
-          options.signal.addEventListener("abort", () =>
-            reject(new Error("AbortError")),
-          );
-          const chunks = setInterval(options.onProgress, 15_000);
-          setTimeout(() => {
-            clearInterval(chunks);
-            resolve({ uri: "/local/slow.png" });
-          }, 50_000);
-        }),
-    );
-
-    const result = syncAll(db, null, undefined, {
-      getSyncData: () =>
-        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1)] })),
-    });
-    await jest.advanceTimersByTimeAsync(50_000);
-    await result;
-
-    expect(fsModule.File.downloadFileAsync).toHaveBeenCalledTimes(1);
-    const [row] = await db.select().from(schemes);
-    expect(row.localImagePath).toBe("/local/slow.png");
-  });
 });
 
 describe("atomic write and progress stages", () => {
@@ -998,7 +814,6 @@ describe("atomic write and progress stages", () => {
             course_lessons: [makeCourseLesson("c1", "l1", 1)],
           }),
         ),
-      downloadImage: noopDownload,
     });
 
     const error = await syncAll(db, null, undefined, {
@@ -1012,7 +827,6 @@ describe("atomic write and progress stages", () => {
             course_lessons: [makeCourseLesson("c1", "missing-lesson", 1)],
           }),
         ),
-      downloadImage: noopDownload,
     }).catch((err: unknown) => err);
 
     expect((error as Error).message).toBe("FOREIGN KEY constraint failed");
@@ -1022,24 +836,6 @@ describe("atomic write and progress stages", () => {
     const memberships = await db.select().from(courseLessons);
     expect(memberships).toEqual([
       expect.objectContaining({ courseUuid: "c1", lessonUuid: "l1" }),
-    ]);
-  });
-
-  test("reports the image download start, each downloaded image, then the saving stage", async () => {
-    const db = await initDb();
-    const onProgress = jest.fn();
-
-    await syncAll(db, null, onProgress, {
-      getSyncData: () =>
-        Promise.resolve(makeSyncResponse({ schemes: [makeScheme(1), makeScheme(2)] })),
-      downloadImage: noopDownload,
-    });
-
-    expect(onProgress.mock.calls.map(([progress]) => progress)).toEqual([
-      { stage: "downloading", total: 2, completed: 0 },
-      { stage: "downloading", total: 2, completed: 1 },
-      { stage: "downloading", total: 2, completed: 2 },
-      { stage: "saving" },
     ]);
   });
 
@@ -1058,7 +854,6 @@ describe("atomic write and progress stages", () => {
         Promise.resolve(
           makeSyncResponse({ lesson_uuids: ["l1"], lessons: [makeLesson("l1")] }),
         ),
-      downloadImage: noopDownload,
     });
     await new Promise<void>((resolve) => setImmediate(() => resolve()));
 
