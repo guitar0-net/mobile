@@ -241,12 +241,19 @@ describe("useAppSync — returning user (isInitialSyncDone=true)", () => {
     expect(useSyncStore.getState().isInitialSyncDone).toBe(true);
   });
 
-  test("still starts scheme image downloads when a background sync fails", async () => {
+  test("does not start scheme image downloads when a background sync fails", async () => {
     const deps = makeDeps({
       syncAll: jest.fn().mockRejectedValue(new Error("Network")),
     });
     const { result } = renderHook(() => useAppSync(deps));
     await waitFor(() => expect(result.current.status).toBe("stale"));
+    expect(deps.startSchemeImageSync).not.toHaveBeenCalled();
+  });
+
+  test("starts scheme image downloads after a successful background sync", async () => {
+    const deps = makeDeps();
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.status).toBe("success"));
     expect(deps.startSchemeImageSync).toHaveBeenCalledTimes(1);
   });
 
