@@ -18,6 +18,7 @@ import { BUNDLED_SCHEME_IMAGES } from "./bundled-schemes";
 const CONCURRENCY = 2;
 const CONSECUTIVE_FAILURE_LIMIT = 5;
 const STALL_TIMEOUT_MS = 20_000;
+const TMP_PREFIX = ".tmp-";
 
 type SchemeRef = { id: number; image: string };
 
@@ -80,7 +81,11 @@ function refreshCounts(): void {
   });
 }
 
-function forgetMissingFiles(): void {
+function reconcileFiles(): void {
+  const dir = imagesDir();
+  const entries = dir.exists ? dir.list() : [];
+  const onDisk = new Set(entries.map((entry) => entry.name));
+  const referenced = new Set<string>();
   const db = getDb();
   const stored = db
     .select({ id: schemes.id, fileName: schemes.localImagePath })
@@ -88,9 +93,17 @@ function forgetMissingFiles(): void {
     .where(isNotNull(schemes.localImagePath))
     .all();
   for (const { id, fileName } of stored) {
-    if (fileName && !new File(imagesDir(), fileName).exists) {
+    if (fileName && onDisk.has(fileName)) {
+      referenced.add(fileName);
+    } else {
       db.update(schemes).set({ localImagePath: null }).where(eq(schemes.id, id)).run();
     }
+  }
+  const isDownloading = inFlight.size > 0;
+  for (const entry of entries) {
+    if (referenced.has(entry.name)) continue;
+    if (isDownloading && entry.name.startsWith(TMP_PREFIX)) continue;
+    entry.delete();
   }
 }
 
@@ -121,25 +134,26 @@ async function saveToDisk(scheme: SchemeRef): Promise<boolean> {
   dir.create({ intermediates: true, idempotent: true });
   const fileName = fileNameFor(scheme);
   downloadsSinceLaunch += 1;
-  const tmpName = `.tmp-${downloadsSinceLaunch}-${fileName}`;
+  const tmpName = `${TMP_PREFIX}${downloadsSinceLaunch}-${fileName}`;
   try {
     await downloadWithStallTimeout(remoteUrl(scheme.image), new File(dir, tmpName));
     const db = getDb();
     const current = db
-      .select({ image: schemes.image })
+      .select({ image: schemes.image, fileName: schemes.localImagePath })
       .from(schemes)
       .where(eq(schemes.id, scheme.id))
       .get();
-    if (current?.image !== scheme.image) return false;
+    if (!current || current.image !== scheme.image) return false;
     new File(dir, tmpName).moveSync(new File(dir, fileName), { overwrite: true });
     db.update(schemes)
       .set({ localImagePath: fileName })
       .where(eq(schemes.id, scheme.id))
       .run();
+    const wasPending = current.fileName === null;
     useStatusStore.setState((state) => ({
       saved: { ...state.saved, [scheme.id]: { fileName } },
+      pending: wasPending ? Math.max(0, state.pending - 1) : state.pending,
     }));
-    refreshCounts();
     return true;
   } finally {
     const leftover = new File(dir, tmpName);
@@ -159,7 +173,7 @@ function download(scheme: SchemeRef): Promise<boolean> {
 
 async function runPass(): Promise<void> {
   const startedAt = Date.now();
-  forgetMissingFiles();
+  reconcileFiles();
   refreshCounts();
   const queue = getDb()
     .select({ id: schemes.id, image: schemes.image })
@@ -195,6 +209,7 @@ async function runPass(): Promise<void> {
     useStatusStore.setState({ isRunning: false });
   }
 
+  refreshCounts();
   const { pending } = useStatusStore.getState();
   if (pending === 0) {
     capture("scheme_images_drained", {

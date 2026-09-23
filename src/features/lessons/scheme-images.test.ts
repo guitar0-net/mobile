@@ -46,6 +46,11 @@ jest.mock("expo-file-system", () => {
       return true;
     }
     create() {}
+    list() {
+      return [...mockFiles.keys()]
+        .filter((file) => file.startsWith(`${this.uri}/`))
+        .map((file) => new MockFile(file));
+    }
     delete() {
       for (const file of [...mockFiles.keys()]) {
         if (file.startsWith(`${this.uri}/`)) mockFiles.delete(file);
@@ -62,6 +67,9 @@ jest.mock("expo-file-system", () => {
     uri: string;
     constructor(...parts: (string | { uri: string })[]) {
       this.uri = join(parts);
+    }
+    get name() {
+      return this.uri.split("/").pop();
     }
     get exists() {
       return mockFiles.has(this.uri);
@@ -168,6 +176,44 @@ describe("startSchemeImageSync", () => {
     await startSchemeImageSync();
 
     expect(storedFileNames(db)).toEqual([{ id: 1, fileName: "1.jpg" }]);
+  });
+
+  test("deletes files that no scheme points to", async () => {
+    mockFiles.set(`${IMAGES}/1.jpg`, "");
+    mockFiles.set(`${IMAGES}/99.jpg`, "");
+    mockFiles.set(`${IMAGES}/.tmp-4-2.jpg`, "");
+    await seedSchemes([{ id: 1, localImagePath: "1.jpg" }]);
+
+    await startSchemeImageSync();
+
+    expect([...mockFiles.keys()]).toEqual([`${IMAGES}/1.jpg`]);
+  });
+
+  test("keeps the temporary file of a download that is still running", async () => {
+    await seedSchemes([{ id: 7 }]);
+    let finish = () => {};
+    mockDownload.mockImplementationOnce((url, dest) => {
+      mockFiles.set(dest.uri, "");
+      return new Promise((resolve) => {
+        finish = () => void writesFile(url, dest).then(resolve);
+      });
+    });
+    renderHook(() =>
+      useSchemeImageSource({
+        id: 7,
+        image: "/media/lesson_schemes/beat7.jpg",
+        localImagePath: null,
+      }),
+    );
+    await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
+    const [tmpFile] = mockFiles.keys();
+
+    const pass = startSchemeImageSync();
+
+    expect(mockFiles.has(tmpFile)).toBe(true);
+    finish();
+    await pass;
+    expect([...mockFiles.keys()]).toEqual([`${IMAGES}/7.jpg`]);
   });
 
   test("ignores schemes that no song uses", async () => {
@@ -360,6 +406,30 @@ describe("useSchemeImageStatus", () => {
 
     await waitFor(() =>
       expect(result.current).toEqual({ pending: 2, total: 3, isRunning: false }),
+    );
+  });
+
+  test("counts down as each image is saved", async () => {
+    await seedSchemes([{ id: 1 }, { id: 2 }]);
+    let finishSecond = () => {};
+    mockDownload.mockImplementation((url, dest) =>
+      url.endsWith("beat1.jpg")
+        ? writesFile(url, dest)
+        : new Promise((resolve) => {
+            finishSecond = () => void writesFile(url, dest).then(resolve);
+          }),
+    );
+    const { result } = renderHook(() => useSchemeImageStatus());
+
+    const pass = startSchemeImageSync();
+
+    await waitFor(() =>
+      expect(result.current).toEqual({ pending: 1, total: 2, isRunning: true }),
+    );
+    finishSecond();
+    await pass;
+    await waitFor(() =>
+      expect(result.current).toEqual({ pending: 0, total: 2, isRunning: false }),
     );
   });
 
