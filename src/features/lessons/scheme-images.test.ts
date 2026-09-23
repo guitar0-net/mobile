@@ -551,6 +551,20 @@ describe("useSchemeImage", () => {
     expect(mockDownload).toHaveBeenCalledTimes(1);
   });
 
+  test("reports failure when the scheme image changed while it was downloading", async () => {
+    await seedSchemes([{ id: 7 }]);
+
+    const { result } = renderHook(() =>
+      useSchemeImage({
+        id: 7,
+        image: "/media/lesson_schemes/old7.jpg",
+        localImagePath: null,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.state).toBe("failed"));
+  });
+
   test("retry downloads the image again and resumes the background pass", async () => {
     const db = await seedSchemes([{ id: 7 }, { id: 8 }]);
     mockDownload.mockRejectedValueOnce(new Error("offline"));
