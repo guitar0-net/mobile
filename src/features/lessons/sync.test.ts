@@ -20,13 +20,20 @@ import { resetDbForTesting } from "./__tests__/testing";
 import { syncAll } from "./sync";
 
 const mockDeletedFiles: string[] = [];
+const mockDeleteFile = jest.fn((name: string) => mockDeletedFiles.push(name));
+const mockCaptureException = jest.fn();
+
+jest.mock("@/lib/analytics", () => ({
+  capture: jest.fn(),
+  captureException: (...args: unknown[]) => mockCaptureException(...args),
+}));
 
 jest.mock("expo-file-system", () => ({
   Paths: { document: "/documents" },
   Directory: jest.fn(),
   File: jest.fn((_dir: unknown, name: string) => ({
     exists: true,
-    delete: () => mockDeletedFiles.push(name),
+    delete: () => mockDeleteFile(name),
   })),
 }));
 
@@ -128,6 +135,8 @@ function makeSyncResponse(
 beforeEach(() => {
   resetDbForTesting();
   mockDeletedFiles.length = 0;
+  mockDeleteFile.mockClear();
+  mockCaptureException.mockClear();
 });
 
 // ---------------------------------------------------------------------------
@@ -409,6 +418,30 @@ describe("downloaded scheme images across syncs", () => {
 
     expect(await db.select().from(schemes)).toEqual([]);
     expect(mockDeletedFiles).toEqual(["7.jpg"]);
+  });
+
+  test("a file that cannot be deleted does not fail the saved sync", async () => {
+    const scheme = makeScheme(7, { image: "/media/a.jpg" });
+    const db = await syncWithDownloadedImage(scheme);
+    const error = new Error("EACCES");
+    mockDeleteFile.mockImplementationOnce(() => {
+      throw error;
+    });
+
+    const version = await syncAll(db, "v1", undefined, {
+      getSyncData: () =>
+        Promise.resolve({
+          ...responseWith({ ...scheme, image: "/media/b.jpg" }),
+          version: "v2",
+        }),
+    });
+
+    expect(version).toBe("v2");
+    const [row] = await db.select().from(schemes);
+    expect(row.image).toBe("/media/b.jpg");
+    expect(mockCaptureException).toHaveBeenCalledWith(error, {
+      stage: "scheme_images",
+    });
   });
 });
 

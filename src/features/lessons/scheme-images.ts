@@ -255,8 +255,12 @@ export function useSchemeImageSource(scheme: DisplayedScheme): ImageSource | num
 
 export function deleteSchemeImageFiles(fileNames: string[]): void {
   for (const fileName of fileNames) {
-    const file = new File(imagesDir(), fileName);
-    if (file.exists) file.delete();
+    try {
+      const file = new File(imagesDir(), fileName);
+      if (file.exists) file.delete();
+    } catch (error) {
+      captureException(error, { stage: "scheme_images" });
+    }
   }
 }
 
