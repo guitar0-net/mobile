@@ -52,8 +52,12 @@ export default function LoadingScreen() {
     };
   }, [status, router]);
 
-  const progressLabel =
-    progress?.stage === "saving" ? "Сохраняем уроки..." : "Подключаемся к серверу...";
+  let progressLabel = "Подключаемся к серверу...";
+  if (progress?.stage === "fetching") {
+    progressLabel = `Загружаем уроки... ${formatSize(progress.bytes)}`;
+  } else if (progress?.stage === "saving") {
+    progressLabel = "Сохраняем уроки...";
+  }
 
   return (
     <View className="flex-1 bg-background">
@@ -128,4 +132,10 @@ export default function LoadingScreen() {
       </SafeAreaView>
     </View>
   );
+}
+
+function formatSize(bytes: number): string {
+  const kilobytes = Math.round(bytes / 1024);
+  if (kilobytes < 1000) return `${kilobytes} КБ`;
+  return `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} МБ`;
 }
