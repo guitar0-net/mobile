@@ -12,7 +12,7 @@ import { SettingsGroup } from "@/components/ui/settings-group";
 import { SettingsRow } from "@/components/ui/settings-row";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
-import { useDownloadedVideos } from "@/features/lessons";
+import { useDownloadedVideos, useSchemeImageStatus } from "@/features/lessons";
 import { useWifiOnlyDownloads } from "@/features/settings";
 import { useAppSync, useSyncState } from "@/lib/sync";
 import type { AppSyncDeps } from "@/lib/sync";
@@ -32,6 +32,7 @@ export function DataGroup({ deps }: DataGroupProps) {
   const [manuallyTriggered, setManuallyTriggered] = useState(false);
   const { wifiOnlyDownloads, setWifiOnlyDownloads } = useWifiOnlyDownloads();
   const { data: downloadedVideos } = useDownloadedVideos();
+  const schemeImages = useSchemeImageStatus();
   const router = useRouter();
   const colors = useColors();
 
@@ -42,6 +43,10 @@ export function DataGroup({ deps }: DataGroupProps) {
     setManuallyTriggered(true);
     retry();
   };
+
+  let schemeImagesSummary = `${schemeImages.total - schemeImages.pending} из ${schemeImages.total}`;
+  if (schemeImages.isRunning) schemeImagesSummary = `Загрузка… ${schemeImagesSummary}`;
+  else if (schemeImages.pending === 0) schemeImagesSummary = "Все загружены";
 
   const totalBytes = (downloadedVideos ?? []).reduce((sum, v) => sum + v.sizeBytes, 0);
   const summary = `${pluralRu(downloadedVideos?.length ?? 0, "урок", "урока", "уроков")} · ${formatMegabytesRu(totalBytes)}`;
@@ -94,6 +99,13 @@ export function DataGroup({ deps }: DataGroupProps) {
         label="Загруженные видео"
         sublabel={summary}
         onPress={() => router.push("/settings/downloaded-videos")}
+      />
+      <View className="h-px bg-border" />
+      <SettingsRow
+        type="info"
+        icon={{ ios: "photo.on.rectangle", android: "image" }}
+        label="Схемы уроков"
+        sublabel={schemeImagesSummary}
       />
     </SettingsGroup>
   );
