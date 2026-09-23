@@ -12,6 +12,7 @@ import { resetDbForTesting } from "./__tests__/testing";
 import { BUNDLED_SCHEME_IMAGES } from "./bundled-schemes";
 import {
   deleteAllSchemeImages,
+  resumeSchemeImageSync,
   startSchemeImageSync,
   useSchemeImageSource,
   useSchemeImageStatus,
@@ -394,6 +395,26 @@ describe("startSchemeImageSync", () => {
     jest.useRealTimers();
 
     expect(storedFileNames(db)).toEqual([{ id: 1, fileName: "1.jpg" }]);
+  });
+});
+
+describe("resumeSchemeImageSync", () => {
+  test("downloads missing images even before anything was counted", async () => {
+    const db = await seedSchemes([{ id: 1 }]);
+
+    await resumeSchemeImageSync();
+
+    expect(storedFileNames(db)).toEqual([{ id: 1, fileName: "1.jpg" }]);
+  });
+
+  test("does nothing once every image is known to be on disk", async () => {
+    await seedSchemes([{ id: 1 }]);
+    await startSchemeImageSync();
+    mockFiles.set(`${IMAGES}/stray.jpg`, "");
+
+    await resumeSchemeImageSync();
+
+    expect(mockFiles.has(`${IMAGES}/stray.jpg`)).toBe(true);
   });
 });
 

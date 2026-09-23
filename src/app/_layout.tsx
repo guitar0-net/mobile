@@ -22,6 +22,7 @@ import { ActivitySessionTracker } from "@/features/activity";
 import { DonationIapProvider } from "@/features/donations";
 import { AnalyticsScreenTracker } from "@/lib/analytics";
 import { queryClient } from "@/lib/network/query-client";
+import { useSchemeImageRetry } from "@/lib/sync";
 import { ThemeProvider, useTheme, useThemedScreenOptions } from "@/lib/themes";
 
 SplashScreen.preventAutoHideAsync();
@@ -79,6 +80,7 @@ export default function RootLayout() {
     "Geist-SemiBold": require("../../assets/fonts/Geist-SemiBold.ttf"),
     Debby: require("../../assets/fonts/Debby.ttf"),
   });
+  useSchemeImageRetry();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
