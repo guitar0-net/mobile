@@ -290,9 +290,12 @@ export function useSchemeImage(scheme: DisplayedScheme): SchemeImageState {
   useEffect(() => {
     if (localFile) return;
     let isCurrent = true;
-    download({ id, image }).catch(() => {
+    const fail = () => {
       if (isCurrent) setFailedAttempt(attemptKey);
-    });
+    };
+    download({ id, image }).then((isSaved) => {
+      if (!isSaved) fail();
+    }, fail);
     return () => {
       isCurrent = false;
     };
