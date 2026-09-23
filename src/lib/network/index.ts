@@ -6,6 +6,7 @@ export {
   ApiError,
   RequestTimeoutError,
   apiFetch,
+  apiFetchStreaming,
   apiPostBinary,
   apiPostJson,
 } from "./fetcher";

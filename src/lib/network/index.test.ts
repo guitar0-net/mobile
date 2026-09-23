@@ -6,11 +6,18 @@ import {
   ApiError,
   RequestTimeoutError,
   apiFetch,
+  apiFetchStreaming,
   apiPostBinary,
   apiPostJson,
 } from "./index";
 
 const BASE_URL = "https://test.example.com";
+
+const mockExpoFetch = jest.fn<Promise<Response>, [string, RequestInit]>();
+
+jest.mock("expo/fetch", () => ({
+  fetch: (url: string, init: RequestInit) => mockExpoFetch(url, init),
+}));
 
 beforeEach(() => {
   process.env.EXPO_PUBLIC_API_URL = BASE_URL;
@@ -278,5 +285,145 @@ describe("apiPostJson", () => {
     await expect(apiPostJson("/any", {})).rejects.toThrow(
       "EXPO_PUBLIC_API_URL is not configured",
     );
+  });
+});
+
+describe("apiFetchStreaming", () => {
+  const encoder = new TextEncoder();
+
+  function streamedResponse(
+    chunks: string[],
+    init: { status?: number; delayMs?: number; signal?: AbortSignal } = {},
+  ): Response {
+    const { status = 200, delayMs = 0, signal } = init;
+    const queue = chunks.map((chunk) => encoder.encode(chunk));
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        return new Promise<void>((resolve) => {
+          const timer = setTimeout(() => {
+            const next = queue.shift();
+            if (next) controller.enqueue(next);
+            else controller.close();
+            resolve();
+          }, delayMs);
+          signal?.addEventListener("abort", () => {
+            clearTimeout(timer);
+            controller.error(new TypeError("Aborted"));
+            resolve();
+          });
+        });
+      },
+    });
+    return new Response(body, { status });
+  }
+
+  function respondWith(chunks: string[], init?: { status?: number; delayMs?: number }) {
+    mockExpoFetch.mockImplementation((_url, requestInit) =>
+      Promise.resolve(
+        streamedResponse(chunks, { ...init, signal: requestInit.signal ?? undefined }),
+      ),
+    );
+  }
+
+  beforeEach(() => {
+    mockExpoFetch.mockReset();
+  });
+
+  test("parses the body and reports the bytes received after each chunk", async () => {
+    respondWith(['{"lessons":', "[1,2]}"]);
+    const onBytes = jest.fn();
+
+    const result = await apiFetchStreaming("/api/v1/sync/lessons/", onBytes);
+
+    expect(result).toEqual({ lessons: [1, 2] });
+    expect(onBytes.mock.calls).toEqual([[11], [17]]);
+    expect(mockExpoFetch).toHaveBeenCalledWith(
+      `${BASE_URL}/api/v1/sync/lessons/`,
+      expect.anything(),
+    );
+  });
+
+  test("decodes a character split across chunks", async () => {
+    const bytes = encoder.encode('"урок"');
+    mockExpoFetch.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(bytes.slice(0, 2));
+            controller.enqueue(bytes.slice(2));
+            controller.close();
+          },
+        }),
+      ),
+    );
+
+    await expect(apiFetchStreaming("/any", jest.fn())).resolves.toBe("урок");
+  });
+
+  test("throws an ApiError carrying the status code on a non-OK response", async () => {
+    respondWith(['{"detail":"Bad since"}'], { status: 422 });
+
+    const error = await apiFetchStreaming("/any", jest.fn()).catch(
+      (err: unknown) => err,
+    );
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 422, message: "Bad since" });
+  });
+
+  test("throws when the body is not valid JSON", async () => {
+    respondWith(["not-json"]);
+
+    await expect(apiFetchStreaming("/any", jest.fn())).rejects.toThrow(
+      "Failed to parse JSON response for /any",
+    );
+  });
+
+  describe("stall timeout", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test("gives up on a server that sends no response for 30 seconds", async () => {
+      mockExpoFetch.mockImplementation(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () =>
+              reject(new TypeError("Aborted")),
+            );
+          }),
+      );
+      const result = apiFetchStreaming("/api/v1/sync/lessons/", jest.fn()).catch(
+        (err: unknown) => err,
+      );
+
+      await jest.advanceTimersByTimeAsync(30_000);
+
+      expect(await result).toEqual(new RequestTimeoutError("/api/v1/sync/lessons/"));
+    });
+
+    test("gives up when the body stops arriving for 30 seconds", async () => {
+      respondWith(["[1,", "2]"], { delayMs: 40_000 });
+      const result = apiFetchStreaming("/any", jest.fn()).catch((err: unknown) => err);
+
+      await jest.advanceTimersByTimeAsync(30_000);
+
+      expect(await result).toBeInstanceOf(RequestTimeoutError);
+    });
+
+    test("keeps a slow download alive while chunks keep arriving", async () => {
+      respondWith(["[1,", "2,", "3]"], { delayMs: 25_000 });
+      const onBytes = jest.fn();
+      const result = apiFetchStreaming("/any", onBytes);
+
+      await jest.advanceTimersByTimeAsync(100_000);
+
+      await expect(result).resolves.toEqual([1, 2, 3]);
+      expect(onBytes).toHaveBeenCalledTimes(3);
+    });
   });
 });
