@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
+import { startSchemeImageSync as defaultStartSchemeImageSync } from "@/features/lessons/scheme-images";
 import { syncAll as defaultSyncAll } from "@/features/lessons/sync";
 import type { SyncProgress } from "@/features/lessons/sync";
 import { capture, captureException } from "@/lib/analytics";
@@ -33,27 +34,19 @@ export type AppSyncDeps = {
     since: string | null,
     onProgress?: (progress: SyncProgress) => void | Promise<void>,
   ) => Promise<string | null>;
+  startSchemeImageSync: () => Promise<void>;
 };
-
-type SyncStep =
-  | { sync_step: "init" | "fetching" | "saving" }
-  | { sync_step: "downloading"; images_completed: number; images_total: number };
-
-function describeSyncStep(progress: SyncProgress): SyncStep {
-  if (progress.stage === "saving") return { sync_step: "saving" };
-  return {
-    sync_step: "downloading",
-    images_completed: progress.completed,
-    images_total: progress.total,
-  };
-}
 
 function waitForPaint(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
 }
 
 export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
-  const { initDb = defaultInitDb, syncAll = defaultSyncAll } = deps ?? {};
+  const {
+    initDb = defaultInitDb,
+    syncAll = defaultSyncAll,
+    startSchemeImageSync = defaultStartSchemeImageSync,
+  } = deps ?? {};
 
   const {
     isInitialSyncDone,
@@ -78,12 +71,12 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
 
   const sync = useCallback(async () => {
     const startedAt = Date.now();
-    let step: SyncStep = { sync_step: "init" };
+    let step: "init" | "fetching" | SyncProgress["stage"] = "init";
     try {
       const db = await initDb();
-      step = { sync_step: "fetching" };
+      step = "fetching";
       const onProgress = (p: SyncProgress) => {
-        step = describeSyncStep(p);
+        step = p.stage;
         if (!isFirstLaunch) return;
         setProgress(p);
         return p.stage === "saving" ? waitForPaint() : undefined;
@@ -107,16 +100,18 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
         is_first_launch: isFirstLaunch,
         error_name: error instanceof Error ? error.name : typeof error,
         duration_ms: Date.now() - startedAt,
-        ...step,
+        sync_step: step,
       };
       capture("content_sync_failed", details);
       if (isFirstLaunch || syncFailure.kind !== "offline") {
         captureException(error, { stage: "content_sync", ...details });
       }
     }
+    if (useSyncStore.getState().isInitialSyncDone) void startSchemeImageSync();
   }, [
     initDb,
     syncAll,
+    startSchemeImageSync,
     contentVersion,
     isFirstLaunch,
     setContentVersion,

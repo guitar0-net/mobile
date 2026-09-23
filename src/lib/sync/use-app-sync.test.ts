@@ -25,6 +25,7 @@ function makeDeps(overrides?: Partial<AppSyncDeps>): AppSyncDeps {
   return {
     initDb: jest.fn().mockResolvedValue(mockDb),
     syncAll: jest.fn().mockResolvedValue("v1.0"),
+    startSchemeImageSync: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -67,7 +68,7 @@ describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
   test("updates progress state via onProgress callback", async () => {
     const deps = makeDeps({
       syncAll: jest.fn().mockImplementation(async (_db, _since, onProgress) => {
-        onProgress?.({ stage: "downloading", total: 5, completed: 3 });
+        onProgress?.({ stage: "saving" });
         return "v1.0";
       }),
     });
@@ -78,11 +79,7 @@ describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
       return state;
     });
     await waitFor(() => expect(result.current.status).toBe("success"));
-    expect(progressValues).toContainEqual({
-      stage: "downloading",
-      total: 5,
-      completed: 3,
-    });
+    expect(progressValues).toContainEqual({ stage: "saving" });
   });
 
   test("renders the saving stage before the save starts", async () => {
@@ -111,6 +108,22 @@ describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
     const { result } = renderHook(() => useAppSync(deps));
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(useSyncStore.getState().isInitialSyncDone).toBe(false);
+  });
+
+  test("starts scheme image downloads once the first sync succeeds", async () => {
+    const deps = makeDeps();
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.status).toBe("success"));
+    expect(deps.startSchemeImageSync).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not start scheme image downloads when the first sync fails", async () => {
+    const deps = makeDeps({
+      syncAll: jest.fn().mockRejectedValue(new Error("Network")),
+    });
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(deps.startSchemeImageSync).not.toHaveBeenCalled();
   });
 
   test("retry re-runs sync after failure", async () => {
@@ -202,7 +215,7 @@ describe("useAppSync — returning user (isInitialSyncDone=true)", () => {
   test("does not show progress on subsequent launch", async () => {
     const deps = makeDeps({
       syncAll: jest.fn().mockImplementation(async (_db, _since, onProgress) => {
-        await onProgress?.({ stage: "downloading", total: 5, completed: 3 });
+        await onProgress?.({ stage: "saving" });
         return "v1.0";
       }),
     });
@@ -226,6 +239,15 @@ describe("useAppSync — returning user (isInitialSyncDone=true)", () => {
     const { result } = renderHook(() => useAppSync(deps));
     await waitFor(() => expect(result.current.status).toBe("stale"));
     expect(useSyncStore.getState().isInitialSyncDone).toBe(true);
+  });
+
+  test("still starts scheme image downloads when a background sync fails", async () => {
+    const deps = makeDeps({
+      syncAll: jest.fn().mockRejectedValue(new Error("Network")),
+    });
+    const { result } = renderHook(() => useAppSync(deps));
+    await waitFor(() => expect(result.current.status).toBe("stale"));
+    expect(deps.startSchemeImageSync).toHaveBeenCalledTimes(1);
   });
 
   test("lastSyncedAt stays unset after a failed sync", async () => {
@@ -380,20 +402,16 @@ describe("useAppSync — failure analytics", () => {
     });
   });
 
-  test("records how far the image download got before failing", async () => {
+  test("attributes a failure after the download to saving", async () => {
     await runFailing(
       makeDeps({
         syncAll: jest.fn().mockImplementation(async (_db, _since, onProgress) => {
-          await onProgress?.({ stage: "downloading", total: 135, completed: 42 });
-          throw new RequestTimeoutError("/media/lesson_schemes/a.jpg");
+          await onProgress?.({ stage: "saving" });
+          throw new Error("FOREIGN KEY constraint failed");
         }),
       }),
     );
-    expect(syncFailedProps()).toMatchObject({
-      sync_step: "downloading",
-      images_completed: 42,
-      images_total: 135,
-    });
+    expect(syncFailedProps()).toMatchObject({ sync_step: "saving" });
   });
 
   test("attributes a database failure to initialization, not the network", async () => {

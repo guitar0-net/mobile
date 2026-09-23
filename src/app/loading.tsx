@@ -52,14 +52,8 @@ export default function LoadingScreen() {
     };
   }, [status, router]);
 
-  let progressValue: number | undefined;
-  let progressLabel = "Подключаемся к серверу...";
-  if (progress?.stage === "downloading") {
-    progressValue = progress.total > 0 ? progress.completed / progress.total : 1;
-    progressLabel = `Загружаем уроки... ${Math.round(progressValue * 100)}%`;
-  } else if (progress?.stage === "saving") {
-    progressLabel = "Сохраняем уроки...";
-  }
+  const progressLabel =
+    progress?.stage === "saving" ? "Сохраняем уроки..." : "Подключаемся к серверу...";
 
   return (
     <View className="flex-1 bg-background">
@@ -83,7 +77,7 @@ export default function LoadingScreen() {
           {status === "loading" && isFirstLaunch && (
             <>
               <View className="h-8 w-full justify-center">
-                <ProgressBar value={progressValue} />
+                <ProgressBar />
               </View>
               <Text className="text-sm text-muted-fg">{progressLabel}</Text>
             </>

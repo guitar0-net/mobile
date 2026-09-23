@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { eq, notInArray } from "drizzle-orm";
-import { Directory, File as FSFile, Paths } from "expo-file-system";
 
 import type { AppDb } from "@/lib/db";
 import {
@@ -17,62 +16,18 @@ import {
   songSchemes as songSchemesTable,
   songs as songsTable,
 } from "@/lib/db";
-import { RequestTimeoutError } from "@/lib/network";
 import type { components } from "@/lib/network/api.types";
 
 import { getSyncData as defaultGetSyncData } from "./api";
+import { deleteSchemeImageFiles } from "./scheme-images";
 
 type SyncLessonsResponse = components["schemas"]["SyncLessonsResponse"];
 
-export type SyncProgress =
-  { stage: "downloading"; total: number; completed: number } | { stage: "saving" };
+export type SyncProgress = { stage: "saving" };
 
 export type SyncDeps = {
   getSyncData: (since: string | null) => Promise<SyncLessonsResponse>;
-  downloadImage: (schemeId: number, url: string) => Promise<string>;
 };
-
-const IMAGE_STALL_TIMEOUT_MS = 20_000;
-const IMAGE_RETRY_DELAYS_MS = [1_000, 3_000];
-
-async function defaultDownloadImage(schemeId: number, url: string): Promise<string> {
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
-  const absoluteUrl = url.startsWith("http") ? url : `${baseUrl}${url}`;
-  const imagesDir = new Directory(Paths.document, "images");
-  imagesDir.create({ intermediates: true, idempotent: true });
-  const dest = new FSFile(imagesDir, `${schemeId}.png`);
-
-  const controller = new AbortController();
-  let stallTimer = setTimeout(() => controller.abort(), IMAGE_STALL_TIMEOUT_MS);
-  const resetStallTimer = () => {
-    clearTimeout(stallTimer);
-    stallTimer = setTimeout(() => controller.abort(), IMAGE_STALL_TIMEOUT_MS);
-  };
-  try {
-    const downloaded = await FSFile.downloadFileAsync(absoluteUrl, dest, {
-      idempotent: true,
-      signal: controller.signal,
-      onProgress: resetStallTimer,
-    });
-    return downloaded.uri;
-  } catch (error) {
-    if (controller.signal.aborted) throw new RequestTimeoutError(absoluteUrl);
-    throw error;
-  } finally {
-    clearTimeout(stallTimer);
-  }
-}
-
-async function withImageRetries<T>(attempt: () => Promise<T>): Promise<T> {
-  for (const delayMs of IMAGE_RETRY_DELAYS_MS) {
-    try {
-      return await attempt();
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
-  return attempt();
-}
 
 type SyncTx = Parameters<Parameters<AppDb["transaction"]>[0]>[0];
 
@@ -87,6 +42,17 @@ function deleteOrphanedSongs(tx: SyncTx): void {
     .where(notInArray(songSchemesTable.songUuid, linkedUuids))
     .run();
   tx.delete(songsTable).where(notInArray(songsTable.uuid, linkedUuids)).run();
+}
+
+function deleteOrphanedSchemes(tx: SyncTx): string[] {
+  const linkedIds = tx.select({ id: songSchemesTable.schemeId }).from(songSchemesTable);
+  const orphans = tx
+    .select({ fileName: schemesTable.localImagePath })
+    .from(schemesTable)
+    .where(notInArray(schemesTable.id, linkedIds))
+    .all();
+  tx.delete(schemesTable).where(notInArray(schemesTable.id, linkedIds)).run();
+  return orphans.flatMap(({ fileName }) => (fileName ? [fileName] : []));
 }
 
 function deleteRemovedLessons(tx: SyncTx, serverUuids: string[]): void {
@@ -107,8 +73,9 @@ function deleteRemovedLessons(tx: SyncTx, serverUuids: string[]): void {
 }
 
 /**
- * Downloads every scheme image first, then writes the whole payload in one
- * transaction, so an interrupted sync never leaves partially applied content.
+ * Writes the whole payload in one transaction, so an interrupted sync never
+ * leaves partially applied content. Scheme images are not part of it — they
+ * are downloaded afterwards by `startSchemeImageSync`.
  */
 export async function syncAll(
   db: AppDb,
@@ -116,8 +83,7 @@ export async function syncAll(
   onProgress?: (progress: SyncProgress) => void | Promise<void>,
   deps?: Partial<SyncDeps>,
 ): Promise<string | null> {
-  const { getSyncData = defaultGetSyncData, downloadImage = defaultDownloadImage } =
-    deps ?? {};
+  const { getSyncData = defaultGetSyncData } = deps ?? {};
 
   const {
     version,
@@ -131,20 +97,6 @@ export async function syncAll(
     course_lessons,
   } = await getSyncData(since);
 
-  const localImagePaths = new Map<number, string>();
-  await onProgress?.({ stage: "downloading", total: schemes.length, completed: 0 });
-  for (const scheme of schemes) {
-    const localImagePath = await withImageRetries(() =>
-      downloadImage(scheme.id, scheme.image),
-    );
-    localImagePaths.set(scheme.id, localImagePath);
-    await onProgress?.({
-      stage: "downloading",
-      total: schemes.length,
-      completed: localImagePaths.size,
-    });
-  }
-
   await onProgress?.({ stage: "saving" });
 
   const songsByLesson = new Map<string, typeof songs>();
@@ -154,6 +106,7 @@ export async function syncAll(
     songsByLesson.set(song.lesson_uuid, bucket);
   }
   const now = new Date().toISOString();
+  const staleImageFiles: string[] = [];
 
   db.transaction((tx) => {
     for (const chord of chords) {
@@ -173,12 +126,19 @@ export async function syncAll(
     }
 
     for (const scheme of schemes) {
+      const existing = tx
+        .select({ image: schemesTable.image, fileName: schemesTable.localImagePath })
+        .from(schemesTable)
+        .where(eq(schemesTable.id, scheme.id))
+        .get();
+      const isImageChanged = existing != null && existing.image !== scheme.image;
+      if (isImageChanged && existing.fileName) staleImageFiles.push(existing.fileName);
       const values = {
         image: scheme.image,
         inscription: scheme.inscription ?? null,
         height: scheme.height ?? null,
         width: scheme.width ?? null,
-        localImagePath: localImagePaths.get(scheme.id) ?? null,
+        localImagePath: isImageChanged ? null : (existing?.fileName ?? null),
       };
       tx.insert(schemesTable)
         .values({ id: scheme.id, ...values })
@@ -242,6 +202,7 @@ export async function syncAll(
 
     deleteRemovedLessons(tx, lesson_uuids);
     deleteOrphanedSongs(tx);
+    staleImageFiles.push(...deleteOrphanedSchemes(tx));
 
     tx.delete(courseLessonsTable).run();
     for (const course of courses) {
@@ -281,5 +242,6 @@ export async function syncAll(
     }
   });
 
+  deleteSchemeImageFiles(staleImageFiles);
   return version;
 }
