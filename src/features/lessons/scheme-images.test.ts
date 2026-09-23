@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { eq } from "drizzle-orm";
 
 import { initDb, schemes, songSchemes, songs } from "@/lib/db";
@@ -14,7 +14,7 @@ import {
   deleteAllSchemeImages,
   resumeSchemeImageSync,
   startSchemeImageSync,
-  useSchemeImageSource,
+  useSchemeImage,
   useSchemeImageStatus,
 } from "./scheme-images";
 
@@ -200,7 +200,7 @@ describe("startSchemeImageSync", () => {
       });
     });
     renderHook(() =>
-      useSchemeImageSource({
+      useSchemeImage({
         id: 7,
         image: "/media/lesson_schemes/beat7.jpg",
         localImagePath: null,
@@ -328,7 +328,7 @@ describe("startSchemeImageSync", () => {
       .where(eq(schemes.id, 1));
 
     renderHook(() =>
-      useSchemeImageSource({
+      useSchemeImage({
         id: 1,
         image: "/media/lesson_schemes/new1.jpg",
         localImagePath: null,
@@ -466,75 +466,120 @@ describe("useSchemeImageStatus", () => {
   });
 });
 
-describe("useSchemeImageSource", () => {
+describe("useSchemeImage", () => {
   const scheme = (id: number, localImagePath: string | null = null) => ({
     id,
     image: `/media/lesson_schemes/beat${id}.jpg`,
     localImagePath,
+  });
+  const readyFile = (name: string) => ({
+    state: "ready",
+    source: { uri: `${IMAGES}/${name}` },
   });
 
   test("shows the downloaded file when it is on disk", async () => {
     await seedSchemes([{ id: 7, localImagePath: "7.jpg" }]);
     mockFiles.set(`${IMAGES}/7.jpg`, "");
 
-    const { result } = renderHook(() => useSchemeImageSource(scheme(7, "7.jpg")));
+    const { result } = renderHook(() => useSchemeImage(scheme(7, "7.jpg")));
 
-    expect(result.current).toEqual({ uri: `${IMAGES}/7.jpg` });
+    expect(result.current).toEqual(readyFile("7.jpg"));
     expect(mockDownload).not.toHaveBeenCalled();
   });
 
-  test("falls back to the bundled image and downloads the real one", async () => {
+  test("shows the bundled image and downloads the real one", async () => {
     const db = await seedSchemes([{ id: 1 }]);
 
-    const { result } = renderHook(() => useSchemeImageSource(scheme(1)));
+    const { result } = renderHook(() => useSchemeImage(scheme(1)));
 
-    expect(result.current).toBe(BUNDLED_SCHEME_IMAGES[1]);
+    expect(result.current).toEqual({
+      state: "ready",
+      source: BUNDLED_SCHEME_IMAGES[1],
+    });
     await waitFor(() =>
       expect(storedFileNames(db)).toEqual([{ id: 1, fileName: "1.jpg" }]),
     );
   });
 
-  test("switches to the downloaded file without waiting for new props", async () => {
+  test("is loading until the download is saved, then shows the file", async () => {
     await seedSchemes([{ id: 7 }]);
+    let finish = () => {};
+    mockDownload.mockImplementationOnce(
+      (url, dest) =>
+        new Promise((resolve) => {
+          finish = () => void writesFile(url, dest).then(resolve);
+        }),
+    );
 
-    const { result } = renderHook(() => useSchemeImageSource(scheme(7)));
+    const { result } = renderHook(() => useSchemeImage(scheme(7)));
 
-    await waitFor(() => expect(result.current).toEqual({ uri: `${IMAGES}/7.jpg` }));
+    expect(result.current).toEqual({ state: "loading" });
+    await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
+    finish();
+    await waitFor(() => expect(result.current).toEqual(readyFile("7.jpg")));
+  });
+
+  test("downloads a file that went missing instead of using the server URL", async () => {
+    await seedSchemes([{ id: 7, localImagePath: "7.jpg" }]);
+
+    const { result } = renderHook(() => useSchemeImage(scheme(7, "7.jpg")));
+
+    expect(result.current).toEqual({ state: "loading" });
+    await waitFor(() => expect(result.current).toEqual(readyFile("7.jpg")));
   });
 
   test("does not download again when the screen reopens with stale props", async () => {
     await seedSchemes([{ id: 7 }]);
-    const first = renderHook(() => useSchemeImageSource(scheme(7)));
-    await waitFor(() =>
-      expect(first.result.current).toEqual({ uri: `${IMAGES}/7.jpg` }),
-    );
+    const first = renderHook(() => useSchemeImage(scheme(7)));
+    await waitFor(() => expect(first.result.current.state).toBe("ready"));
     first.unmount();
 
-    const { result } = renderHook(() => useSchemeImageSource(scheme(7)));
+    const { result } = renderHook(() => useSchemeImage(scheme(7)));
 
-    expect(result.current).toEqual({ uri: `${IMAGES}/7.jpg` });
+    expect(result.current).toEqual(readyFile("7.jpg"));
     expect(mockDownload).toHaveBeenCalledTimes(1);
   });
 
-  test("falls back to the server URL when nothing is local or bundled", async () => {
-    await seedSchemes([{ id: 7, localImagePath: "7.jpg" }]);
-
-    const { result } = renderHook(() => useSchemeImageSource(scheme(7, "7.jpg")));
-
-    expect(result.current).toEqual({
-      uri: "https://api.test/media/lesson_schemes/beat7.jpg",
-    });
-    await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
-  });
-
-  test("a failed on-screen download does not retry by itself", async () => {
+  test("a failed download reports failure and does not retry by itself", async () => {
     await seedSchemes([{ id: 7 }]);
     mockDownload.mockRejectedValue(new Error("offline"));
 
-    renderHook(() => useSchemeImageSource(scheme(7)));
+    const { result } = renderHook(() => useSchemeImage(scheme(7)));
 
-    await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.state).toBe("failed"));
     await new Promise<void>((resolve) => setImmediate(() => resolve()));
     expect(mockDownload).toHaveBeenCalledTimes(1);
+  });
+
+  test("retry downloads the image again and resumes the background pass", async () => {
+    const db = await seedSchemes([{ id: 7 }, { id: 8 }]);
+    mockDownload.mockRejectedValueOnce(new Error("offline"));
+    const { result } = renderHook(() => useSchemeImage(scheme(7)));
+    await waitFor(() => expect(result.current.state).toBe("failed"));
+
+    act(() => {
+      if (result.current.state === "failed") result.current.retry();
+    });
+
+    expect(result.current).toEqual({ state: "loading" });
+    await waitFor(() =>
+      expect(storedFileNames(db)).toEqual([
+        { id: 7, fileName: "7.jpg" },
+        { id: 8, fileName: "8.jpg" },
+      ]),
+    );
+    expect(result.current).toEqual(readyFile("7.jpg"));
+    expect(mockDownload).toHaveBeenCalledTimes(3);
+  });
+
+  test("a failed image appears once the background pass saves it", async () => {
+    await seedSchemes([{ id: 7 }]);
+    mockDownload.mockRejectedValueOnce(new Error("offline"));
+    const { result } = renderHook(() => useSchemeImage(scheme(7)));
+    await waitFor(() => expect(result.current.state).toBe("failed"));
+
+    await act(() => startSchemeImageSync());
+
+    expect(result.current).toEqual(readyFile("7.jpg"));
   });
 });

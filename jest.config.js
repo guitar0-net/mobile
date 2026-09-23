@@ -45,6 +45,7 @@ const config = {
     "!src/**/*.test.{ts,tsx}",
     "!src/app/**",
     "!src/components/app-tabs.tsx",
+    "!src/components/ui/skeleton.tsx",
     "!src/lib/dev/**",
     "!src/lib/analytics/client.ts",
     "!src/lib/analytics/events.ts",
@@ -53,8 +54,6 @@ const config = {
     // which is already covered behaviorally by use-app-session.test.tsx.
     "!src/features/activity/components/session-tracker.tsx",
     "!src/features/lessons/components/download-button.tsx",
-    // Thin wrapper — the source choice lives in useSchemeImageSource, tested in scheme-images.test.ts.
-    "!src/features/songs/components/scheme-image.tsx",
     "!src/features/metronome/components/beat-indicator.tsx",
     "!src/features/metronome/components/pattern-dots.tsx",
     "!src/features/metronome/components/time-signature-sheet.tsx",
