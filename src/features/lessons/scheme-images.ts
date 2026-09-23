@@ -36,7 +36,8 @@ const useStatusStore = create<SchemeImageStatus & { isCounted: boolean }>(() => 
 
 let activePass: Promise<void> | null = null;
 let passesSinceLaunch = 0;
-const inFlight = new Map<number, Promise<void>>();
+let downloadsSinceLaunch = 0;
+const inFlight = new Map<string, Promise<boolean>>();
 
 function imagesDir(): Directory {
   return new Directory(Paths.document, "images");
@@ -107,31 +108,41 @@ async function downloadWithStallTimeout(url: string, destination: File): Promise
 }
 
 // Android leaves a partially written file behind when a download fails midway.
-async function saveToDisk(scheme: SchemeRef): Promise<void> {
+async function saveToDisk(scheme: SchemeRef): Promise<boolean> {
   const dir = imagesDir();
   dir.create({ intermediates: true, idempotent: true });
   const fileName = fileNameFor(scheme);
-  const tmpName = `.tmp-${fileName}`;
+  downloadsSinceLaunch += 1;
+  const tmpName = `.tmp-${downloadsSinceLaunch}-${fileName}`;
   try {
     await downloadWithStallTimeout(remoteUrl(scheme.image), new File(dir, tmpName));
+    const db = getDb();
+    const current = db
+      .select({ image: schemes.image })
+      .from(schemes)
+      .where(eq(schemes.id, scheme.id))
+      .get();
+    if (current?.image !== scheme.image) return false;
     new File(dir, tmpName).moveSync(new File(dir, fileName), { overwrite: true });
-    getDb()
-      .update(schemes)
+    db.update(schemes)
       .set({ localImagePath: fileName })
-      .where(and(eq(schemes.id, scheme.id), eq(schemes.image, scheme.image)))
+      .where(eq(schemes.id, scheme.id))
       .run();
     refreshCounts();
+    return true;
   } finally {
     const leftover = new File(dir, tmpName);
     if (leftover.exists) leftover.delete();
   }
 }
 
-function download(scheme: SchemeRef): Promise<void> {
-  const existing = inFlight.get(scheme.id);
+/** Resolves `false` when the scheme image changed while it was downloading. */
+function download(scheme: SchemeRef): Promise<boolean> {
+  const key = `${scheme.id}:${scheme.image}`;
+  const existing = inFlight.get(key);
   if (existing) return existing;
-  const task = saveToDisk(scheme).finally(() => inFlight.delete(scheme.id));
-  inFlight.set(scheme.id, task);
+  const task = saveToDisk(scheme).finally(() => inFlight.delete(key));
+  inFlight.set(key, task);
   return task;
 }
 
@@ -157,9 +168,10 @@ async function runPass(): Promise<void> {
       const scheme = queue.shift();
       if (!scheme) return;
       try {
-        await download(scheme);
-        downloaded += 1;
-        consecutiveFailures = 0;
+        if (await download(scheme)) {
+          downloaded += 1;
+          consecutiveFailures = 0;
+        }
       } catch (error) {
         consecutiveFailures += 1;
         lastError = error;

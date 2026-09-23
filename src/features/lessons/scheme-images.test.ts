@@ -24,7 +24,7 @@ type MockDownload = (
   options: DownloadOptions,
 ) => Promise<void>;
 
-const mockFiles = new Set<string>();
+const mockFiles = new Map<string, string>();
 const mockDownload = jest.fn<ReturnType<MockDownload>, Parameters<MockDownload>>();
 const mockCapture = jest.fn();
 
@@ -47,7 +47,7 @@ jest.mock("expo-file-system", () => {
     }
     create() {}
     delete() {
-      for (const file of [...mockFiles]) {
+      for (const file of [...mockFiles.keys()]) {
         if (file.startsWith(`${this.uri}/`)) mockFiles.delete(file);
       }
     }
@@ -70,8 +70,8 @@ jest.mock("expo-file-system", () => {
       mockFiles.delete(this.uri);
     }
     moveSync(dest: { uri: string }) {
+      mockFiles.set(dest.uri, mockFiles.get(this.uri) ?? "");
       mockFiles.delete(this.uri);
-      mockFiles.add(dest.uri);
     }
   }
 
@@ -85,7 +85,7 @@ jest.mock("expo-file-system", () => {
 const IMAGES = "file:///docs/images";
 
 function writesFile(url: string, dest: { uri: string }) {
-  mockFiles.add(dest.uri);
+  mockFiles.set(dest.uri, url);
   return Promise.resolve();
 }
 
@@ -136,7 +136,7 @@ describe("startSchemeImageSync", () => {
       { id: 2, fileName: "2.jpg" },
       { id: 3, fileName: "3.jpg" },
     ]);
-    expect([...mockFiles].sort()).toEqual([
+    expect([...mockFiles.keys()].sort()).toEqual([
       `${IMAGES}/1.jpg`,
       `${IMAGES}/2.jpg`,
       `${IMAGES}/3.jpg`,
@@ -153,7 +153,7 @@ describe("startSchemeImageSync", () => {
   });
 
   test("skips images that are already on disk", async () => {
-    mockFiles.add(`${IMAGES}/1.png`);
+    mockFiles.set(`${IMAGES}/1.png`, "");
     await seedSchemes([{ id: 1, localImagePath: "1.png" }, { id: 2 }]);
 
     await startSchemeImageSync();
@@ -182,7 +182,7 @@ describe("startSchemeImageSync", () => {
   test("a failed download leaves neither a partial file nor a recorded path", async () => {
     const db = await seedSchemes([{ id: 1 }]);
     mockDownload.mockImplementation((_url, dest) => {
-      mockFiles.add(dest.uri);
+      mockFiles.set(dest.uri, "");
       return Promise.reject(new Error("UnableToDownload: 503"));
     });
 
@@ -261,6 +261,45 @@ describe("startSchemeImageSync", () => {
     await startSchemeImageSync();
 
     expect(storedFileNames(db)).toEqual([{ id: 1, fileName: null }]);
+    expect(mockFiles.size).toBe(0);
+  });
+
+  test("a stale download neither replaces the new image nor counts as done", async () => {
+    const db = await seedSchemes([{ id: 1 }]);
+    let finishStale = () => {};
+    mockDownload.mockImplementationOnce(
+      (url, dest) =>
+        new Promise((resolve) => {
+          finishStale = () => void writesFile(url, dest).then(resolve);
+        }),
+    );
+    const pass = startSchemeImageSync();
+    await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
+    await db
+      .update(schemes)
+      .set({ image: "/media/lesson_schemes/new1.jpg" })
+      .where(eq(schemes.id, 1));
+
+    renderHook(() =>
+      useSchemeImageSource({
+        id: 1,
+        image: "/media/lesson_schemes/new1.jpg",
+        localImagePath: null,
+      }),
+    );
+    await waitFor(() =>
+      expect(storedFileNames(db)).toEqual([{ id: 1, fileName: "1.jpg" }]),
+    );
+    finishStale();
+    await pass;
+
+    expect([...mockFiles]).toEqual([
+      [`${IMAGES}/1.jpg`, "https://api.test/media/lesson_schemes/new1.jpg"],
+    ]);
+    expect(mockCapture).toHaveBeenCalledWith(
+      "scheme_images_drained",
+      expect.objectContaining({ downloaded: 0 }),
+    );
   });
 
   test("aborts a download that receives no data for 20 seconds", async () => {
@@ -314,7 +353,7 @@ describe("startSchemeImageSync", () => {
 
 describe("useSchemeImageStatus", () => {
   test("counts downloaded images before any pass has run", async () => {
-    mockFiles.add(`${IMAGES}/1.jpg`);
+    mockFiles.set(`${IMAGES}/1.jpg`, "");
     await seedSchemes([{ id: 1, localImagePath: "1.jpg" }, { id: 2 }, { id: 3 }]);
 
     const { result } = renderHook(() => useSchemeImageStatus());
@@ -345,7 +384,7 @@ describe("useSchemeImageSource", () => {
 
   test("shows the downloaded file when it is on disk", async () => {
     await seedSchemes([{ id: 7, localImagePath: "7.jpg" }]);
-    mockFiles.add(`${IMAGES}/7.jpg`);
+    mockFiles.set(`${IMAGES}/7.jpg`, "");
 
     const { result } = renderHook(() => useSchemeImageSource(scheme(7, "7.jpg")));
 
