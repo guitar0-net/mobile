@@ -594,14 +594,17 @@ test("songs of a deleted lesson are also removed", async () => {
 test("syncAll passes since to getSyncData", async () => {
   const db = await initDb();
   const getSyncData = jest
-    .fn<Promise<SyncLessonsResponse>, [string | null]>()
+    .fn<Promise<SyncLessonsResponse>, [string | null, (received: number) => void]>()
     .mockResolvedValue(makeSyncResponse());
 
   await syncAll(db, "2026-05-01T00:00:00Z", undefined, {
     getSyncData,
   });
 
-  expect(getSyncData).toHaveBeenCalledWith("2026-05-01T00:00:00Z");
+  expect(getSyncData).toHaveBeenCalledWith(
+    "2026-05-01T00:00:00Z",
+    expect.any(Function),
+  );
 });
 
 test("delta sync with empty lessons list does not create duplicate rows", async () => {
@@ -869,6 +872,25 @@ describe("atomic write and progress stages", () => {
     const memberships = await db.select().from(courseLessons);
     expect(memberships).toEqual([
       expect.objectContaining({ courseUuid: "c1", lessonUuid: "l1" }),
+    ]);
+  });
+
+  test("reports the downloaded bytes before the saving stage", async () => {
+    const db = await initDb();
+    const onProgress = jest.fn();
+
+    await syncAll(db, null, onProgress, {
+      getSyncData: (_since, onBytes) => {
+        onBytes(1024);
+        onBytes(4096);
+        return Promise.resolve(makeSyncResponse());
+      },
+    });
+
+    expect(onProgress.mock.calls).toEqual([
+      [{ stage: "fetching", bytes: 1024 }],
+      [{ stage: "fetching", bytes: 4096 }],
+      [{ stage: "saving" }],
     ]);
   });
 

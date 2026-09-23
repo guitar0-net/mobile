@@ -7,6 +7,12 @@ import { queryClient, QUERY_DEFAULTS } from "@/lib/network/query-client";
 
 import { getLessons, getLesson, getSyncData } from "./api";
 
+const mockExpoFetch = jest.fn<Promise<Response>, [string, RequestInit]>();
+
+jest.mock("expo/fetch", () => ({
+  fetch: (url: string, init: RequestInit) => mockExpoFetch(url, init),
+}));
+
 type LessonsList = components["schemas"]["LessonsList"];
 type LessonDetail = components["schemas"]["LessonDetail"];
 
@@ -209,35 +215,36 @@ describe("getSyncData", () => {
     course_lessons: [],
   };
 
-  test("calls /api/v1/sync/lessons/ when since is null", async () => {
-    jest.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(JSON.stringify(mockSyncResponse), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
+  beforeEach(() => {
+    mockExpoFetch.mockReset();
+    mockExpoFetch.mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify(mockSyncResponse), { status: 200 })),
     );
+  });
 
-    await getSyncData(null);
+  test("calls /api/v1/sync/lessons/ when since is null", async () => {
+    await getSyncData(null, jest.fn());
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(mockExpoFetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/sync/lessons/`,
       expect.anything(),
     );
   });
 
   test("appends encoded since parameter when provided", async () => {
-    jest.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(JSON.stringify(mockSyncResponse), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
+    await getSyncData("2026-01-01T00:00:00Z", jest.fn());
 
-    await getSyncData("2026-01-01T00:00:00Z");
-
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(mockExpoFetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/sync/lessons/?since=2026-01-01T00%3A00%3A00Z`,
       expect.anything(),
     );
+  });
+
+  test("reports the received bytes", async () => {
+    const onBytes = jest.fn();
+
+    await getSyncData(null, onBytes);
+
+    expect(onBytes).toHaveBeenLastCalledWith(JSON.stringify(mockSyncResponse).length);
   });
 });

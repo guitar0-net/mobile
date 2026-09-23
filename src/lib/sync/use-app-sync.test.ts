@@ -19,6 +19,12 @@ jest.mock("@/lib/analytics", () => ({
   captureException: (...args: unknown[]) => mockCaptureException(...args),
 }));
 
+const mockExpoFetch = jest.fn<Promise<Response>, [string, RequestInit]>();
+
+jest.mock("expo/fetch", () => ({
+  fetch: (url: string, init: RequestInit) => mockExpoFetch(url, init),
+}));
+
 const mockDb = {} as Parameters<AppSyncDeps["syncAll"]>[0];
 
 function makeDeps(overrides?: Partial<AppSyncDeps>): AppSyncDeps {
@@ -170,7 +176,7 @@ describe("useAppSync — first launch (isInitialSyncDone=false)", () => {
 
   test("uses default deps when none are provided", async () => {
     process.env.EXPO_PUBLIC_API_URL = "https://test.example.com";
-    jest.spyOn(globalThis, "fetch").mockResolvedValue(
+    mockExpoFetch.mockResolvedValue(
       new Response(
         JSON.stringify({
           version: null,

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { apiFetch } from "@/lib/network";
+import { apiFetch, apiFetchStreaming } from "@/lib/network";
 import type { components } from "@/lib/network/api.types";
 import { queryClient } from "@/lib/network/query-client";
 
@@ -26,10 +26,13 @@ export async function getLesson(uuid: string): Promise<LessonDetail> {
   });
 }
 
-export async function getSyncData(since: string | null): Promise<SyncLessonsResponse> {
+export async function getSyncData(
+  since: string | null,
+  onBytes: (received: number) => void,
+): Promise<SyncLessonsResponse> {
   const path =
     since !== null
       ? `/api/v1/sync/lessons/?since=${encodeURIComponent(since)}`
       : "/api/v1/sync/lessons/";
-  return apiFetch<SyncLessonsResponse>(path);
+  return apiFetchStreaming<SyncLessonsResponse>(path, onBytes);
 }
