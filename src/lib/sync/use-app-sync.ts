@@ -87,6 +87,7 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
       setLastSyncedAt(Date.now());
       setFailure(null);
       setStatus("success");
+      void startSchemeImageSync();
       if (isFirstLaunch) {
         capture("initial_sync_completed", { duration_ms: Date.now() - startedAt });
       }
@@ -107,7 +108,6 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
         captureException(error, { stage: "content_sync", ...details });
       }
     }
-    if (useSyncStore.getState().isInitialSyncDone) void startSchemeImageSync();
   }, [
     initDb,
     syncAll,
