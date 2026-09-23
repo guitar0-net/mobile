@@ -26,13 +26,23 @@ export async function getLesson(uuid: string): Promise<LessonDetail> {
   });
 }
 
+const FULL_SYNC_RESPONSE_TIMEOUT_MS = 60_000;
+const DELTA_SYNC_RESPONSE_TIMEOUT_MS = 10_000;
+
 export async function getSyncData(
   since: string | null,
   onBytes: (received: number) => void,
 ): Promise<SyncLessonsResponse> {
-  const path =
-    since !== null
-      ? `/api/v1/sync/lessons/?since=${encodeURIComponent(since)}`
-      : "/api/v1/sync/lessons/";
-  return apiFetchStreaming<SyncLessonsResponse>(path, onBytes);
+  if (since === null) {
+    return apiFetchStreaming<SyncLessonsResponse>(
+      "/api/v1/sync/lessons/",
+      onBytes,
+      FULL_SYNC_RESPONSE_TIMEOUT_MS,
+    );
+  }
+  return apiFetchStreaming<SyncLessonsResponse>(
+    `/api/v1/sync/lessons/?since=${encodeURIComponent(since)}`,
+    onBytes,
+    DELTA_SYNC_RESPONSE_TIMEOUT_MS,
+  );
 }

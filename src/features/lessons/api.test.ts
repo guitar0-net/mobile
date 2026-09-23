@@ -247,4 +247,48 @@ describe("getSyncData", () => {
 
     expect(onBytes).toHaveBeenLastCalledWith(JSON.stringify(mockSyncResponse).length);
   });
+
+  describe("response timeout", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      mockExpoFetch.mockImplementation(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () =>
+              reject(new TypeError("Aborted")),
+            );
+          }),
+      );
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    function trackSettled(promise: Promise<unknown>): () => boolean {
+      let settled = false;
+      promise.catch(() => undefined).finally(() => (settled = true));
+      return () => settled;
+    }
+
+    test("keeps waiting for the first full sync on a slow network", async () => {
+      const isSettled = trackSettled(getSyncData(null, jest.fn()));
+
+      await jest.advanceTimersByTimeAsync(59_999);
+      expect(isSettled()).toBe(false);
+
+      await jest.advanceTimersByTimeAsync(1);
+      expect(isSettled()).toBe(true);
+    });
+
+    test("gives up on a delta sync quickly so launch is not held up", async () => {
+      const isSettled = trackSettled(getSyncData("2026-01-01T00:00:00Z", jest.fn()));
+
+      await jest.advanceTimersByTimeAsync(9_999);
+      expect(isSettled()).toBe(false);
+
+      await jest.advanceTimersByTimeAsync(1);
+      expect(isSettled()).toBe(true);
+    });
+  });
 });
