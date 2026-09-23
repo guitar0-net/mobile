@@ -27,12 +27,20 @@ export type SchemeImageStatus = {
   isRunning: boolean;
 };
 
-const useStatusStore = create<SchemeImageStatus & { isCounted: boolean }>(() => ({
+type StatusState = SchemeImageStatus & {
+  isCounted: boolean;
+  saved: Record<number, { fileName: string }>;
+};
+
+const INITIAL_STATUS: StatusState = {
   pending: 0,
   total: 0,
   isRunning: false,
   isCounted: false,
-}));
+  saved: {},
+};
+
+const useStatusStore = create<StatusState>(() => INITIAL_STATUS);
 
 let activePass: Promise<void> | null = null;
 let passesSinceLaunch = 0;
@@ -128,6 +136,9 @@ async function saveToDisk(scheme: SchemeRef): Promise<boolean> {
       .set({ localImagePath: fileName })
       .where(eq(schemes.id, scheme.id))
       .run();
+    useStatusStore.setState((state) => ({
+      saved: { ...state.saved, [scheme.id]: { fileName } },
+    }));
     refreshCounts();
     return true;
   } finally {
@@ -238,11 +249,13 @@ type DisplayedScheme = SchemeRef & { localImagePath: string | null };
  */
 export function useSchemeImageSource(scheme: DisplayedScheme): ImageSource | number {
   const { id, image, localImagePath } = scheme;
+  const saved = useStatusStore((state) => state.saved[id]);
   const localFile = useMemo(() => {
-    if (!localImagePath) return null;
-    const file = new File(imagesDir(), localImagePath);
+    const fileName = saved?.fileName ?? localImagePath;
+    if (!fileName) return null;
+    const file = new File(imagesDir(), fileName);
     return file.exists ? file : null;
-  }, [localImagePath]);
+  }, [saved, localImagePath]);
 
   useEffect(() => {
     if (localFile) return;
@@ -267,5 +280,5 @@ export function deleteSchemeImageFiles(fileNames: string[]): void {
 export function deleteAllSchemeImages(): void {
   const dir = imagesDir();
   if (dir.exists) dir.delete();
-  useStatusStore.setState({ pending: 0, total: 0, isRunning: false, isCounted: false });
+  useStatusStore.setState(INITIAL_STATUS);
 }

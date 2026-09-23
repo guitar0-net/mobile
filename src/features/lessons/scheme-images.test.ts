@@ -403,6 +403,28 @@ describe("useSchemeImageSource", () => {
     );
   });
 
+  test("switches to the downloaded file without waiting for new props", async () => {
+    await seedSchemes([{ id: 7 }]);
+
+    const { result } = renderHook(() => useSchemeImageSource(scheme(7)));
+
+    await waitFor(() => expect(result.current).toEqual({ uri: `${IMAGES}/7.jpg` }));
+  });
+
+  test("does not download again when the screen reopens with stale props", async () => {
+    await seedSchemes([{ id: 7 }]);
+    const first = renderHook(() => useSchemeImageSource(scheme(7)));
+    await waitFor(() =>
+      expect(first.result.current).toEqual({ uri: `${IMAGES}/7.jpg` }),
+    );
+    first.unmount();
+
+    const { result } = renderHook(() => useSchemeImageSource(scheme(7)));
+
+    expect(result.current).toEqual({ uri: `${IMAGES}/7.jpg` });
+    expect(mockDownload).toHaveBeenCalledTimes(1);
+  });
+
   test("falls back to the server URL when nothing is local or bundled", async () => {
     await seedSchemes([{ id: 7, localImagePath: "7.jpg" }]);
 
