@@ -379,6 +379,31 @@ describe("apiFetchStreaming", () => {
     );
   });
 
+  test("reports a failed connection as a TypeError, like the global fetch", async () => {
+    mockExpoFetch.mockRejectedValueOnce(new Error("fetch failed: offline"));
+
+    await expect(apiFetchStreaming("/any", jest.fn())).rejects.toBeInstanceOf(
+      TypeError,
+    );
+  });
+
+  test("reports a connection dropped mid-body as a TypeError", async () => {
+    mockExpoFetch.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(encoder.encode("[1,"));
+            controller.error(new Error("connection lost"));
+          },
+        }),
+      ),
+    );
+
+    await expect(apiFetchStreaming("/any", jest.fn())).rejects.toBeInstanceOf(
+      TypeError,
+    );
+  });
+
   describe("stall timeout", () => {
     beforeEach(() => {
       jest.useFakeTimers();

@@ -53,7 +53,9 @@ export async function apiFetchStreaming<T>(
     stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
   };
   try {
-    const response = await expoFetch(url, { signal: controller.signal });
+    const response = await asNetworkError(
+      expoFetch(url, { signal: controller.signal }),
+    );
     resetStallTimer();
     await throwIfNotOk(response);
     const text = await readBody(response, (received) => {
@@ -79,11 +81,22 @@ async function readBody(
   let text = "";
   let received = 0;
   for (;;) {
-    const { done, value } = await reader.read();
+    const { done, value } = await asNetworkError(reader.read());
     if (done) return text + decoder.decode();
     received += value.byteLength;
     text += decoder.decode(value, { stream: true });
     onChunk(received);
+  }
+}
+
+// expo/fetch rejects with a plain Error on network failure, unlike the Fetch
+// spec and RN's global fetch, which use TypeError.
+async function asNetworkError<T>(operation: Promise<T>): Promise<T> {
+  try {
+    return await operation;
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    throw new TypeError(message, { cause });
   }
 }
 
