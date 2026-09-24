@@ -6,7 +6,7 @@ import { addNetworkStateListener } from "expo-network";
 import { useEffect } from "react";
 import { AppState } from "react-native";
 
-import { resumeSchemeImageSync as defaultResumeSchemeImageSync } from "@/features/lessons/scheme-images";
+import { resumeSchemeImageSync as defaultResumeSchemeImageSync } from "@/features/lessons";
 
 import { runContentSync as defaultRunContentSync } from "./content-sync";
 import type { SyncTrigger } from "./content-sync";

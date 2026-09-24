@@ -4,7 +4,7 @@
 
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
-import type { SnapshotResult } from "@/features/lessons/sync";
+import type { SnapshotResult } from "@/features/lessons";
 import type { AppDb } from "@/lib/db";
 
 import { usePrepareApp } from "./use-prepare-app";

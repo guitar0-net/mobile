@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import type { SyncResult } from "@/features/lessons/sync";
+import type { SyncResult } from "@/features/lessons";
 import type { AppDb } from "@/lib/db";
 import { ApiError } from "@/lib/network";
 
