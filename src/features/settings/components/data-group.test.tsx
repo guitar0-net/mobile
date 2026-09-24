@@ -6,23 +6,36 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 import type { ReactNode } from "react";
 import { Switch } from "react-native";
 
+import type { SyncResult } from "@/features/lessons/sync";
+import type { AppDb } from "@/lib/db";
 import { ApiError } from "@/lib/network";
+import type { SyncTrigger } from "@/lib/sync";
 import { resetSyncForTesting } from "@/lib/sync/__tests__/testing";
-import { useSyncStore } from "@/lib/sync/store";
-import type { AppSyncDeps } from "@/lib/sync/use-app-sync";
+import { runContentSync } from "@/lib/sync/content-sync";
 import { ThemeProvider } from "@/lib/themes";
 
 import { DataGroup } from "./data-group";
 
-const mockDb = {} as Parameters<AppSyncDeps["syncAll"]>[0];
+jest.mock("@/lib/analytics", () => ({
+  capture: jest.fn(),
+  captureException: jest.fn(),
+}));
 
-function makeDeps(overrides?: Partial<AppSyncDeps>): AppSyncDeps {
+const unchanged: SyncResult = { previousVersion: "v1", version: "v1" };
+
+function contentDeps(syncAll: jest.Mock) {
   return {
-    initDb: jest.fn().mockResolvedValue(mockDb),
-    syncAll: jest.fn().mockResolvedValue("v1.0"),
+    getDb: () => ({}) as AppDb,
+    syncAll,
+    invalidateContentQueries: jest.fn(),
     startSchemeImageSync: jest.fn().mockResolvedValue(undefined),
-    ...overrides,
   };
+}
+
+function syncWith(syncAll: jest.Mock) {
+  return jest.fn((trigger: SyncTrigger) =>
+    runContentSync(trigger, contentDeps(syncAll)),
+  );
 }
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -51,13 +64,13 @@ jest.mock("@/features/lessons", () => ({
 }));
 
 function renderGroup({
-  deps,
+  sync = syncWith(jest.fn().mockResolvedValue(unchanged)),
   wifiOnlyDownloads = false,
   setWifiOnlyDownloads = jest.fn(),
   data,
   schemeImages = { pending: 0, total: 135, isRunning: false },
 }: {
-  deps?: Partial<AppSyncDeps>;
+  sync?: (trigger: SyncTrigger) => Promise<void>;
   wifiOnlyDownloads?: boolean;
   setWifiOnlyDownloads?: (value: boolean) => void;
   data?: { lessonUuid: string; title: string; sizeBytes: number }[];
@@ -66,14 +79,17 @@ function renderGroup({
   mockUseWifiOnlyDownloads.mockReturnValue({ wifiOnlyDownloads, setWifiOnlyDownloads });
   mockUseDownloadedVideos.mockReturnValue({ data });
   mockUseSchemeImageStatus.mockReturnValue(schemeImages);
-  return render(<DataGroup deps={deps ?? makeDeps()} />, { wrapper });
+  return render(<DataGroup runContentSync={sync} />, { wrapper });
 }
 
 beforeEach(() => {
   resetSyncForTesting();
-  // Settings is only reachable once the initial sync has completed.
-  useSyncStore.setState({ isInitialSyncDone: true });
   mockPush.mockReset();
+  jest.spyOn(console, "warn").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 describe("DataGroup", () => {
@@ -92,46 +108,60 @@ describe("DataGroup", () => {
     expect(screen.getByText("Синхронизировать")).toBeTruthy();
   });
 
-  test("successful manual sync updates the last-synced label", async () => {
-    const deps = makeDeps();
-    renderGroup({ deps });
+  test("opening the screen does not start a sync", () => {
+    const sync = syncWith(jest.fn().mockResolvedValue(unchanged));
+    renderGroup({ sync });
+
+    expect(sync).not.toHaveBeenCalled();
+  });
+
+  test("pressing the button starts a manual sync and updates the last-synced label", async () => {
+    const sync = syncWith(jest.fn().mockResolvedValue(unchanged));
+    renderGroup({ sync });
 
     fireEvent.press(screen.getByText("Синхронизировать"));
 
+    expect(sync).toHaveBeenCalledWith("manual");
     await waitFor(() => expect(screen.getByText(/только что/i)).toBeTruthy());
   });
 
   test("shows a loading state while a manual sync is in progress", async () => {
-    let resolveSync: (version: string) => void = () => {};
-    const deps = makeDeps({
-      syncAll: jest.fn().mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            resolveSync = resolve;
-          }),
-      ),
-    });
-    renderGroup({ deps });
-
-    // Let the silent automatic mount-sync resolve first, then trigger the
-    // manual sync we actually want to observe mid-flight.
-    await waitFor(() => expect(deps.syncAll).toHaveBeenCalledTimes(1));
-    resolveSync("v1.0");
-    await waitFor(() => expect(screen.getByText(/только что/i)).toBeTruthy());
+    let finishSync: (result: SyncResult) => void = () => {};
+    const syncAll = jest.fn(
+      () =>
+        new Promise<SyncResult>((resolve) => {
+          finishSync = resolve;
+        }),
+    );
+    renderGroup({ sync: syncWith(syncAll) });
 
     fireEvent.press(screen.getByText("Синхронизировать"));
-    await waitFor(() => expect(deps.syncAll).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.getByText("Синхронизация…")).toBeTruthy());
 
-    resolveSync("v1.1");
+    finishSync(unchanged);
     await waitFor(() => expect(screen.getByText("Синхронизировать")).toBeTruthy());
   });
 
+  test("a background sync in progress does not show the loading state", async () => {
+    let finishSync: (result: SyncResult) => void = () => {};
+    const syncAll = jest.fn(
+      () =>
+        new Promise<SyncResult>((resolve) => {
+          finishSync = resolve;
+        }),
+    );
+    renderGroup();
+
+    const backgroundSync = runContentSync("launch", contentDeps(syncAll));
+    await waitFor(() => expect(syncAll).toHaveBeenCalled());
+
+    expect(screen.queryByText("Синхронизация…")).toBeNull();
+    finishSync(unchanged);
+    await backgroundSync;
+  });
+
   test("a failed manual sync shows a visible error", async () => {
-    const deps = makeDeps({
-      syncAll: jest.fn().mockRejectedValue(new Error("Network")),
-    });
-    renderGroup({ deps });
+    renderGroup({ sync: syncWith(jest.fn().mockRejectedValue(new Error("Network"))) });
 
     fireEvent.press(screen.getByText("Синхронизировать"));
 
@@ -141,10 +171,7 @@ describe("DataGroup", () => {
   });
 
   test("a rate-limited sync does not tell the user to check their connection", async () => {
-    const deps = makeDeps({
-      syncAll: jest.fn().mockRejectedValue(new ApiError(503)),
-    });
-    renderGroup({ deps });
+    renderGroup({ sync: syncWith(jest.fn().mockRejectedValue(new ApiError(503))) });
 
     fireEvent.press(screen.getByText("Синхронизировать"));
 
@@ -154,13 +181,13 @@ describe("DataGroup", () => {
     expect(screen.queryByText(/подключение к интернету/i)).toBeNull();
   });
 
-  test("a failed automatic background sync stays silent", async () => {
-    const deps = makeDeps({
-      syncAll: jest.fn().mockRejectedValue(new Error("Network")),
-    });
-    renderGroup({ deps });
+  test("a failed background sync stays silent", async () => {
+    renderGroup();
 
-    await waitFor(() => expect(deps.syncAll).toHaveBeenCalledTimes(1));
+    await runContentSync(
+      "launch",
+      contentDeps(jest.fn().mockRejectedValue(new Error("Network"))),
+    );
 
     expect(screen.queryByText(/не удалось синхронизировать/i)).toBeNull();
   });

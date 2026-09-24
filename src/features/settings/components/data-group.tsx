@@ -14,21 +14,22 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 import { useDownloadedVideos, useSchemeImageStatus } from "@/features/lessons";
 import { useWifiOnlyDownloads } from "@/features/settings";
-import { useAppSync, useSyncState } from "@/lib/sync";
-import type { AppSyncDeps } from "@/lib/sync";
+import { runContentSync as defaultRunContentSync, useSyncStore } from "@/lib/sync";
+import type { SyncTrigger } from "@/lib/sync";
 import { useColors } from "@/lib/themes";
 import { formatMegabytesRu, pluralRu } from "@/lib/utils";
 
 import { formatRelativeTimeRu } from "../format-relative-time-ru";
 
 type DataGroupProps = {
-  /** Test-only injection point, mirrors useAppSync's own deps parameter. */
-  deps?: Partial<AppSyncDeps>;
+  /** Test-only injection point. */
+  runContentSync?: (trigger: SyncTrigger) => Promise<void>;
 };
 
-export function DataGroup({ deps }: DataGroupProps) {
-  const { lastSyncedAt } = useSyncState();
-  const { status, failure, retry } = useAppSync(deps);
+export function DataGroup({ runContentSync = defaultRunContentSync }: DataGroupProps) {
+  const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt);
+  const syncStatus = useSyncStore((s) => s.syncStatus);
+  const lastFailure = useSyncStore((s) => s.lastFailure);
   const [manuallyTriggered, setManuallyTriggered] = useState(false);
   const { wifiOnlyDownloads, setWifiOnlyDownloads } = useWifiOnlyDownloads();
   const { data: downloadedVideos } = useDownloadedVideos();
@@ -36,12 +37,13 @@ export function DataGroup({ deps }: DataGroupProps) {
   const router = useRouter();
   const colors = useColors();
 
-  const isSyncing = manuallyTriggered && status === "loading";
-  const shownFailure = manuallyTriggered ? failure : null;
+  const isSyncing = manuallyTriggered && syncStatus === "syncing";
+  const shownFailure =
+    manuallyTriggered && syncStatus === "failed" ? lastFailure : null;
 
   const handleSyncNow = () => {
     setManuallyTriggered(true);
-    retry();
+    void runContentSync("manual");
   };
 
   let schemeImagesSummary = `${schemeImages.total - schemeImages.pending} из ${schemeImages.total}`;
