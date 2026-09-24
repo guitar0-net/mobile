@@ -902,6 +902,7 @@ describe("applyContentSnapshot", () => {
 
   function snapshotWith(overrides: Partial<SyncLessonsResponse> = {}) {
     return {
+      snapshotVersion: SNAPSHOT_VERSION,
       readSnapshot: () =>
         Promise.resolve({
           ...makeSyncResponse({
@@ -966,10 +967,12 @@ describe("applyContentSnapshot", () => {
     ["a newer", "2026-07-01T00:00:00+00:00"],
   ])("leaves local content with %s version untouched", async (_label, localVersion) => {
     const db = await syncedDb(localVersion);
+    const readSnapshot = jest.fn();
 
-    const result = await applyContentSnapshot(db, snapshotWith());
+    const result = await applyContentSnapshot(db, { ...snapshotWith(), readSnapshot });
 
     expect(result.applied).toBe(false);
+    expect(readSnapshot).not.toHaveBeenCalled();
     expect(await db.select({ uuid: lessons.uuid }).from(lessons)).toHaveLength(2);
     expect(getContentVersion(db)).toBe(localVersion);
   });

@@ -5,9 +5,14 @@
 import { Asset } from "expo-asset";
 import { File } from "expo-file-system";
 
+import snapshotMeta from "@/assets/content/lessons-snapshot-version.json";
+
 import type { SyncLessonsResponse } from "./api";
 
 export type ContentSnapshot = SyncLessonsResponse & { version: string };
+
+/** Version of the bundled snapshot, known without reading the snapshot itself. */
+export const SNAPSHOT_VERSION: string = snapshotMeta.version;
 
 /** Reads the lessons content bundled with the app by `npm run content:snapshot`. */
 export async function readSnapshot(): Promise<ContentSnapshot> {

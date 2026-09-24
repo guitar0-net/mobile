@@ -10,6 +10,9 @@ const SOURCE_URL = "https://api.guitar0.net/api/v1/sync/lessons/";
 const OUTPUT_PATH = fileURLToPath(
   new URL("../assets/content/lessons.snapshot", import.meta.url),
 );
+const VERSION_PATH = fileURLToPath(
+  new URL("../assets/content/lessons-snapshot-version.json", import.meta.url),
+);
 
 function compare(a, b) {
   if (a < b) return -1;
@@ -52,4 +55,5 @@ if (typeof data.version !== "string" || data.version === "") {
 
 mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
 writeFileSync(OUTPUT_PATH, `${JSON.stringify(sortArrays(data), null, 2)}\n`);
+writeFileSync(VERSION_PATH, `${JSON.stringify({ version: data.version }, null, 2)}\n`);
 console.log(`Content snapshot ${data.version} written to ${OUTPUT_PATH}`);
