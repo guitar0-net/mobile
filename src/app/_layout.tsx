@@ -15,14 +15,17 @@ import {
 } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import { Button } from "@/components/ui/button";
+import { StatusMessage } from "@/components/ui/status-message";
 import { ActivitySessionTracker } from "@/features/activity";
 import { DonationIapProvider } from "@/features/donations";
-import { AnalyticsScreenTracker } from "@/lib/analytics";
+import { AnalyticsScreenTracker, capture } from "@/lib/analytics";
 import { queryClient } from "@/lib/network/query-client";
-import { useSchemeImageRetry } from "@/lib/sync";
+import { useBackgroundSync, usePrepareApp } from "@/lib/sync";
 import { ThemeProvider, useTheme, useThemedScreenOptions } from "@/lib/themes";
 
 SplashScreen.preventAutoHideAsync();
@@ -65,7 +68,6 @@ function ThemedStack() {
   return (
     <NavThemeProvider value={navTheme}>
       <Stack screenOptions={screenOptions}>
-        <Stack.Screen name="loading" options={{ headerShown: false }} />
         <Stack.Screen name="migration" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="lesson/[id]" options={{ headerBackTitle: "Назад" }} />
@@ -80,32 +82,62 @@ export default function RootLayout() {
     "Geist-SemiBold": require("../../assets/fonts/Geist-SemiBold.ttf"),
     Debby: require("../../assets/fonts/Debby.ttf"),
   });
-  useSchemeImageRetry();
+  const { status, snapshotApplied, retry } = usePrepareApp();
+  const isSettled = (fontsLoaded || fontError != null) && status !== "preparing";
+  const isReadyReported = useRef(false);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+    if (!isSettled) return;
+    void SplashScreen.hideAsync();
+    if (isReadyReported.current) return;
+    isReadyReported.current = true;
+    capture("app_ready", {
+      duration_ms: Math.round(performance.now()),
+      snapshot_applied: snapshotApplied,
+    });
+  }, [isSettled, snapshotApplied]);
 
-  if (!fontsLoaded && !fontError) {
+  if (!isSettled) {
     return null;
   }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
-        <ActivitySessionTracker />
-        <AnalyticsScreenTracker />
-        <DonationIapProvider>
-          <ThemeProvider>
-            <BottomSheetModalProvider>
-              <ThemedStack />
-              <StatusBarAdapter />
-            </BottomSheetModalProvider>
-          </ThemeProvider>
-        </DonationIapProvider>
+        {status === "ready" ? <PreparedApp /> : <DbInitError onRetry={retry} />}
       </QueryClientProvider>
     </GestureHandlerRootView>
+  );
+}
+
+function PreparedApp() {
+  useBackgroundSync();
+
+  return (
+    <>
+      <ActivitySessionTracker />
+      <AnalyticsScreenTracker />
+      <DonationIapProvider>
+        <ThemeProvider>
+          <BottomSheetModalProvider>
+            <ThemedStack />
+            <StatusBarAdapter />
+          </BottomSheetModalProvider>
+        </ThemeProvider>
+      </DonationIapProvider>
+    </>
+  );
+}
+
+function DbInitError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <ThemeProvider>
+      <View className="flex-1 items-center justify-center gap-3 bg-background px-8">
+        <StatusMessage variant="error">Не удалось открыть базу данных</StatusMessage>
+        <Button variant="ghost" size="sm" onPress={onRetry}>
+          Повторить
+        </Button>
+      </View>
+    </ThemeProvider>
   );
 }

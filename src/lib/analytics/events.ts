@@ -37,7 +37,6 @@ export type AnalyticsEvents = {
   };
   tuner_mic_permission_resolved: { granted: boolean };
 
-  initial_sync_completed: { duration_ms: number };
   content_snapshot_applied: {
     snapshot_version: string;
     previous_version: string | null;
