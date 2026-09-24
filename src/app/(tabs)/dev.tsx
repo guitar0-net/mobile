@@ -3,16 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { count } from "drizzle-orm";
-import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { DevSettings, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
-import { useCompletedLessonsCount } from "@/features/lessons";
+import { getContentVersion, useCompletedLessonsCount } from "@/features/lessons";
 import { resetLegacyImport } from "@/features/migration";
 import { useFavorites, useThemePreference } from "@/features/settings";
 import { chords, courses, getDb, lessons, schemes, songs } from "@/lib/db";
@@ -22,7 +21,6 @@ import {
   resetSyncState,
   seedLegacyProgress,
 } from "@/lib/dev";
-import { useSyncState } from "@/lib/sync";
 import { useTheme, type ThemeName } from "@/lib/themes";
 import type { ThemeMode } from "@/lib/themes/resolve-theme";
 
@@ -52,13 +50,12 @@ const THEMES: {
 ];
 
 export default function DevToolsScreen() {
-  const router = useRouter();
-  const { isInitialSyncDone, contentVersion } = useSyncState();
   const { theme } = useTheme();
   const { setThemeMode, setHighContrast } = useThemePreference();
   const { favorites } = useFavorites();
   const completedLessons = useCompletedLessonsCount();
   const [counts, setCounts] = useState<DbCounts | null>(null);
+  const [contentVersion, setContentVersion] = useState<string | null>(null);
   const [seedResult, setSeedResult] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,6 +76,7 @@ export default function DevToolsScreen() {
           chords: ch.n,
           schemes: sc.n,
         });
+        setContentVersion(getContentVersion(db));
       } catch {
         // DB not yet initialized
       }
@@ -88,17 +86,17 @@ export default function DevToolsScreen() {
 
   async function handleResetAll() {
     await resetAllData();
-    router.replace("/loading");
+    DevSettings.reload();
   }
 
   function handleResetSync() {
     resetSyncState();
-    router.replace("/loading");
+    DevSettings.reload();
   }
 
   function handleReplayLegacyImport() {
     resetLegacyImport();
-    router.replace("/loading");
+    DevSettings.reload();
   }
 
   async function handleSeedLegacyProgress() {
@@ -153,18 +151,10 @@ export default function DevToolsScreen() {
               Синхронизация
             </Text>
             <View className="overflow-hidden rounded-xl bg-surface">
-              {[
-                ["Начальный синк", isInitialSyncDone ? "Да" : "Нет"],
-                ["Версия контента", contentVersion || "—"],
-              ].map(([label, value], i, arr) => (
-                <View
-                  key={label}
-                  className={`flex-row justify-between px-4 py-3 ${i < arr.length - 1 ? "border-b border-border" : ""}`}
-                >
-                  <Text className="text-foreground">{label}</Text>
-                  <Text className="text-muted-fg">{value}</Text>
-                </View>
-              ))}
+              <View className="flex-row justify-between px-4 py-3">
+                <Text className="text-foreground">Версия контента</Text>
+                <Text className="text-muted-fg">{contentVersion ?? "—"}</Text>
+              </View>
             </View>
           </View>
 

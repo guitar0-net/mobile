@@ -5,6 +5,7 @@
 import { deleteAllSchemeImages } from "@/features/lessons/scheme-images";
 import {
   chords,
+  contentMeta,
   courseLessons,
   courses,
   getDb,
@@ -32,6 +33,7 @@ export async function resetAllData(): Promise<void> {
     await tx.delete(songs);
     await tx.delete(chords);
     await tx.delete(schemes);
+    await tx.delete(contentMeta);
   });
   deleteAllSchemeImages();
   syncStorage.clearAll();
@@ -39,6 +41,7 @@ export async function resetAllData(): Promise<void> {
 }
 
 export function resetSyncState(): void {
+  getDb().delete(contentMeta).run();
   syncStorage.clearAll();
   useSyncStore.setState(readDefaults());
 }
