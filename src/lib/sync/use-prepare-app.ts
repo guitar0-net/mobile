@@ -93,7 +93,6 @@ export function usePrepareApp(deps?: Partial<PrepareAppDeps>): PrepareAppState {
   }, [attempt]);
 
   const retry = useCallback(() => {
-    setPrepared(null);
     setAttempt((value) => value + 1);
   }, []);
 

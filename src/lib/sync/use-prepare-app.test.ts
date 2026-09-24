@@ -98,7 +98,7 @@ test("a failed legacy import still lets the app open", async () => {
   expect(mockCaptureException).toHaveBeenCalledWith(error, { stage: "legacy_import" });
 });
 
-test("a database that cannot open blocks the app until retry succeeds", async () => {
+test("a database that cannot open keeps its error shown until retry succeeds", async () => {
   const error = new Error("disk I/O error");
   const initDb = jest.fn().mockRejectedValueOnce(error).mockResolvedValueOnce(db);
   const deps = makeDeps({ initDb });
@@ -112,7 +112,7 @@ test("a database that cannot open blocks the app until retry succeeds", async ()
 
   act(() => result.current.retry());
 
-  expect(result.current.status).toBe("preparing");
+  expect(result.current.status).toBe("db_error");
   await waitFor(() => expect(result.current.status).toBe("ready"));
   expect(initDb).toHaveBeenCalledTimes(2);
 });
