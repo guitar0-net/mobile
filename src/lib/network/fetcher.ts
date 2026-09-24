@@ -38,13 +38,12 @@ export async function apiFetch<T>(path: string): Promise<T> {
 }
 
 /**
- * Like `apiFetch`, but reports the body bytes received so far. Gives up if the
- * response doesn't start within `responseTimeoutMs`, or once the body goes
- * 30 seconds without new data, so a slow download is never cut off.
+ * Like `apiFetch`, but reads the body as a stream. Gives up if the response
+ * doesn't start within `responseTimeoutMs`, or once the body goes 30 seconds
+ * without new data, so a slow download is never cut off.
  */
 export async function apiFetchStreaming<T>(
   path: string,
-  onBytes: (received: number) => void,
   responseTimeoutMs: number,
 ): Promise<T> {
   const url = `${getBaseUrl()}${path}`;
@@ -60,10 +59,7 @@ export async function apiFetchStreaming<T>(
     );
     resetStallTimer();
     await throwIfNotOk(response);
-    const text = await readBody(response, (received) => {
-      resetStallTimer();
-      onBytes(received);
-    });
+    const text = await readBody(response, resetStallTimer);
     return parseJson<T>(text, path);
   } catch (error) {
     if (controller.signal.aborted) throw new RequestTimeoutError(path);
@@ -73,21 +69,16 @@ export async function apiFetchStreaming<T>(
   }
 }
 
-async function readBody(
-  response: Response,
-  onChunk: (received: number) => void,
-): Promise<string> {
+async function readBody(response: Response, onChunk: () => void): Promise<string> {
   const reader = response.body?.getReader();
   if (!reader) return "";
   const decoder = new TextDecoder();
   let text = "";
-  let received = 0;
   for (;;) {
     const { done, value } = await asNetworkError(reader.read());
     if (done) return text + decoder.decode();
-    received += value.byteLength;
     text += decoder.decode(value, { stream: true });
-    onChunk(received);
+    onChunk();
   }
 }
 

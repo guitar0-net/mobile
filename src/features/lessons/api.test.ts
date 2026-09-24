@@ -223,7 +223,7 @@ describe("getSyncData", () => {
   });
 
   test("calls /api/v1/sync/lessons/ when since is null", async () => {
-    await getSyncData(null, jest.fn());
+    await getSyncData(null);
 
     expect(mockExpoFetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/sync/lessons/`,
@@ -232,20 +232,12 @@ describe("getSyncData", () => {
   });
 
   test("appends encoded since parameter when provided", async () => {
-    await getSyncData("2026-01-01T00:00:00Z", jest.fn());
+    await getSyncData("2026-01-01T00:00:00Z");
 
     expect(mockExpoFetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/sync/lessons/?since=2026-01-01T00%3A00%3A00Z`,
       expect.anything(),
     );
-  });
-
-  test("reports the received bytes", async () => {
-    const onBytes = jest.fn();
-
-    await getSyncData(null, onBytes);
-
-    expect(onBytes).toHaveBeenLastCalledWith(JSON.stringify(mockSyncResponse).length);
   });
 
   describe("response timeout", () => {
@@ -272,7 +264,7 @@ describe("getSyncData", () => {
     }
 
     test("keeps waiting for the first full sync on a slow network", async () => {
-      const isSettled = trackSettled(getSyncData(null, jest.fn()));
+      const isSettled = trackSettled(getSyncData(null));
 
       await jest.advanceTimersByTimeAsync(59_999);
       expect(isSettled()).toBe(false);
@@ -282,7 +274,7 @@ describe("getSyncData", () => {
     });
 
     test("gives up on a delta sync quickly so launch is not held up", async () => {
-      const isSettled = trackSettled(getSyncData("2026-01-01T00:00:00Z", jest.fn()));
+      const isSettled = trackSettled(getSyncData("2026-01-01T00:00:00Z"));
 
       await jest.advanceTimersByTimeAsync(9_999);
       expect(isSettled()).toBe(false);

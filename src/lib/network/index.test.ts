@@ -330,18 +330,15 @@ describe("apiFetchStreaming", () => {
     mockExpoFetch.mockReset();
   });
 
-  test("parses the body and reports the bytes received after each chunk", async () => {
+  test("parses a body that arrives in chunks", async () => {
     respondWith(['{"lessons":', "[1,2]}"]);
-    const onBytes = jest.fn();
 
     const result = await apiFetchStreaming(
       "/api/v1/sync/lessons/",
-      onBytes,
       RESPONSE_TIMEOUT_MS,
     );
 
     expect(result).toEqual({ lessons: [1, 2] });
-    expect(onBytes.mock.calls).toEqual([[11], [17]]);
     expect(mockExpoFetch).toHaveBeenCalledWith(
       `${BASE_URL}/api/v1/sync/lessons/`,
       expect.anything(),
@@ -362,15 +359,13 @@ describe("apiFetchStreaming", () => {
       ),
     );
 
-    await expect(
-      apiFetchStreaming("/any", jest.fn(), RESPONSE_TIMEOUT_MS),
-    ).resolves.toBe("урок");
+    await expect(apiFetchStreaming("/any", RESPONSE_TIMEOUT_MS)).resolves.toBe("урок");
   });
 
   test("throws an ApiError carrying the status code on a non-OK response", async () => {
     respondWith(['{"detail":"Bad since"}'], { status: 422 });
 
-    const error = await apiFetchStreaming("/any", jest.fn(), RESPONSE_TIMEOUT_MS).catch(
+    const error = await apiFetchStreaming("/any", RESPONSE_TIMEOUT_MS).catch(
       (err: unknown) => err,
     );
 
@@ -381,17 +376,17 @@ describe("apiFetchStreaming", () => {
   test("throws when the body is not valid JSON", async () => {
     respondWith(["not-json"]);
 
-    await expect(
-      apiFetchStreaming("/any", jest.fn(), RESPONSE_TIMEOUT_MS),
-    ).rejects.toThrow("Failed to parse JSON response for /any");
+    await expect(apiFetchStreaming("/any", RESPONSE_TIMEOUT_MS)).rejects.toThrow(
+      "Failed to parse JSON response for /any",
+    );
   });
 
   test("reports a failed connection as a TypeError, like the global fetch", async () => {
     mockExpoFetch.mockRejectedValueOnce(new Error("fetch failed: offline"));
 
-    await expect(
-      apiFetchStreaming("/any", jest.fn(), RESPONSE_TIMEOUT_MS),
-    ).rejects.toBeInstanceOf(TypeError);
+    await expect(apiFetchStreaming("/any", RESPONSE_TIMEOUT_MS)).rejects.toBeInstanceOf(
+      TypeError,
+    );
   });
 
   test("reports a connection dropped mid-body as a TypeError", async () => {
@@ -406,9 +401,9 @@ describe("apiFetchStreaming", () => {
       ),
     );
 
-    await expect(
-      apiFetchStreaming("/any", jest.fn(), RESPONSE_TIMEOUT_MS),
-    ).rejects.toBeInstanceOf(TypeError);
+    await expect(apiFetchStreaming("/any", RESPONSE_TIMEOUT_MS)).rejects.toBeInstanceOf(
+      TypeError,
+    );
   });
 
   describe("stall timeout", () => {
@@ -430,11 +425,7 @@ describe("apiFetchStreaming", () => {
           }),
       );
       let settled = false;
-      const result = apiFetchStreaming(
-        "/api/v1/sync/lessons/",
-        jest.fn(),
-        RESPONSE_TIMEOUT_MS,
-      )
+      const result = apiFetchStreaming("/api/v1/sync/lessons/", RESPONSE_TIMEOUT_MS)
         .catch((err: unknown) => err)
         .finally(() => {
           settled = true;
@@ -449,7 +440,7 @@ describe("apiFetchStreaming", () => {
 
     test("gives up when the body stops arriving for 30 seconds", async () => {
       respondWith(["[1,", "2]"], { delayMs: 40_000 });
-      const result = apiFetchStreaming("/any", jest.fn(), RESPONSE_TIMEOUT_MS).catch(
+      const result = apiFetchStreaming("/any", RESPONSE_TIMEOUT_MS).catch(
         (err: unknown) => err,
       );
 
@@ -460,13 +451,11 @@ describe("apiFetchStreaming", () => {
 
     test("keeps a slow download alive while chunks keep arriving", async () => {
       respondWith(["[1,", "2,", "3]"], { delayMs: 25_000 });
-      const onBytes = jest.fn();
-      const result = apiFetchStreaming("/any", onBytes, RESPONSE_TIMEOUT_MS);
+      const result = apiFetchStreaming("/any", RESPONSE_TIMEOUT_MS);
 
       await jest.advanceTimersByTimeAsync(100_000);
 
       await expect(result).resolves.toEqual([1, 2, 3]);
-      expect(onBytes).toHaveBeenCalledTimes(3);
     });
   });
 });

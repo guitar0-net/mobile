@@ -599,12 +599,12 @@ test("songs of a deleted lesson are also removed", async () => {
 test("syncAll asks for everything when no content is stored", async () => {
   const db = await initDb();
   const getSyncData = jest
-    .fn<Promise<SyncLessonsResponse>, [string | null, (received: number) => void]>()
+    .fn<Promise<SyncLessonsResponse>, [string | null]>()
     .mockResolvedValue(makeSyncResponse());
 
   await syncAll(db, { getSyncData });
 
-  expect(getSyncData).toHaveBeenCalledWith(null, expect.any(Function));
+  expect(getSyncData).toHaveBeenCalledWith(null);
 });
 
 test("syncAll asks only for changes since the stored version", async () => {
@@ -614,15 +614,12 @@ test("syncAll asks only for changes since the stored version", async () => {
       Promise.resolve(makeSyncResponse({ version: "2026-05-01T00:00:00Z" })),
   });
   const getSyncData = jest
-    .fn<Promise<SyncLessonsResponse>, [string | null, (received: number) => void]>()
+    .fn<Promise<SyncLessonsResponse>, [string | null]>()
     .mockResolvedValue(makeSyncResponse());
 
   await syncAll(db, { getSyncData });
 
-  expect(getSyncData).toHaveBeenCalledWith(
-    "2026-05-01T00:00:00Z",
-    expect.any(Function),
-  );
+  expect(getSyncData).toHaveBeenCalledWith("2026-05-01T00:00:00Z");
 });
 
 test("delta sync with empty lessons list does not create duplicate rows", async () => {
