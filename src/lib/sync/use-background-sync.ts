@@ -19,7 +19,7 @@ export type BackgroundSyncDeps = {
 
 /**
  * When the app returns to the foreground or the internet becomes reachable,
- * retries a failed content sync, or else resumes missing scheme images.
+ * resumes missing scheme images and retries a failed content sync.
  * Mount it once, at the app root, after the database is ready.
  */
 export function useBackgroundSync(deps?: Partial<BackgroundSyncDeps>): void {
@@ -30,8 +30,8 @@ export function useBackgroundSync(deps?: Partial<BackgroundSyncDeps>): void {
 
   useEffect(() => {
     const catchUp = (trigger: "foreground" | "network") => {
+      void resumeSchemeImageSync();
       if (useSyncStore.getState().syncStatus === "failed") void runContentSync(trigger);
-      else void resumeSchemeImageSync();
     };
     const appState = AppState.addEventListener("change", (state) => {
       if (state === "active") catchUp("foreground");

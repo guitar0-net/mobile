@@ -52,7 +52,7 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test("returning to the app after a failed sync retries the sync", () => {
+test("returning to the app after a failed sync retries the sync and resumes scheme images", () => {
   useSyncStore.setState({ syncStatus: "failed" });
   renderHook(() => useBackgroundSync(deps));
 
@@ -61,7 +61,7 @@ test("returning to the app after a failed sync retries the sync", () => {
   sendAppState("active");
 
   expect(runContentSync).toHaveBeenCalledWith("foreground");
-  expect(resumeSchemeImageSync).not.toHaveBeenCalled();
+  expect(resumeSchemeImageSync).toHaveBeenCalledTimes(1);
 });
 
 test("reconnecting after a failed sync retries the sync", () => {
@@ -73,6 +73,7 @@ test("reconnecting after a failed sync retries the sync", () => {
   sendNetwork(true);
 
   expect(runContentSync).toHaveBeenCalledWith("network");
+  expect(resumeSchemeImageSync).toHaveBeenCalledTimes(1);
 });
 
 test("without a failed sync only scheme images are resumed", () => {
