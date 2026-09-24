@@ -8,6 +8,11 @@ import type { CourseLessonRow } from "./queries";
 
 export type LessonState = "completed" | "continue" | "in-progress" | "neutral";
 
+/** Lesson № 0 is an optional introduction: never suggested as next, not counted in course progress. */
+export function isIntroLesson(lesson: { order: number }): boolean {
+  return lesson.order === 0;
+}
+
 export function isLessonCompleted(
   lesson: { songCount: number },
   progress: LessonProgress | undefined,
@@ -34,10 +39,11 @@ export function computeCourseProgress(
   lessons: CourseLessonRow[],
   allProgress: Record<string, LessonProgress>,
 ): { completed: number; total: number; pct: number } {
-  if (lessons.length === 0) return { completed: 0, total: 0, pct: 0 };
+  const countedLessons = lessons.filter((lesson) => !isIntroLesson(lesson));
+  if (countedLessons.length === 0) return { completed: 0, total: 0, pct: 0 };
 
-  const total = lessons.length;
-  const completed = lessons.filter((lesson) =>
+  const total = countedLessons.length;
+  const completed = countedLessons.filter((lesson) =>
     isLessonCompleted(lesson, allProgress[lesson.lessonUuid]),
   ).length;
 

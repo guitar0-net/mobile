@@ -12,7 +12,7 @@ import { getDb, courseLessons, courses, lessons, lessonSongs, songs } from "@/li
 import type { VideoDownloadStatus } from "@/lib/db";
 import { queryClient } from "@/lib/network/query-client";
 
-import { isLessonCompleted } from "./logic";
+import { isIntroLesson, isLessonCompleted } from "./logic";
 
 export type CourseLessonRow = {
   lessonUuid: string;
@@ -370,8 +370,10 @@ export function useContinueLesson(courseUuid: string) {
   const lesson = useMemo(() => {
     if (!query.data) return null;
     return (
-      query.data.find((row) => !isLessonCompleted(row, progress[row.lessonUuid])) ??
-      query.data.at(-1)
+      query.data.find(
+        (row) =>
+          !isIntroLesson(row) && !isLessonCompleted(row, progress[row.lessonUuid]),
+      ) ?? query.data.at(-1)
     );
   }, [query.data, progress]);
 

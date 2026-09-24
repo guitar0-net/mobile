@@ -139,6 +139,19 @@ describe("computeCourseProgress", () => {
     });
   });
 
+  test("excludes the intro lesson (order 0) from completed and total", () => {
+    const lessons = [{ ...row("l0", 0), order: 0 }, row("l1", 1), row("l2", 1)];
+    const allProgress = {
+      l0: prog(true, []),
+      l1: prog(true, ["s1"]),
+    };
+    expect(computeCourseProgress(lessons, allProgress)).toEqual({
+      completed: 1,
+      total: 2,
+      pct: 50,
+    });
+  });
+
   test("does not count video-viewed-only as completed when songCount > 0", () => {
     const lessons = [row("l1", 2)];
     const allProgress = { l1: prog(true, []) };
