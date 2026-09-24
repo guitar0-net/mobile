@@ -6,11 +6,13 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
 
+import { hasPendingLegacyReview } from "@/features/migration";
+
 export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/loading");
+    router.replace(hasPendingLegacyReview() ? "/migration" : "/(tabs)/home");
   }, [router]);
 
   return <View className="flex-1 bg-background" />;
