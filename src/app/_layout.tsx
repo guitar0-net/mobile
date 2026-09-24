@@ -30,6 +30,8 @@ import { ThemeProvider, useTheme, useThemedScreenOptions } from "@/lib/themes";
 
 SplashScreen.preventAutoHideAsync();
 
+const jsStartedAt = Date.now();
+
 function StatusBarAdapter() {
   const { theme } = useTheme();
   const isDark = theme === "dark" || theme === "contrast-dark";
@@ -93,7 +95,7 @@ export default function RootLayout() {
     if (status !== "ready" || isReadyReported.current) return;
     isReadyReported.current = true;
     capture("app_ready", {
-      duration_ms: Math.round(performance.now()),
+      duration_ms: Date.now() - jsStartedAt,
       snapshot_applied: snapshotApplied,
     });
   }, [isSettled, status, snapshotApplied]);
