@@ -4,7 +4,12 @@
 
 export const MAIN_COURSE_ID = "6236a799-32b4-4e98-b9b2-9ade9ba83b47";
 
-export { applyContentSnapshot, getContentVersion, syncAll } from "./sync";
+export {
+  adoptContentVersion,
+  applyContentSnapshot,
+  getContentVersion,
+  syncAll,
+} from "./sync";
 export type { SnapshotDeps, SnapshotResult, SyncDeps, SyncResult } from "./sync";
 export {
   startSchemeImageSync,
