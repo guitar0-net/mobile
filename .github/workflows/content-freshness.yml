@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 Andrey Kotlyar <guitar0.app@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Content freshness
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lessons content snapshot is up to date
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Compare snapshot version with production
+        run: |
+          local_version=$(jq -r .version assets/content/lessons.snapshot)
+          remote_version=$(curl -fsS --get \
+            --data-urlencode "since=$local_version" \
+            https://api.guitar0.net/api/v1/sync/lessons/ | jq -r .version)
+          if [ "$local_version" != "$remote_version" ]; then
+            echo "::error file=assets/content/lessons.snapshot::Snapshot $local_version is behind production $remote_version. Run npm run content:snapshot."
+            exit 1
+          fi
+          echo "Snapshot $local_version matches production"
