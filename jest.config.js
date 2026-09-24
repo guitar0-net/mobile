@@ -50,6 +50,8 @@ const config = {
     "!src/lib/analytics/client.ts",
     "!src/lib/analytics/events.ts",
     "!src/features/lessons/schema.ts",
+    // Only loads the bundled asset through native expo-asset and expo-file-system.
+    "!src/features/lessons/snapshot.ts",
     // Thin pass-through wrapper — its only job is calling useAppSession(),
     // which is already covered behaviorally by use-app-session.test.tsx.
     "!src/features/activity/components/session-tracker.tsx",

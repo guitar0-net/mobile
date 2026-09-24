@@ -7,6 +7,7 @@ import { eq, notInArray } from "drizzle-orm";
 import type { AppDb } from "@/lib/db";
 import {
   chords as chordsTable,
+  contentMeta as contentMetaTable,
   courseLessons as courseLessonsTable,
   courses as coursesTable,
   lessonSongs as lessonSongsTable,
@@ -16,14 +17,14 @@ import {
   songSchemes as songSchemesTable,
   songs as songsTable,
 } from "@/lib/db";
-import type { components } from "@/lib/network/api.types";
 
 import { getSyncData as defaultGetSyncData } from "./api";
+import type { SyncLessonsResponse } from "./api";
 import { deleteSchemeImageFiles } from "./scheme-images";
+import { readSnapshot as defaultReadSnapshot } from "./snapshot";
+import type { ContentSnapshot } from "./snapshot";
 
-type SyncLessonsResponse = components["schemas"]["SyncLessonsResponse"];
-
-export type SyncProgress = { stage: "fetching"; bytes: number } | { stage: "saving" };
+const CONTENT_META_ID = 1;
 
 export type SyncDeps = {
   getSyncData: (
@@ -76,18 +77,11 @@ function deleteRemovedLessons(tx: SyncTx, serverUuids: string[]): void {
 }
 
 /**
- * Writes the whole payload in one transaction, so an interrupted sync never
- * leaves partially applied content. Scheme images are not part of it — they
- * are downloaded afterwards by `startSchemeImageSync`.
+ * Writes the whole payload and its version in one transaction, so an
+ * interrupted write never leaves partially applied content. Scheme images are
+ * not part of it — they are downloaded afterwards by `startSchemeImageSync`.
  */
-export async function syncAll(
-  db: AppDb,
-  since: string | null,
-  onProgress?: (progress: SyncProgress) => void | Promise<void>,
-  deps?: Partial<SyncDeps>,
-): Promise<string | null> {
-  const { getSyncData = defaultGetSyncData } = deps ?? {};
-
+function writeContent(db: AppDb, payload: SyncLessonsResponse): void {
   const {
     version,
     lesson_uuids,
@@ -98,12 +92,7 @@ export async function syncAll(
     course_uuids,
     courses,
     course_lessons,
-  } = await getSyncData(
-    since,
-    (bytes) => void onProgress?.({ stage: "fetching", bytes }),
-  );
-
-  await onProgress?.({ stage: "saving" });
+  } = payload;
 
   const songsByLesson = new Map<string, typeof songs>();
   for (const song of songs) {
@@ -253,8 +242,77 @@ export async function syncAll(
     } else {
       tx.delete(coursesTable).where(notInArray(coursesTable.uuid, course_uuids)).run();
     }
+
+    if (version != null) {
+      tx.insert(contentMetaTable)
+        .values({ id: CONTENT_META_ID, version })
+        .onConflictDoUpdate({ target: contentMetaTable.id, set: { version } })
+        .run();
+    }
   });
 
   deleteSchemeImageFiles(staleImageFiles);
-  return version;
+}
+
+export function getContentVersion(db: AppDb): string | null {
+  const row = db
+    .select({ version: contentMetaTable.version })
+    .from(contentMetaTable)
+    .where(eq(contentMetaTable.id, CONTENT_META_ID))
+    .get();
+  return row?.version ?? null;
+}
+
+export type SyncResult = { previousVersion: string | null; version: string | null };
+
+export async function syncAll(
+  db: AppDb,
+  deps?: Partial<SyncDeps>,
+): Promise<SyncResult> {
+  const { getSyncData = defaultGetSyncData } = deps ?? {};
+  const previousVersion = getContentVersion(db);
+  const payload = await getSyncData(previousVersion, () => {});
+  writeContent(db, payload);
+  return { previousVersion, version: payload.version ?? previousVersion };
+}
+
+function isNewer(candidate: string, local: string | null): boolean {
+  if (local === null) return true;
+  const localTime = Date.parse(local);
+  if (Number.isNaN(localTime)) return true;
+  return Date.parse(candidate) > localTime;
+}
+
+export type SnapshotResult = {
+  applied: boolean;
+  snapshotVersion: string;
+  previousVersion: string | null;
+  readMs: number;
+  writeMs: number;
+};
+
+export type SnapshotDeps = {
+  readSnapshot: () => Promise<ContentSnapshot>;
+};
+
+/**
+ * Writes the content bundled with the app when it is strictly newer than the
+ * local content, so it never rolls back a delta that already arrived.
+ */
+export async function applyContentSnapshot(
+  db: AppDb,
+  deps?: Partial<SnapshotDeps>,
+): Promise<SnapshotResult> {
+  const { readSnapshot = defaultReadSnapshot } = deps ?? {};
+  const previousVersion = getContentVersion(db);
+  const readStartedAt = performance.now();
+  const snapshot = await readSnapshot();
+  const readMs = performance.now() - readStartedAt;
+  const result = { snapshotVersion: snapshot.version, previousVersion, readMs };
+  if (!isNewer(snapshot.version, previousVersion)) {
+    return { ...result, applied: false, writeMs: 0 };
+  }
+  const writeStartedAt = performance.now();
+  writeContent(db, snapshot);
+  return { ...result, applied: true, writeMs: performance.now() - writeStartedAt };
 }

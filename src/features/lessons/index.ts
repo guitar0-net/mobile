@@ -4,8 +4,8 @@
 
 export const MAIN_COURSE_ID = "6236a799-32b4-4e98-b9b2-9ade9ba83b47";
 
-export { syncAll } from "./sync";
-export type { SyncProgress, SyncDeps } from "./sync";
+export { applyContentSnapshot, getContentVersion, syncAll } from "./sync";
+export type { SnapshotDeps, SnapshotResult, SyncDeps, SyncResult } from "./sync";
 export {
   startSchemeImageSync,
   useSchemeImage,
@@ -19,6 +19,7 @@ export {
   fetchLessonDetail,
   fetchLessonVideoPath,
   fetchSongIdsByLesson,
+  invalidateContentQueries,
   listDownloadedVideos,
   useCompletedLessonsCount,
   useContinueLesson,

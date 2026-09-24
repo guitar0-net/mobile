@@ -17,7 +17,7 @@ import {
 import type { components } from "@/lib/network/api.types";
 
 import { resetDbForTesting } from "./__tests__/testing";
-import { syncAll } from "./sync";
+import { applyContentSnapshot, getContentVersion, syncAll } from "./sync";
 
 const mockDeletedFiles: string[] = [];
 const mockDeleteFile = jest.fn((name: string) => mockDeletedFiles.push(name));
@@ -146,7 +146,7 @@ beforeEach(() => {
 test("1 lesson in response → 1 row inserted in lessons table", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -163,7 +163,7 @@ test("1 lesson in response → 1 row inserted in lessons table", async () => {
 test("lesson row stores server updated_at, not client clock", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -180,7 +180,7 @@ test("lesson row stores server updated_at, not client clock", async () => {
 test("3 lessons in response → 3 rows in lessons table", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -194,25 +194,30 @@ test("3 lessons in response → 3 rows in lessons table", async () => {
   expect(rows).toHaveLength(3);
 });
 
-test("syncAll returns the version string from the server", async () => {
+test("syncAll saves the server version together with the content", async () => {
   const db = await initDb();
 
-  const version = await syncAll(db, null, undefined, {
+  const result = await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(makeSyncResponse({ version: "2026-06-01T12:00:00Z" })),
   });
 
-  expect(version).toBe("2026-06-01T12:00:00Z");
+  expect(result).toEqual({ previousVersion: null, version: "2026-06-01T12:00:00Z" });
+  expect(getContentVersion(db)).toBe("2026-06-01T12:00:00Z");
 });
 
-test("syncAll returns null version when server has no lessons", async () => {
+test("syncAll keeps the local version when the server has no lessons", async () => {
   const db = await initDb();
+  await syncAll(db, {
+    getSyncData: () => Promise.resolve(makeSyncResponse({ version: "v1" })),
+  });
 
-  const version = await syncAll(db, null, undefined, {
+  const result = await syncAll(db, {
     getSyncData: () => Promise.resolve(makeSyncResponse({ version: null })),
   });
 
-  expect(version).toBeNull();
+  expect(result).toEqual({ previousVersion: "v1", version: "v1" });
+  expect(getContentVersion(db)).toBe("v1");
 });
 
 // ---------------------------------------------------------------------------
@@ -222,7 +227,7 @@ test("syncAll returns null version when server has no lessons", async () => {
 test("lesson with 2 songs → 2 rows in songs table linked to the lesson", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -249,7 +254,7 @@ test("chord is upserted into chords table", async () => {
   const db = await initDb();
   const chord = makeChord(1, { title: "Am", svg_horizontal: "<svg>v1</svg>" });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -270,7 +275,7 @@ test("chord shared across two songs appears once in chords table", async () => {
   const db = await initDb();
   const chord = makeChord(7, { title: "Em" });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -296,7 +301,7 @@ test("chord SVG is updated on re-sync", async () => {
   const db = await initDb();
   const chord = makeChord(1, { svg_horizontal: "<svg>v1</svg>" });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -310,7 +315,7 @@ test("chord SVG is updated on re-sync", async () => {
 
   const updated = { ...chord, svg_horizontal: "<svg>v2</svg>" };
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -334,7 +339,7 @@ test("scheme is written without touching the network for its image", async () =>
   const db = await initDb();
   const scheme = makeScheme(42, { image: "https://example.com/scheme.png" });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -372,7 +377,7 @@ describe("downloaded scheme images across syncs", () => {
 
   async function syncWithDownloadedImage(scheme: SchemeSync) {
     const db = await initDb();
-    await syncAll(db, null, undefined, {
+    await syncAll(db, {
       getSyncData: () => Promise.resolve(responseWith(scheme)),
     });
     await db.update(schemes).set({ localImagePath: `${scheme.id}.jpg` });
@@ -383,7 +388,7 @@ describe("downloaded scheme images across syncs", () => {
     const scheme = makeScheme(7, { image: "/media/a.jpg", inscription: "Old" });
     const db = await syncWithDownloadedImage(scheme);
 
-    await syncAll(db, "v1", undefined, {
+    await syncAll(db, {
       getSyncData: () =>
         Promise.resolve(responseWith({ ...scheme, inscription: "New" })),
     });
@@ -398,7 +403,7 @@ describe("downloaded scheme images across syncs", () => {
     const scheme = makeScheme(7, { image: "/media/a.jpg" });
     const db = await syncWithDownloadedImage(scheme);
 
-    await syncAll(db, "v1", undefined, {
+    await syncAll(db, {
       getSyncData: () =>
         Promise.resolve(responseWith({ ...scheme, image: "/media/b.jpg" })),
     });
@@ -412,7 +417,7 @@ describe("downloaded scheme images across syncs", () => {
     const scheme = makeScheme(7, { image: "/media/a.jpg" });
     const db = await syncWithDownloadedImage(scheme);
 
-    await syncAll(db, "v1", undefined, {
+    await syncAll(db, {
       getSyncData: () => Promise.resolve(responseWith(scheme, [makeSong("s1", "l1")])),
     });
 
@@ -428,7 +433,7 @@ describe("downloaded scheme images across syncs", () => {
       throw error;
     });
 
-    const version = await syncAll(db, "v1", undefined, {
+    const { version } = await syncAll(db, {
       getSyncData: () =>
         Promise.resolve({
           ...responseWith({ ...scheme, image: "/media/b.jpg" }),
@@ -449,7 +454,7 @@ test("scheme shared across two songs appears once in schemes, twice in song_sche
   const db = await initDb();
   const scheme = makeScheme(10);
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -478,7 +483,7 @@ test("scheme shared across two songs appears once in schemes, twice in song_sche
 test("existing lesson is updated with new title on second sync", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -488,7 +493,7 @@ test("existing lesson is updated with new title on second sync", async () => {
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -505,7 +510,7 @@ test("existing lesson is updated with new title on second sync", async () => {
 test("updated lesson keeps only the new songs, removing old ones", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -516,7 +521,7 @@ test("updated lesson keeps only the new songs, removing old ones", async () => {
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -539,7 +544,7 @@ test("updated lesson keeps only the new songs, removing old ones", async () => {
 test("lesson absent from lesson_uuids is deleted from SQLite", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -549,7 +554,7 @@ test("lesson absent from lesson_uuids is deleted from SQLite", async () => {
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -567,7 +572,7 @@ test("lesson absent from lesson_uuids is deleted from SQLite", async () => {
 test("songs of a deleted lesson are also removed", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -578,7 +583,7 @@ test("songs of a deleted lesson are also removed", async () => {
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(makeSyncResponse({ lesson_uuids: [], lessons: [] })),
   });
@@ -588,18 +593,31 @@ test("songs of a deleted lesson are also removed", async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Delta sync — since parameter is forwarded to getSyncData
+// Delta sync — the stored version is sent as since
 // ---------------------------------------------------------------------------
 
-test("syncAll passes since to getSyncData", async () => {
+test("syncAll asks for everything when no content is stored", async () => {
   const db = await initDb();
   const getSyncData = jest
     .fn<Promise<SyncLessonsResponse>, [string | null, (received: number) => void]>()
     .mockResolvedValue(makeSyncResponse());
 
-  await syncAll(db, "2026-05-01T00:00:00Z", undefined, {
-    getSyncData,
+  await syncAll(db, { getSyncData });
+
+  expect(getSyncData).toHaveBeenCalledWith(null, expect.any(Function));
+});
+
+test("syncAll asks only for changes since the stored version", async () => {
+  const db = await initDb();
+  await syncAll(db, {
+    getSyncData: () =>
+      Promise.resolve(makeSyncResponse({ version: "2026-05-01T00:00:00Z" })),
   });
+  const getSyncData = jest
+    .fn<Promise<SyncLessonsResponse>, [string | null, (received: number) => void]>()
+    .mockResolvedValue(makeSyncResponse());
+
+  await syncAll(db, { getSyncData });
 
   expect(getSyncData).toHaveBeenCalledWith(
     "2026-05-01T00:00:00Z",
@@ -610,7 +628,7 @@ test("syncAll passes since to getSyncData", async () => {
 test("delta sync with empty lessons list does not create duplicate rows", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -620,7 +638,7 @@ test("delta sync with empty lessons list does not create duplicate rows", async 
       ),
   });
 
-  await syncAll(db, "2026-01-01T00:00:00Z", undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(makeSyncResponse({ lesson_uuids: ["l1"], lessons: [] })),
   });
@@ -637,7 +655,7 @@ test("song_chords rows for removed song are deleted on lesson update", async () 
   const db = await initDb();
   const chord = makeChord(7, { title: "Em" });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -649,7 +667,7 @@ test("song_chords rows for removed song are deleted on lesson update", async () 
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -668,7 +686,7 @@ test("song_schemes rows for removed song are deleted on lesson update", async ()
   const db = await initDb();
   const scheme = makeScheme(5);
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -680,7 +698,7 @@ test("song_schemes rows for removed song are deleted on lesson update", async ()
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -702,7 +720,7 @@ test("song_schemes rows for removed song are deleted on lesson update", async ()
 test("1 course in response → 1 row inserted in courses table", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -720,7 +738,7 @@ test("1 course in response → 1 row inserted in courses table", async () => {
 test("course with 2 lessons → 2 rows in course_lessons table", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -746,7 +764,7 @@ test("course with 2 lessons → 2 rows in course_lessons table", async () => {
 test("existing course is updated with new title on second sync", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -756,7 +774,7 @@ test("existing course is updated with new title on second sync", async () => {
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -773,7 +791,7 @@ test("existing course is updated with new title on second sync", async () => {
 test("re-sync replaces course lesson memberships", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -786,7 +804,7 @@ test("re-sync replaces course lesson memberships", async () => {
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -811,7 +829,7 @@ test("re-sync replaces course lesson memberships", async () => {
 test("course absent from course_uuids is deleted from SQLite", async () => {
   const db = await initDb();
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -821,7 +839,7 @@ test("course absent from course_uuids is deleted from SQLite", async () => {
       ),
   });
 
-  await syncAll(db, null, undefined, {
+  await syncAll(db, {
     getSyncData: () =>
       Promise.resolve(
         makeSyncResponse({
@@ -836,10 +854,10 @@ test("course absent from course_uuids is deleted from SQLite", async () => {
   expect(rows[0].uuid).toBe("c1");
 });
 
-describe("atomic write and progress stages", () => {
+describe("atomic write", () => {
   test("a failing write leaves the previously synced content untouched", async () => {
     const db = await initDb();
-    await syncAll(db, null, undefined, {
+    await syncAll(db, {
       getSyncData: () =>
         Promise.resolve(
           makeSyncResponse({
@@ -852,10 +870,11 @@ describe("atomic write and progress stages", () => {
         ),
     });
 
-    const error = await syncAll(db, null, undefined, {
+    const error = await syncAll(db, {
       getSyncData: () =>
         Promise.resolve(
           makeSyncResponse({
+            version: "2026-02-01T00:00:00Z",
             lesson_uuids: ["l1"],
             lessons: [makeLesson("l1", { title: "Новое название" })],
             course_uuids: ["c1"],
@@ -873,48 +892,140 @@ describe("atomic write and progress stages", () => {
     expect(memberships).toEqual([
       expect.objectContaining({ courseUuid: "c1", lessonUuid: "l1" }),
     ]);
+    expect(getContentVersion(db)).toBe("2026-01-01T00:00:00Z");
   });
+});
 
-  test("reports the downloaded bytes before the saving stage", async () => {
+// ---------------------------------------------------------------------------
+// Bundled content snapshot
+// ---------------------------------------------------------------------------
+
+describe("applyContentSnapshot", () => {
+  const SNAPSHOT_VERSION = "2026-05-30T05:29:18.303356+00:00";
+
+  function snapshotWith(overrides: Partial<SyncLessonsResponse> = {}) {
+    return {
+      readSnapshot: () =>
+        Promise.resolve({
+          ...makeSyncResponse({
+            lesson_uuids: ["l1"],
+            lessons: [makeLesson("l1", { title: "Из снимка" })],
+            ...overrides,
+          }),
+          version: SNAPSHOT_VERSION,
+        }),
+    };
+  }
+
+  async function syncedDb(version: string) {
     const db = await initDb();
-    const onProgress = jest.fn();
-
-    await syncAll(db, null, onProgress, {
-      getSyncData: (_since, onBytes) => {
-        onBytes(1024);
-        onBytes(4096);
-        return Promise.resolve(makeSyncResponse());
-      },
-    });
-
-    expect(onProgress.mock.calls).toEqual([
-      [{ stage: "fetching", bytes: 1024 }],
-      [{ stage: "fetching", bytes: 4096 }],
-      [{ stage: "saving" }],
-    ]);
-  });
-
-  test("starts writing only after the saving stage has been acknowledged", async () => {
-    const db = await initDb();
-    let acknowledgeSaving = () => {};
-    const onProgress = (progress: { stage: string }) =>
-      progress.stage === "saving"
-        ? new Promise<void>((resolve) => {
-            acknowledgeSaving = resolve;
-          })
-        : undefined;
-
-    const result = syncAll(db, null, onProgress, {
+    await syncAll(db, {
       getSyncData: () =>
         Promise.resolve(
-          makeSyncResponse({ lesson_uuids: ["l1"], lessons: [makeLesson("l1")] }),
+          makeSyncResponse({
+            version,
+            lesson_uuids: ["l1", "l2"],
+            lessons: [
+              makeLesson("l1", { title: "Из сети" }),
+              makeLesson("l2", { title: "Удалён в снимке" }),
+            ],
+          }),
         ),
     });
-    await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    return db;
+  }
 
-    expect(await db.select().from(lessons)).toHaveLength(0);
-    acknowledgeSaving();
-    await result;
-    expect(await db.select().from(lessons)).toHaveLength(1);
+  test("fills an empty database and stores the snapshot version", async () => {
+    const db = await initDb();
+
+    const result = await applyContentSnapshot(db, snapshotWith());
+
+    expect(result).toMatchObject({
+      applied: true,
+      snapshotVersion: SNAPSHOT_VERSION,
+      previousVersion: null,
+    });
+    expect(await db.select({ title: lessons.title }).from(lessons)).toEqual([
+      { title: "Из снимка" },
+    ]);
+    expect(getContentVersion(db)).toBe(SNAPSHOT_VERSION);
+  });
+
+  test("replaces older local content, removing lessons the snapshot no longer has", async () => {
+    const db = await syncedDb("2026-01-01T00:00:00Z");
+
+    const result = await applyContentSnapshot(db, snapshotWith());
+
+    expect(result.applied).toBe(true);
+    expect(result.previousVersion).toBe("2026-01-01T00:00:00Z");
+    expect(
+      await db.select({ uuid: lessons.uuid, title: lessons.title }).from(lessons),
+    ).toEqual([{ uuid: "l1", title: "Из снимка" }]);
+    expect(getContentVersion(db)).toBe(SNAPSHOT_VERSION);
+  });
+
+  test.each([
+    ["the same", SNAPSHOT_VERSION],
+    ["a newer", "2026-07-01T00:00:00+00:00"],
+  ])("leaves local content with %s version untouched", async (_label, localVersion) => {
+    const db = await syncedDb(localVersion);
+
+    const result = await applyContentSnapshot(db, snapshotWith());
+
+    expect(result.applied).toBe(false);
+    expect(await db.select({ uuid: lessons.uuid }).from(lessons)).toHaveLength(2);
+    expect(getContentVersion(db)).toBe(localVersion);
+  });
+
+  test("replaces local content whose version cannot be compared", async () => {
+    const db = await syncedDb("not-a-date");
+
+    const result = await applyContentSnapshot(db, snapshotWith());
+
+    expect(result.applied).toBe(true);
+    expect(getContentVersion(db)).toBe(SNAPSHOT_VERSION);
+  });
+
+  test("keeps downloaded videos and scheme images", async () => {
+    const db = await initDb();
+    const scheme = makeScheme(7, { image: "/media/a.jpg" });
+    const content = {
+      version: "2026-01-01T00:00:00Z",
+      lesson_uuids: ["l1"],
+      lessons: [makeLesson("l1")],
+      songs: [makeSong("s1", "l1", { scheme_ids: [7] })],
+      schemes: [scheme],
+    };
+    await syncAll(db, {
+      getSyncData: () => Promise.resolve(makeSyncResponse(content)),
+    });
+    await db
+      .update(lessons)
+      .set({ localVideoPath: "l1.mp4", videoDownloadStatus: "downloaded" });
+    await db.update(schemes).set({ localImagePath: "7.jpg" });
+
+    const result = await applyContentSnapshot(db, snapshotWith(content));
+
+    expect(result.applied).toBe(true);
+    const [lesson] = await db.select().from(lessons);
+    expect(lesson).toMatchObject({
+      localVideoPath: "l1.mp4",
+      videoDownloadStatus: "downloaded",
+    });
+    const [savedScheme] = await db.select().from(schemes);
+    expect(savedScheme.localImagePath).toBe("7.jpg");
+  });
+
+  test("a failing write changes neither the content nor the version", async () => {
+    const db = await syncedDb("2026-01-01T00:00:00Z");
+
+    const error = await applyContentSnapshot(
+      db,
+      snapshotWith({ course_lessons: [makeCourseLesson("c1", "missing-lesson", 1)] }),
+    ).catch((err: unknown) => err);
+
+    expect((error as Error).message).toBe("FOREIGN KEY constraint failed");
+    expect(await db.select({ uuid: lessons.uuid }).from(lessons)).toHaveLength(2);
+    expect(getContentVersion(db)).toBe("2026-01-01T00:00:00Z");
   });
 });

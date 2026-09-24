@@ -9,6 +9,7 @@ import React from "react";
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { useSettingsStore } from "@/features/settings/store";
 import { courseLessons, courses, initDb, lessons, lessonSongs, songs } from "@/lib/db";
+import { queryClient } from "@/lib/network/query-client";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import {
@@ -18,6 +19,7 @@ import {
   fetchFavoriteLessons,
   fetchLessonDetail,
   fetchSongIdsByLesson,
+  invalidateContentQueries,
   listDownloadedVideos,
   useCompletedLessonsCount,
   useContinueLesson,
@@ -876,5 +878,37 @@ describe("fetchSongIdsByLesson", () => {
     const byLesson = await fetchSongIdsByLesson(["lesson-1", "missing-lesson"]);
 
     expect(Object.keys(byLesson)).toEqual(["lesson-1"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// invalidateContentQueries
+// ---------------------------------------------------------------------------
+
+describe("invalidateContentQueries", () => {
+  afterEach(() => {
+    queryClient.clear();
+  });
+
+  test("marks lesson content stale and leaves network and activity data alone", () => {
+    const keys = [
+      ["courses"],
+      ["course-lessons", "c1"],
+      ["lesson-detail", "l1", "c1"],
+      ["chords", "count"],
+      ["announcements", "list"],
+      ["activity", "timeline"],
+    ];
+    for (const key of keys) queryClient.setQueryData(key, "cached");
+
+    invalidateContentQueries();
+
+    const stale = keys.filter((key) => queryClient.getQueryState(key)?.isInvalidated);
+    expect(stale).toEqual([
+      ["courses"],
+      ["course-lessons", "c1"],
+      ["lesson-detail", "l1", "c1"],
+      ["chords", "count"],
+    ]);
   });
 });
