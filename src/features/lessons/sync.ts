@@ -21,7 +21,7 @@ import {
 import { getSyncData as defaultGetSyncData } from "./api";
 import type { SyncLessonsResponse } from "./api";
 import { deleteSchemeImageFiles } from "./scheme-images";
-import { readSnapshot as defaultReadSnapshot } from "./snapshot";
+import { readSnapshot as defaultReadSnapshot, SNAPSHOT_VERSION } from "./snapshot";
 import type { ContentSnapshot } from "./snapshot";
 
 const CONTENT_META_ID = 1;
@@ -295,6 +295,7 @@ export type SnapshotResult = {
 };
 
 export type SnapshotDeps = {
+  snapshotVersion: string;
   readSnapshot: () => Promise<ContentSnapshot>;
 };
 
@@ -306,16 +307,22 @@ export async function applyContentSnapshot(
   db: AppDb,
   deps?: Partial<SnapshotDeps>,
 ): Promise<SnapshotResult> {
-  const { readSnapshot = defaultReadSnapshot } = deps ?? {};
+  const { snapshotVersion = SNAPSHOT_VERSION, readSnapshot = defaultReadSnapshot } =
+    deps ?? {};
   const previousVersion = getContentVersion(db);
+  if (!isNewer(snapshotVersion, previousVersion)) {
+    return { applied: false, snapshotVersion, previousVersion, readMs: 0, writeMs: 0 };
+  }
   const readStartedAt = performance.now();
   const snapshot = await readSnapshot();
   const readMs = performance.now() - readStartedAt;
-  const result = { snapshotVersion: snapshot.version, previousVersion, readMs };
-  if (!isNewer(snapshot.version, previousVersion)) {
-    return { ...result, applied: false, writeMs: 0 };
-  }
   const writeStartedAt = performance.now();
   writeContent(db, snapshot);
-  return { ...result, applied: true, writeMs: performance.now() - writeStartedAt };
+  return {
+    applied: true,
+    snapshotVersion: snapshot.version,
+    previousVersion,
+    readMs,
+    writeMs: performance.now() - writeStartedAt,
+  };
 }
