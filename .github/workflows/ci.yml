@@ -142,3 +142,21 @@ jobs:
 
       - name: Check REUSE compliance
         uses: fsfe/reuse-action@v5
+
+  content-snapshot:
+    name: Content snapshot version file
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Compare version file with snapshot
+        run: |
+          snapshot_version=$(jq -r .version assets/content/lessons.snapshot)
+          file_version=$(jq -r .version assets/content/lessons-snapshot-version.json)
+          if [ "$snapshot_version" != "$file_version" ]; then
+            echo "::error file=assets/content/lessons-snapshot-version.json::Version $file_version does not match snapshot $snapshot_version. Run npm run content:snapshot."
+            exit 1
+          fi
