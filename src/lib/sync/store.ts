@@ -4,12 +4,17 @@
 
 import { create } from "zustand";
 
+import type { SyncFailure } from "./failure";
 import { syncStorage } from "./storage";
+
+export type SyncStatus = "idle" | "syncing" | "failed";
 
 type SyncData = {
   isInitialSyncDone: boolean;
   contentVersion: string;
   lastSyncedAt: number | null;
+  syncStatus: SyncStatus;
+  lastFailure: SyncFailure | null;
 };
 
 type SyncActions = {
@@ -35,6 +40,8 @@ export function readDefaults(): SyncData {
     isInitialSyncDone: syncStorage.getBoolean(KEYS.IS_INITIAL_SYNC_DONE) ?? false,
     contentVersion: syncStorage.getString(KEYS.CONTENT_VERSION) ?? "",
     lastSyncedAt: syncStorage.getNumber(KEYS.LAST_SYNCED_AT) ?? null,
+    syncStatus: "idle",
+    lastFailure: null,
   };
 }
 

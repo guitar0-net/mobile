@@ -104,7 +104,7 @@ export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
         duration_ms: Date.now() - startedAt,
         sync_step: step,
       };
-      capture("content_sync_failed", details);
+      capture("content_sync_failed", { ...details, trigger: "launch" });
       if (isFirstLaunch || syncFailure.kind !== "offline") {
         captureException(error, { stage: "content_sync", ...details });
       }
