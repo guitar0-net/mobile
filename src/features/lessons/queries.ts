@@ -31,6 +31,7 @@ const CONTENT_QUERY_KEYS = [
   ["favorite-lessons"],
   ["song-detail"],
   ["chords"],
+  ["migration", "review-sections"],
 ];
 
 /** Re-reads every query built from synced lesson content. */

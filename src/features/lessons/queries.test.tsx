@@ -896,6 +896,7 @@ describe("invalidateContentQueries", () => {
       ["course-lessons", "c1"],
       ["lesson-detail", "l1", "c1"],
       ["chords", "count"],
+      ["migration", "review-sections"],
       ["announcements", "list"],
       ["activity", "timeline"],
     ];
@@ -909,6 +910,7 @@ describe("invalidateContentQueries", () => {
       ["course-lessons", "c1"],
       ["lesson-detail", "l1", "c1"],
       ["chords", "count"],
+      ["migration", "review-sections"],
     ]);
   });
 });
