@@ -10,6 +10,7 @@ import { useMemo } from "react";
 import { useFavorites, useProgress } from "@/features/settings";
 import { getDb, courseLessons, courses, lessons, lessonSongs, songs } from "@/lib/db";
 import type { VideoDownloadStatus } from "@/lib/db";
+import { queryClient } from "@/lib/network/query-client";
 
 import { isLessonCompleted } from "./logic";
 
@@ -21,6 +22,23 @@ export type CourseLessonRow = {
   duration: number | null;
   songs: { uuid: string; title: string }[];
 };
+
+const CONTENT_QUERY_KEYS = [
+  ["courses"],
+  ["course-lessons"],
+  ["lesson-detail"],
+  ["lessons"],
+  ["favorite-lessons"],
+  ["song-detail"],
+  ["chords"],
+];
+
+/** Re-reads every query built from synced lesson content. */
+export function invalidateContentQueries(): void {
+  for (const queryKey of CONTENT_QUERY_KEYS) {
+    void queryClient.invalidateQueries({ queryKey });
+  }
+}
 
 export async function fetchCourses() {
   return getDb().select().from(courses);

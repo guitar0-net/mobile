@@ -7,7 +7,6 @@ import { useShallow } from "zustand/react/shallow";
 
 import { startSchemeImageSync as defaultStartSchemeImageSync } from "@/features/lessons/scheme-images";
 import { syncAll as defaultSyncAll } from "@/features/lessons/sync";
-import type { SyncProgress } from "@/features/lessons/sync";
 import { capture, captureException } from "@/lib/analytics";
 import { initDb as defaultInitDb } from "@/lib/db";
 import type { AppDb } from "@/lib/db";
@@ -18,6 +17,8 @@ import { useSyncStore } from "./store";
 
 /** "stale" — sync failed but local content is usable; "error" — nothing to fall back on. */
 export type SyncStatus = "loading" | "success" | "stale" | "error";
+
+type SyncProgress = { stage: "fetching"; bytes: number } | { stage: "saving" };
 
 export type AppSyncState = {
   status: SyncStatus;
@@ -44,7 +45,7 @@ function waitForPaint(): Promise<void> {
 export function useAppSync(deps?: Partial<AppSyncDeps>): AppSyncState {
   const {
     initDb = defaultInitDb,
-    syncAll = defaultSyncAll,
+    syncAll = (db: AppDb) => defaultSyncAll(db).then(({ version }) => version),
     startSchemeImageSync = defaultStartSchemeImageSync,
   } = deps ?? {};
 
