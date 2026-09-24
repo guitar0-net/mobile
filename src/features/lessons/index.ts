@@ -12,6 +12,7 @@ export {
 } from "./sync";
 export type { SnapshotDeps, SnapshotResult, SyncDeps, SyncResult } from "./sync";
 export {
+  resumeSchemeImageSync,
   startSchemeImageSync,
   useSchemeImage,
   useSchemeImageStatus,

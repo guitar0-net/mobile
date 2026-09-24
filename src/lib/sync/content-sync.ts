@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { invalidateContentQueries as defaultInvalidateContentQueries } from "@/features/lessons/queries";
-import { startSchemeImageSync as defaultStartSchemeImageSync } from "@/features/lessons/scheme-images";
-import { syncAll as defaultSyncAll } from "@/features/lessons/sync";
-import type { SyncResult } from "@/features/lessons/sync";
+import {
+  invalidateContentQueries as defaultInvalidateContentQueries,
+  startSchemeImageSync as defaultStartSchemeImageSync,
+  syncAll as defaultSyncAll,
+} from "@/features/lessons";
+import type { SyncResult } from "@/features/lessons";
 import { capture, captureException } from "@/lib/analytics";
 import { getDb as defaultGetDb } from "@/lib/db";
 import type { AppDb } from "@/lib/db";

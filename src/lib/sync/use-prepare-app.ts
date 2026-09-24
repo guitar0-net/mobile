@@ -4,8 +4,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { applyContentSnapshot as defaultApplyContentSnapshot } from "@/features/lessons/sync";
-import type { SnapshotResult } from "@/features/lessons/sync";
+import { applyContentSnapshot as defaultApplyContentSnapshot } from "@/features/lessons";
+import type { SnapshotResult } from "@/features/lessons";
 import { importLegacyProgress as defaultImportLegacyProgress } from "@/features/migration";
 import { capture, captureException } from "@/lib/analytics";
 import { initDb as defaultInitDb } from "@/lib/db";
