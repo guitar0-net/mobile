@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import type { SyncFailureKind } from "@/lib/sync";
+import type { SyncFailureKind, SyncTrigger } from "@/lib/sync";
 
 export type AnalyticsEvents = {
   chord_orientation_toggled: { orientation: "horizontal" | "vertical" };
@@ -38,7 +38,25 @@ export type AnalyticsEvents = {
   tuner_mic_permission_resolved: { granted: boolean };
 
   initial_sync_completed: { duration_ms: number };
-  content_sync_failed: { kind: SyncFailureKind; is_first_launch: boolean };
+  content_snapshot_applied: {
+    snapshot_version: string;
+    previous_version: string | null;
+    read_ms: number;
+    write_ms: number;
+  };
+  content_sync_completed: {
+    trigger: SyncTrigger;
+    previous_version: string | null;
+    version: string | null;
+    duration_ms: number;
+  };
+  content_sync_failed: {
+    trigger: SyncTrigger;
+    kind: SyncFailureKind;
+    error_name: string;
+    duration_ms: number;
+  };
+  app_ready: { duration_ms: number; snapshot_applied: boolean };
   scheme_images_drained: { downloaded: number; passes: number; duration_ms: number };
   scheme_images_sweep_failed: {
     error_name: string;
