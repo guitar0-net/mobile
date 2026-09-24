@@ -68,6 +68,7 @@ function ThemedStack() {
   return (
     <NavThemeProvider value={navTheme}>
       <Stack screenOptions={screenOptions}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="migration" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="lesson/[id]" options={{ headerBackTitle: "Назад" }} />

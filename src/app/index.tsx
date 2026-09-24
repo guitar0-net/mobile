@@ -2,18 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
-import { View } from "react-native";
+import { Redirect } from "expo-router";
 
 import { hasPendingLegacyReview } from "@/features/migration";
 
 export default function Index() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace(hasPendingLegacyReview() ? "/migration" : "/(tabs)/home");
-  }, [router]);
-
-  return <View className="flex-1 bg-background" />;
+  return <Redirect href={hasPendingLegacyReview() ? "/migration" : "/(tabs)/home"} />;
 }
