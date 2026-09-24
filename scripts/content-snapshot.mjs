@@ -4,10 +4,12 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const SOURCE_URL = "https://api.guitar0.net/api/v1/sync/lessons/";
-const OUTPUT_PATH = new URL("../assets/content/lessons.snapshot", import.meta.url)
-  .pathname;
+const OUTPUT_PATH = fileURLToPath(
+  new URL("../assets/content/lessons.snapshot", import.meta.url),
+);
 
 function compare(a, b) {
   if (a < b) return -1;
