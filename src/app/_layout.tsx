@@ -89,13 +89,13 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isSettled) return;
     void SplashScreen.hideAsync();
-    if (isReadyReported.current) return;
+    if (status !== "ready" || isReadyReported.current) return;
     isReadyReported.current = true;
     capture("app_ready", {
       duration_ms: Math.round(performance.now()),
       snapshot_applied: snapshotApplied,
     });
-  }, [isSettled, snapshotApplied]);
+  }, [isSettled, status, snapshotApplied]);
 
   if (!isSettled) {
     return null;
