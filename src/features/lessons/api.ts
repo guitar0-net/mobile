@@ -29,20 +29,15 @@ export async function getLesson(uuid: string): Promise<LessonDetail> {
 const FULL_SYNC_RESPONSE_TIMEOUT_MS = 60_000;
 const DELTA_SYNC_RESPONSE_TIMEOUT_MS = 10_000;
 
-export async function getSyncData(
-  since: string | null,
-  onBytes: (received: number) => void,
-): Promise<SyncLessonsResponse> {
+export async function getSyncData(since: string | null): Promise<SyncLessonsResponse> {
   if (since === null) {
     return apiFetchStreaming<SyncLessonsResponse>(
       "/api/v1/sync/lessons/",
-      onBytes,
       FULL_SYNC_RESPONSE_TIMEOUT_MS,
     );
   }
   return apiFetchStreaming<SyncLessonsResponse>(
     `/api/v1/sync/lessons/?since=${encodeURIComponent(since)}`,
-    onBytes,
     DELTA_SYNC_RESPONSE_TIMEOUT_MS,
   );
 }

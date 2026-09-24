@@ -27,10 +27,7 @@ import type { ContentSnapshot } from "./snapshot";
 const CONTENT_META_ID = 1;
 
 export type SyncDeps = {
-  getSyncData: (
-    since: string | null,
-    onBytes: (received: number) => void,
-  ) => Promise<SyncLessonsResponse>;
+  getSyncData: (since: string | null) => Promise<SyncLessonsResponse>;
 };
 
 type SyncTx = Parameters<Parameters<AppDb["transaction"]>[0]>[0];
@@ -271,7 +268,7 @@ export async function syncAll(
 ): Promise<SyncResult> {
   const { getSyncData = defaultGetSyncData } = deps ?? {};
   const previousVersion = getContentVersion(db);
-  const payload = await getSyncData(previousVersion, () => {});
+  const payload = await getSyncData(previousVersion);
   writeContent(db, payload);
   return { previousVersion, version: payload.version ?? previousVersion };
 }
