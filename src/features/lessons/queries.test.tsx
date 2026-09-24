@@ -425,6 +425,27 @@ describe("useContinueLesson", () => {
     expect(result.current.lesson?.lessonUuid).toBe("lesson-2");
   });
 
+  test("skips the unwatched intro lesson (order 0)", async () => {
+    await seedCourse();
+    const db = await initDb();
+    await db.insert(lessons).values({
+      uuid: "lesson-0",
+      title: "Intro",
+      videoUrl: "https://example.com/v0.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db
+      .insert(courseLessons)
+      .values({ courseUuid: "course-1", lessonUuid: "lesson-0", order: 0 });
+
+    const { result } = renderHook(() => useContinueLesson("course-1"), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.lesson?.lessonUuid).toBe("lesson-1");
+  });
+
   test("lesson updates reactively when progress changes", async () => {
     await seedCourse();
     const { result } = renderHook(() => useContinueLesson("course-1"), {
