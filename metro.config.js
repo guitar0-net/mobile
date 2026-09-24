@@ -3,6 +3,6 @@ const { withNativeWind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
 
-config.resolver.assetExts.push("lottie");
+config.resolver.assetExts.push("lottie", "snapshot");
 
 module.exports = withNativeWind(config, { input: "./src/global.css" });
