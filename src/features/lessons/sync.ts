@@ -273,11 +273,17 @@ export async function syncAll(
   return { previousVersion, version: payload.version ?? previousVersion };
 }
 
+// The server sends microseconds, while ECMAScript only guarantees parsing of
+// ISO timestamps with milliseconds.
+function parseVersion(version: string): number {
+  return Date.parse(version.replace(/(\.\d{3})\d+/, "$1"));
+}
+
 function isNewer(candidate: string, local: string | null): boolean {
   if (local === null) return true;
-  const localTime = Date.parse(local);
+  const localTime = parseVersion(local);
   if (Number.isNaN(localTime)) return true;
-  return Date.parse(candidate) > localTime;
+  return parseVersion(candidate) > localTime;
 }
 
 export type SnapshotResult = {
