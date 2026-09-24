@@ -189,6 +189,11 @@ export const confirmedDonations = sqliteTable("confirmed_donations", {
   verifiedAt: text("verified_at").notNull(),
 });
 
+export const contentMeta = sqliteTable("content_meta", {
+  id: integer("id").primaryKey(),
+  version: text("version").notNull(),
+});
+
 // ---------------------------------------------------------------------------
 // Inferred TypeScript row types — no hand-written interfaces
 // ---------------------------------------------------------------------------

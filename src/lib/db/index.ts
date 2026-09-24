@@ -66,6 +66,7 @@ export {
   activityEvents,
   activityDaily,
   confirmedDonations,
+  contentMeta,
   VIDEO_DOWNLOAD_STATUSES,
   ACTIVITY_EVENT_TYPES,
 } from "./schema";
