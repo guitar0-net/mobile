@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:recommended", "group:allNonMajor"],
 
   "minimumReleaseAge": "3 days",
 
@@ -15,7 +15,6 @@
   "labels": ["dependencies"],
   "commitMessagePrefix": "chore(deps):",
   "rebaseWhen": "behind-base-branch",
-  "separateMajorMinor": true,
   "major": {
     "labels": ["dependencies", "breaking-change"]
   },
@@ -30,46 +29,37 @@
 
   "packageRules": [
     {
-      "matchDepTypes": ["devDependencies"],
-      "groupName": "dev-dependencies",
-      "labels": ["dependencies", "npm"]
-    },
-    {
-      "matchPackageNames": ["expo", "expo-*", "@expo/**"],
+      "matchPackageNames": [
+        "expo",
+        "expo-*",
+        "@expo/**",
+        "babel-preset-expo",
+        "eslint-config-expo",
+        "jest-expo"
+      ],
       "groupName": "expo-sdk",
       "minimumReleaseAge": "1 day",
       "schedule": ["before 6am"]
     },
     {
-      "matchPackageNames": ["react-native", "react-native-*", "@react-navigation/**"],
-      "groupName": "react-native"
-    },
-    {
+      "description": "Versions pinned by the Expo SDK; updated via `npx expo install --fix` during SDK upgrades",
       "matchPackageNames": [
         "react",
         "react-dom",
         "react-test-renderer",
-        "@types/react"
+        "@types/react",
+        "react-native",
+        "react-native-gesture-handler",
+        "react-native-reanimated",
+        "react-native-safe-area-context",
+        "react-native-screens",
+        "react-native-svg",
+        "react-native-web",
+        "react-native-worklets",
+        "@react-native-async-storage/async-storage",
+        "lottie-react-native"
       ],
-      "groupName": "react"
-    },
-    {
-      "matchPackageNames": [
-        "eslint",
-        "eslint-*",
-        "@typescript-eslint/**",
-        "prettier",
-        "prettier-plugin-*"
-      ],
-      "groupName": "linting"
-    },
-    {
-      "matchPackageNames": ["jest-expo", "@testing-library/**", "@types/jest"],
-      "groupName": "testing"
-    },
-    {
-      "matchPackageNames": ["typescript", "tslib"],
-      "groupName": "build-tooling"
+      "enabled": false
     },
     {
       "matchManagers": ["github-actions"],
