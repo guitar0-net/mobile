@@ -55,11 +55,9 @@ jest.mock("@/features/settings", () => ({
 }));
 
 const mockUseDownloadedVideos = jest.fn();
-const mockUseSchemeImageStatus = jest.fn();
 
 jest.mock("@/features/lessons", () => ({
   useDownloadedVideos: () => mockUseDownloadedVideos(),
-  useSchemeImageStatus: () => mockUseSchemeImageStatus(),
 }));
 
 function renderGroup({
@@ -67,17 +65,14 @@ function renderGroup({
   wifiOnlyDownloads = false,
   setWifiOnlyDownloads = jest.fn(),
   data,
-  schemeImages = { pending: 0, total: 135, isRunning: false },
 }: {
   sync?: (trigger: SyncTrigger) => Promise<void>;
   wifiOnlyDownloads?: boolean;
   setWifiOnlyDownloads?: (value: boolean) => void;
   data?: { lessonUuid: string; title: string; sizeBytes: number }[];
-  schemeImages?: { pending: number; total: number; isRunning: boolean };
 } = {}) {
   mockUseWifiOnlyDownloads.mockReturnValue({ wifiOnlyDownloads, setWifiOnlyDownloads });
   mockUseDownloadedVideos.mockReturnValue({ data });
-  mockUseSchemeImageStatus.mockReturnValue(schemeImages);
   return render(<DataGroup runContentSync={sync} />, { wrapper });
 }
 
@@ -227,20 +222,5 @@ describe("DataGroup", () => {
     renderGroup({ data: [] });
     fireEvent.press(screen.getByText("Загруженные видео"));
     expect(mockPush).toHaveBeenCalledWith("/settings/downloaded-videos");
-  });
-
-  test("shows how many scheme images are downloaded so far", () => {
-    renderGroup({ schemeImages: { pending: 7, total: 135, isRunning: false } });
-    expect(screen.getByText("128 из 135")).toBeTruthy();
-  });
-
-  test("marks scheme images as loading while a download pass runs", () => {
-    renderGroup({ schemeImages: { pending: 7, total: 135, isRunning: true } });
-    expect(screen.getByText("Загрузка… 128 из 135")).toBeTruthy();
-  });
-
-  test("reports all scheme images downloaded once nothing is pending", () => {
-    renderGroup({ schemeImages: { pending: 0, total: 135, isRunning: false } });
-    expect(screen.getByText("Все загружены")).toBeTruthy();
   });
 });
