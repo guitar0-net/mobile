@@ -4,7 +4,6 @@
 
 import {
   invalidateContentQueries as defaultInvalidateContentQueries,
-  startSchemeImageSync as defaultStartSchemeImageSync,
   syncAll as defaultSyncAll,
 } from "@/features/lessons";
 import type { SyncResult } from "@/features/lessons";
@@ -15,13 +14,12 @@ import type { AppDb } from "@/lib/db";
 import { describeSyncFailure } from "./failure";
 import { useSyncStore } from "./store";
 
-export type SyncTrigger = "launch" | "foreground" | "network" | "manual";
+export type SyncTrigger = "launch" | "manual";
 
 export type ContentSyncDeps = {
   getDb: () => AppDb;
   syncAll: (db: AppDb) => Promise<SyncResult>;
   invalidateContentQueries: () => void;
-  startSchemeImageSync: () => Promise<void>;
 };
 
 let activeSync: Promise<void> | null = null;
@@ -47,7 +45,6 @@ async function syncContent(
     getDb = defaultGetDb,
     syncAll = defaultSyncAll,
     invalidateContentQueries = defaultInvalidateContentQueries,
-    startSchemeImageSync = defaultStartSchemeImageSync,
   }: Partial<ContentSyncDeps>,
 ): Promise<void> {
   const startedAt = Date.now();
@@ -65,7 +62,6 @@ async function syncContent(
         duration_ms: Date.now() - startedAt,
       });
     }
-    void startSchemeImageSync();
   } catch (error) {
     if (__DEV__) console.warn("[sync] failed:", error);
     const failure = describeSyncFailure(error);

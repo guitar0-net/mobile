@@ -24,7 +24,6 @@ function makeDeps(result: Promise<SyncResult>) {
     getDb: () => ({}) as AppDb,
     syncAll: jest.fn(() => result),
     invalidateContentQueries: jest.fn(),
-    startSchemeImageSync: jest.fn().mockResolvedValue(undefined),
   } satisfies ContentSyncDeps;
 }
 
@@ -51,18 +50,17 @@ test("concurrent calls share one request", async () => {
   expect(deps.syncAll).toHaveBeenCalledTimes(1);
 });
 
-test("a new version refreshes queries, reports the change and downloads scheme images", async () => {
+test("a new version refreshes queries and reports the change", async () => {
   const deps = makeDeps(Promise.resolve({ previousVersion: "v1", version: "v2" }));
 
-  await runContentSync("foreground", deps);
+  await runContentSync("manual", deps);
 
   expect(deps.invalidateContentQueries).toHaveBeenCalledTimes(1);
-  expect(deps.startSchemeImageSync).toHaveBeenCalledTimes(1);
   expect(capturedEvents("content_sync_completed")).toEqual([
     [
       "content_sync_completed",
       expect.objectContaining({
-        trigger: "foreground",
+        trigger: "manual",
         previous_version: "v1",
         version: "v2",
       }),
@@ -86,7 +84,7 @@ test("an unchanged version still refreshes queries but reports nothing", async (
 test("a failure marks the sync failed without touching the content", async () => {
   const deps = makeDeps(Promise.reject(new ApiError(500)));
 
-  await runContentSync("network", deps);
+  await runContentSync("launch", deps);
 
   expect(useSyncStore.getState()).toMatchObject({
     syncStatus: "failed",
@@ -98,7 +96,7 @@ test("a failure marks the sync failed without touching the content", async () =>
     [
       "content_sync_failed",
       expect.objectContaining({
-        trigger: "network",
+        trigger: "launch",
         kind: "server",
         error_name: "ApiError",
       }),
