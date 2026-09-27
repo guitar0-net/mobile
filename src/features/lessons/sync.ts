@@ -76,7 +76,7 @@ function deleteRemovedLessons(tx: SyncTx, serverUuids: string[]): void {
 /**
  * Writes the whole payload and its version in one transaction, so an
  * interrupted write never leaves partially applied content. Scheme images are
- * not part of it — they are downloaded afterwards by `startSchemeImageSync`.
+ * not part of it — `useSchemeImage` downloads them when a song is opened.
  */
 function writeContent(db: AppDb, payload: SyncLessonsResponse): void {
   const {
