@@ -9,7 +9,6 @@ import { initDb, schemes, songSchemes, songs } from "@/lib/db";
 import { RequestTimeoutError } from "@/lib/network";
 
 import { resetDbForTesting } from "./__tests__/testing";
-import { BUNDLED_SCHEME_IMAGES } from "./bundled-schemes";
 import {
   deleteAllSchemeImages,
   resumeSchemeImageSync,
@@ -28,6 +27,12 @@ type MockDownload = (
 const mockFiles = new Map<string, string>();
 const mockDownload = jest.fn<ReturnType<MockDownload>, Parameters<MockDownload>>();
 const mockCapture = jest.fn();
+
+const BUNDLED_BEAT1 = 101;
+
+jest.mock("./bundled-schemes", () => ({
+  BUNDLED_SCHEME_IMAGES: { "/media/lesson_schemes/beat1.jpg": BUNDLED_BEAT1 },
+}));
 
 jest.mock("@/lib/analytics", () => ({
   capture: (...args: unknown[]) => mockCapture(...args),
@@ -487,18 +492,37 @@ describe("useSchemeImage", () => {
     expect(mockDownload).not.toHaveBeenCalled();
   });
 
-  test("shows the bundled image and downloads the real one", async () => {
-    const db = await seedSchemes([{ id: 1 }]);
+  test("shows the bundled image without downloading it", async () => {
+    await seedSchemes([{ id: 1 }]);
 
     const { result } = renderHook(() => useSchemeImage(scheme(1)));
 
-    expect(result.current).toEqual({
-      state: "ready",
-      source: BUNDLED_SCHEME_IMAGES[1],
-    });
-    await waitFor(() =>
-      expect(storedFileNames(db)).toEqual([{ id: 1, fileName: "1.jpg" }]),
+    expect(result.current).toEqual({ state: "ready", source: BUNDLED_BEAT1 });
+    await new Promise<void>((resolve) => setImmediate(() => resolve()));
+    expect(mockDownload).not.toHaveBeenCalled();
+  });
+
+  test("prefers the bundled image over a file downloaded earlier", async () => {
+    await seedSchemes([{ id: 1, localImagePath: "1.jpg" }]);
+    mockFiles.set(`${IMAGES}/1.jpg`, "");
+
+    const { result } = renderHook(() => useSchemeImage(scheme(1, "1.jpg")));
+
+    expect(result.current).toEqual({ state: "ready", source: BUNDLED_BEAT1 });
+  });
+
+  test("downloads the image when its path is no longer the bundled one", async () => {
+    const db = await seedSchemes([{ id: 1 }]);
+    const image = "/media/lesson_schemes/beat1_abc123.jpg";
+    db.update(schemes).set({ image }).where(eq(schemes.id, 1)).run();
+
+    const { result } = renderHook(() =>
+      useSchemeImage({ id: 1, image, localImagePath: null }),
     );
+
+    expect(result.current).toEqual({ state: "loading" });
+    await waitFor(() => expect(result.current).toEqual(readyFile("1.jpg")));
+    expect(mockDownload.mock.calls[0][0]).toContain("beat1_abc123.jpg");
   });
 
   test("is loading until the download is saved, then shows the file", async () => {

@@ -270,25 +270,27 @@ export type SchemeImageState =
   | { state: "failed"; retry: () => void };
 
 /**
- * Shows the downloaded file, else the image bundled with the app. Otherwise
- * downloads the file and reports `loading` until it is saved, or `failed`
- * with a `retry` that also resumes the background pass.
+ * Shows the image bundled with the app for this `image` path, else the
+ * downloaded file. Otherwise downloads the file and reports `loading` until
+ * it is saved, or `failed` with a `retry`.
  */
 export function useSchemeImage(scheme: DisplayedScheme): SchemeImageState {
   const { id, image, localImagePath } = scheme;
+  const bundled = BUNDLED_SCHEME_IMAGES[image];
   const saved = useStatusStore((state) => state.saved[id]);
   const localFile = useMemo(() => {
+    if (bundled !== undefined) return null;
     const fileName = saved?.fileName ?? localImagePath;
     if (!fileName) return null;
     const file = new File(imagesDir(), fileName);
     return file.exists ? file : null;
-  }, [saved, localImagePath]);
+  }, [bundled, saved, localImagePath]);
   const [attempt, setAttempt] = useState(0);
   const [failedAttempt, setFailedAttempt] = useState<string | null>(null);
   const attemptKey = `${id}:${image}:${attempt}`;
 
   useEffect(() => {
-    if (localFile) return;
+    if (bundled !== undefined || localFile) return;
     let isCurrent = true;
     const fail = () => {
       if (isCurrent) setFailedAttempt(attemptKey);
@@ -299,16 +301,15 @@ export function useSchemeImage(scheme: DisplayedScheme): SchemeImageState {
     return () => {
       isCurrent = false;
     };
-  }, [localFile, id, image, attemptKey]);
+  }, [bundled, localFile, id, image, attemptKey]);
 
   const retry = useCallback(() => {
     setAttempt((value) => value + 1);
     void resumeSchemeImageSync();
   }, []);
 
-  if (localFile) return { state: "ready", source: { uri: localFile.uri } };
-  const bundled = BUNDLED_SCHEME_IMAGES[id];
   if (bundled !== undefined) return { state: "ready", source: bundled };
+  if (localFile) return { state: "ready", source: { uri: localFile.uri } };
   if (failedAttempt === attemptKey) return { state: "failed", retry };
   return { state: "loading" };
 }
