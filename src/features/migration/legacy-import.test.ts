@@ -155,9 +155,10 @@ it("retries on the next launch when storage itself fails", async () => {
   await seedContent();
   await writeLegacyBlob({ "1": { isComplite: true } });
   const getItem = AsyncStorage.getItem as jest.Mock;
-  getItem.mockRejectedValueOnce(new Error("database is locked"));
+  const error = new Error("database is locked");
+  getItem.mockRejectedValueOnce(error);
 
-  expect(await importLegacyProgress()).toBeNull();
+  await expect(importLegacyProgress()).rejects.toBe(error);
   expect(useSettingsStore.getState().progress).toEqual({});
 
   expect(await importLegacyProgress()).toEqual({
@@ -184,7 +185,7 @@ it("retries on the next launch when the content is not synced yet", async () => 
 it("retries on the next launch when the database is not ready yet", async () => {
   await writeLegacyBlob({ "1": { isComplite: true } });
 
-  expect(await importLegacyProgress()).toBeNull();
+  await expect(importLegacyProgress()).rejects.toThrow();
   expect(useSettingsStore.getState().progress).toEqual({});
 
   await seedContent();
