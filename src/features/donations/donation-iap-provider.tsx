@@ -229,8 +229,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         const finished = await finish(purchase);
         if (!finished) return;
         reconciledRef.current.add(key);
-        capture(silent ? "donation_purchase_restored" : "donation_purchase_confirmed", {
+        capture("donation_purchase_confirmed", {
           product_id: purchase.productId,
+          source: silent ? "background" : "purchase",
         });
         await saveConfirmedDonation(
           key,

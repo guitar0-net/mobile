@@ -61,8 +61,10 @@ export type AnalyticsEvents = {
   theme_changed: { mode: "light" | "dark" | "system"; high_contrast: boolean };
 
   donation_purchase_started: { product_id: string };
-  donation_purchase_confirmed: { product_id: string };
-  donation_purchase_restored: { product_id: string };
+  donation_purchase_confirmed: {
+    product_id: string;
+    source: "purchase" | "background";
+  };
   donation_purchase_failed: {
     product_id: string | null;
     stage: "store" | "verify";

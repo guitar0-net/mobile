@@ -544,6 +544,7 @@ describe("DonationIapProvider — analytics", () => {
     await waitFor(() =>
       expect(mockCapture).toHaveBeenCalledWith("donation_purchase_confirmed", {
         product_id: "donation_thanks",
+        source: "purchase",
       }),
     );
     expect(mockCapture.mock.calls.map(([event]) => event)).toEqual([
@@ -641,19 +642,16 @@ describe("DonationIapProvider — analytics", () => {
     expect(failedProducts).toEqual(["donation_coffee", "donation_thanks"]);
   });
 
-  test("reports a purchase the store hands back on restore as restored, not as a new donation", async () => {
+  test("reports a donation settled outside the purchase flow as confirmed in the background", async () => {
     mockIAP({ availablePurchases: [makePurchase()] });
 
     renderHook(() => useDonationIapSession(), { wrapper });
 
     await waitFor(() =>
-      expect(mockCapture).toHaveBeenCalledWith("donation_purchase_restored", {
+      expect(mockCapture).toHaveBeenCalledWith("donation_purchase_confirmed", {
         product_id: "donation_thanks",
+        source: "background",
       }),
-    );
-    expect(mockCapture).not.toHaveBeenCalledWith(
-      "donation_purchase_confirmed",
-      expect.anything(),
     );
   });
 });
