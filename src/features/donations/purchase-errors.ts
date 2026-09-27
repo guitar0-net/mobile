@@ -57,6 +57,8 @@ export function describePurchaseError(error: unknown): string | null {
     case ErrorCode.ItemUnavailable:
     case ErrorCode.SkuNotFound:
       return "Этот вариант поддержки сейчас недоступен в магазине";
+    case ErrorCode.BillingUnavailable:
+      return "Покупки в магазине недоступны на этом устройстве";
     case ErrorCode.NetworkError:
     case ErrorCode.ServiceTimeout:
     case ErrorCode.ServiceDisconnected:

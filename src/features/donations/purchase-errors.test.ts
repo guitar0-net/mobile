@@ -77,6 +77,12 @@ describe("describePurchaseError", () => {
     );
   });
 
+  test("does not suggest a retry when the store has no billing on this device", () => {
+    expect(describePurchaseError(makePurchaseError(ErrorCode.BillingUnavailable))).toBe(
+      "Покупки в магазине недоступны на этом устройстве",
+    );
+  });
+
   test("reports a network problem", () => {
     expect(describePurchaseError(makePurchaseError(ErrorCode.NetworkError))).toBe(
       "Нет соединения с магазином. Проверьте интернет",
