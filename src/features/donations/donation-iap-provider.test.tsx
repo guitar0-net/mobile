@@ -589,4 +589,55 @@ describe("DonationIapProvider — analytics", () => {
       reason: ErrorCode.AlreadyOwned,
     });
   });
+
+  test("reports a store failure once when the store both fires the error and rejects the request", async () => {
+    const error = {
+      code: ErrorCode.BillingUnavailable,
+      message: "billing unavailable",
+    };
+    let rejectRequest: (reason: unknown) => void = () => {};
+    const requestPurchase = jest.fn(
+      () => new Promise((_, reject) => (rejectRequest = reject)),
+    );
+    const { getOptions } = mockIAP({ requestPurchase });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    act(() => result.current.purchase("donation_coffee"));
+    await act(async () => rejectRequest(error));
+    act(() => getOptions().onPurchaseError?.(error as never));
+
+    const failures = mockCapture.mock.calls.filter(
+      ([event]) => event === "donation_purchase_failed",
+    );
+    expect(failures).toEqual([
+      [
+        "donation_purchase_failed",
+        {
+          product_id: "donation_coffee",
+          stage: "store",
+          reason: ErrorCode.BillingUnavailable,
+        },
+      ],
+    ]);
+  });
+
+  test("reports each failed attempt when the user tries again", async () => {
+    const error = { code: ErrorCode.UserCancelled, message: "cancelled" };
+    const { getOptions } = mockIAP({
+      requestPurchase: jest.fn(() => new Promise(() => {})),
+    });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    act(() => result.current.purchase("donation_coffee"));
+    act(() => getOptions().onPurchaseError?.(error as never));
+    act(() => result.current.purchase("donation_thanks"));
+    act(() => getOptions().onPurchaseError?.(error as never));
+
+    const failedProducts = mockCapture.mock.calls
+      .filter(([event]) => event === "donation_purchase_failed")
+      .map(([, props]) => props.product_id);
+    expect(failedProducts).toEqual(["donation_coffee", "donation_thanks"]);
+  });
 });

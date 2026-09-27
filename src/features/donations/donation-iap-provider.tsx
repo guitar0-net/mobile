@@ -57,6 +57,8 @@ type DonationIapSession = {
   restore: () => void;
 };
 
+type PurchaseAttempt = { productId: string; failureReported: boolean };
+
 const PLATFORM: DonationPlatform = Platform.OS === "ios" ? "ios" : "android";
 
 const RECONNECT_DELAYS_MS = [10_000, 60_000, 300_000];
@@ -107,6 +109,7 @@ const SessionContext = createContext<DonationIapSession | null>(null);
 export function DonationIapProvider({ children }: { children: React.ReactNode }) {
   const deviceId = useMemo(() => getDeviceId(), []);
   const [purchasingProductId, setPurchasingProductId] = useState<string | null>(null);
+  const purchaseAttemptRef = useRef<PurchaseAttempt | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const restoringRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -131,6 +134,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     reconnect,
   } = useIAP({
     onPurchaseSuccess: (purchase) => {
+      purchaseAttemptRef.current = null;
       setPurchasingProductId(null);
       if (isAwaitingPayment(purchase)) {
         void refreshPurchases();
@@ -138,17 +142,24 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       }
       void reconcile(purchase);
     },
-    onPurchaseError: (error) => {
-      setPurchasingProductId(null);
-      capture("donation_purchase_failed", {
-        product_id: purchasingProductId,
-        stage: "store",
-        reason: purchaseFailureReason(error),
-      });
-      const message = describePurchaseError(error);
-      if (message) setErrorMessage(message);
-    },
+    onPurchaseError: (error) => reportStoreFailure(error),
   });
+
+  // expo-iap delivers one store failure twice: to onPurchaseError and as a
+  // rejection of requestPurchase(), so only the first of them is reported.
+  const reportStoreFailure = useCallback((error: unknown) => {
+    setPurchasingProductId(null);
+    const attempt = purchaseAttemptRef.current;
+    if (attempt?.failureReported) return;
+    if (attempt) attempt.failureReported = true;
+    capture("donation_purchase_failed", {
+      product_id: attempt?.productId ?? null,
+      stage: "store",
+      reason: purchaseFailureReason(error),
+    });
+    const message = describePurchaseError(error);
+    if (message) setErrorMessage(message);
+  }, []);
 
   const withReconnect = useCallback(
     async <T,>(call: () => Promise<T>): Promise<T> => {
@@ -356,6 +367,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       if (purchasingProductId !== null) return;
       setErrorMessage(null);
       setPurchasingProductId(productId);
+      purchaseAttemptRef.current = { productId, failureReported: false };
       capture("donation_purchase_started", {
         product_id: productId,
       });
@@ -365,21 +377,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           google: { skus: [productId] },
         },
         type: "in-app",
-      }).catch((error) => {
-        // onPurchaseError covers store-side failures; a request that never
-        // reaches the store rejects here instead and fires no event. It is not
-        // retried automatically — a second attempt could open a second dialog.
-        setPurchasingProductId(null);
-        capture("donation_purchase_failed", {
-          product_id: productId,
-          stage: "store",
-          reason: purchaseFailureReason(error),
-        });
-        const message = describePurchaseError(error);
-        if (message) setErrorMessage(message);
-      });
+      }).catch(reportStoreFailure);
     },
-    [requestPurchase, purchasingProductId],
+    [requestPurchase, purchasingProductId, reportStoreFailure],
   );
 
   const restore = useCallback(() => {
