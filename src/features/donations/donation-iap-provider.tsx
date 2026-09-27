@@ -35,12 +35,6 @@ import {
 import type { DonationPlatform } from "./verify-payload";
 import { buildVerifyPayload } from "./verify-payload";
 
-/**
- * `awaiting-payment` — the store is still collecting a slow payment;
- * `verifying` — the receipt is in hand but our server has not recorded it yet;
- * `confirmed` — the server verified it. A receipt the server rejects for good
- * leaves the map entirely: it is no longer a reason to call the tier bought.
- */
 export type DonationPurchaseState = "awaiting-payment" | "verifying" | "confirmed";
 
 type DonationIapSession = {
@@ -56,6 +50,8 @@ type DonationIapSession = {
   purchase: (productId: string) => void;
   restore: () => void;
 };
+
+type PurchaseAttempt = { productId: string; failureReported: boolean };
 
 const PLATFORM: DonationPlatform = Platform.OS === "ios" ? "ios" : "android";
 
@@ -93,20 +89,10 @@ function isAwaitingPayment(purchase: Purchase): boolean {
 
 const SessionContext = createContext<DonationIapSession | null>(null);
 
-/**
- * Store session shared by the whole app: one billing connection, one set of
- * purchase listeners, and the verify-then-finish loop that settles every
- * purchase the stores hand us.
- *
- * Mounted at the root rather than on the donation screen because both stores
- * deliver purchases outside it — a Play payment that clears hours later, a
- * StoreKit transaction interrupted by a relaunch. An unsettled Play purchase is
- * auto-refunded after three days, so waiting for the user to reopen the screen
- * would silently lose donations.
- */
 export function DonationIapProvider({ children }: { children: React.ReactNode }) {
   const deviceId = useMemo(() => getDeviceId(), []);
   const [purchasingProductId, setPurchasingProductId] = useState<string | null>(null);
+  const purchaseAttemptRef = useRef<PurchaseAttempt | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const restoringRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -118,6 +104,22 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const [rejectedKeys, setRejectedKeys] = useState<ReadonlySet<string>>(new Set());
   const [isHydrated, setIsHydrated] = useState(false);
   const [storeError, setStoreError] = useState(false);
+
+  const reportStoreFailure = useCallback(
+    (error: unknown, attempt: PurchaseAttempt | null) => {
+      if (attempt?.failureReported) return;
+      if (attempt) attempt.failureReported = true;
+      setPurchasingProductId(null);
+      capture("donation_purchase_failed", {
+        product_id: attempt?.productId ?? null,
+        stage: "store",
+        reason: purchaseFailureReason(error),
+      });
+      const message = describePurchaseError(error);
+      if (message) setErrorMessage(message);
+    },
+    [],
+  );
 
   const {
     connected,
@@ -131,6 +133,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     reconnect,
   } = useIAP({
     onPurchaseSuccess: (purchase) => {
+      purchaseAttemptRef.current = null;
       setPurchasingProductId(null);
       if (isAwaitingPayment(purchase)) {
         void refreshPurchases();
@@ -139,14 +142,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       void reconcile(purchase);
     },
     onPurchaseError: (error) => {
-      setPurchasingProductId(null);
-      capture("donation_purchase_failed", {
-        product_id: purchasingProductId,
-        stage: "store",
-        reason: purchaseFailureReason(error),
-      });
-      const message = describePurchaseError(error);
-      if (message) setErrorMessage(message);
+      const attempt = purchaseAttemptRef.current;
+      purchaseAttemptRef.current = null;
+      reportStoreFailure(error, attempt);
     },
   });
 
@@ -164,8 +162,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     [reconnect],
   );
 
-  // A store refusing to finish an already-finished non-consumable is not a
-  // failed donation, so this reports settlement instead of throwing.
   const finish = useCallback(
     async (purchase: Purchase): Promise<boolean> => {
       try {
@@ -213,13 +209,12 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
 
         setConfirmedReceipts((prev) => new Map(prev).set(key, purchase.productId));
         setErrorMessage(null);
-        // Persisting only after the store settles the receipt keeps an
-        // unacknowledged purchase coming back until its acknowledgement lands.
         const finished = await finish(purchase);
         if (!finished) return;
         reconciledRef.current.add(key);
         capture("donation_purchase_confirmed", {
           product_id: purchase.productId,
+          source: silent ? "background" : "purchase",
         });
         await saveConfirmedDonation(
           key,
@@ -250,9 +245,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  // Re-checking purchases is background work the user never asked for, so its
-  // failure must not hide the tiers. Whether the store works is decided by
-  // whether it hands over the catalog.
   const refreshPurchases = useCallback(
     () => withReconnect(() => getAvailablePurchases()).catch(() => {}),
     [getAvailablePurchases, withReconnect],
@@ -307,13 +299,8 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   }, [connected, reconnect]);
 
   useEffect(() => {
-    // Reconciling before the stored receipts are back would re-verify every
-    // donation this device has already had confirmed.
     if (!isHydrated) return;
     for (const availablePurchase of availablePurchases) {
-      // The stores also list purchases of products this build knows nothing
-      // about — retired SKUs from earlier versions — and the server has no
-      // donation to match them to.
       if (!isDonationProduct(availablePurchase.productId)) continue;
       void reconcile(availablePurchase, { silent: true });
     }
@@ -356,6 +343,8 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       if (purchasingProductId !== null) return;
       setErrorMessage(null);
       setPurchasingProductId(productId);
+      const attempt = { productId, failureReported: false };
+      purchaseAttemptRef.current = attempt;
       capture("donation_purchase_started", {
         product_id: productId,
       });
@@ -365,21 +354,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           google: { skus: [productId] },
         },
         type: "in-app",
-      }).catch((error) => {
-        // onPurchaseError covers store-side failures; a request that never
-        // reaches the store rejects here instead and fires no event. It is not
-        // retried automatically — a second attempt could open a second dialog.
-        setPurchasingProductId(null);
-        capture("donation_purchase_failed", {
-          product_id: productId,
-          stage: "store",
-          reason: purchaseFailureReason(error),
-        });
-        const message = describePurchaseError(error);
-        if (message) setErrorMessage(message);
-      });
+      }).catch((error) => reportStoreFailure(error, attempt));
     },
-    [requestPurchase, purchasingProductId],
+    [requestPurchase, purchasingProductId, reportStoreFailure],
   );
 
   const restore = useCallback(() => {
