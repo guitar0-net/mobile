@@ -122,6 +122,24 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const [isHydrated, setIsHydrated] = useState(false);
   const [storeError, setStoreError] = useState(false);
 
+  // expo-iap delivers one store failure twice: to onPurchaseError and as a
+  // rejection of requestPurchase(), so only the first of them is reported.
+  const reportStoreFailure = useCallback(
+    (error: unknown, attempt: PurchaseAttempt | null) => {
+      if (attempt?.failureReported) return;
+      if (attempt) attempt.failureReported = true;
+      setPurchasingProductId(null);
+      capture("donation_purchase_failed", {
+        product_id: attempt?.productId ?? null,
+        stage: "store",
+        reason: purchaseFailureReason(error),
+      });
+      const message = describePurchaseError(error);
+      if (message) setErrorMessage(message);
+    },
+    [],
+  );
+
   const {
     connected,
     products,
@@ -142,24 +160,12 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       }
       void reconcile(purchase);
     },
-    onPurchaseError: (error) => reportStoreFailure(error),
+    onPurchaseError: (error) => {
+      const attempt = purchaseAttemptRef.current;
+      purchaseAttemptRef.current = null;
+      reportStoreFailure(error, attempt);
+    },
   });
-
-  // expo-iap delivers one store failure twice: to onPurchaseError and as a
-  // rejection of requestPurchase(), so only the first of them is reported.
-  const reportStoreFailure = useCallback((error: unknown) => {
-    setPurchasingProductId(null);
-    const attempt = purchaseAttemptRef.current;
-    if (attempt?.failureReported) return;
-    if (attempt) attempt.failureReported = true;
-    capture("donation_purchase_failed", {
-      product_id: attempt?.productId ?? null,
-      stage: "store",
-      reason: purchaseFailureReason(error),
-    });
-    const message = describePurchaseError(error);
-    if (message) setErrorMessage(message);
-  }, []);
 
   const withReconnect = useCallback(
     async <T,>(call: () => Promise<T>): Promise<T> => {
@@ -368,7 +374,8 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       if (purchasingProductId !== null) return;
       setErrorMessage(null);
       setPurchasingProductId(productId);
-      purchaseAttemptRef.current = { productId, failureReported: false };
+      const attempt = { productId, failureReported: false };
+      purchaseAttemptRef.current = attempt;
       capture("donation_purchase_started", {
         product_id: productId,
       });
@@ -378,7 +385,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           google: { skus: [productId] },
         },
         type: "in-app",
-      }).catch(reportStoreFailure);
+      }).catch((error) => reportStoreFailure(error, attempt));
     },
     [requestPurchase, purchasingProductId, reportStoreFailure],
   );
