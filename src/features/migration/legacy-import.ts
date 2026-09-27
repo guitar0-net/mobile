@@ -70,19 +70,13 @@ function toLessonUuids(
  * Copies lesson progress and favorites left on the device by version 4.x into
  * the current storage. Requires synced content, since imported lessons are
  * expanded down to their songs. Runs at most once per install; returns what it
- * imported, or null when there was nothing to import.
+ * imported, or null when there was nothing to import. Throws when the 4.x
+ * storage or the local content cannot be read; the next launch then retries.
  */
 export async function importLegacyProgress(): Promise<LegacyImport | null> {
   if (migrationStorage.getBoolean(KEYS.IMPORT_DONE)) return null;
 
-  let raw: string | null;
-  try {
-    raw = await AsyncStorage.getItem(LEGACY_ROOT_KEY);
-  } catch {
-    // Storage unavailable rather than empty — leave the flag unset so the
-    // next launch tries again instead of silently dropping the progress.
-    return null;
-  }
+  const raw = await AsyncStorage.getItem(LEGACY_ROOT_KEY);
 
   let settings: Record<string, LegacyLessonSetting> = {};
   if (raw !== null) {
@@ -99,12 +93,7 @@ export async function importLegacyProgress(): Promise<LegacyImport | null> {
 
   let completedCount = 0;
   if (completed.length > 0) {
-    let songIdsByLesson: Record<string, string[]>;
-    try {
-      songIdsByLesson = await fetchSongIdsByLesson(completed);
-    } catch {
-      return null;
-    }
+    const songIdsByLesson = await fetchSongIdsByLesson(completed);
 
     // "Lesson complete" in 4.x meant the whole lesson, songs included, so it
     // expands into exactly the per-song state the new model derives from.

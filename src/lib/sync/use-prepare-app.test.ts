@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
 import type { SnapshotResult } from "@/features/lessons";
+import { importLegacyProgress } from "@/features/migration";
 import type { AppDb } from "@/lib/db";
 
 import { usePrepareApp } from "./use-prepare-app";
@@ -91,6 +93,17 @@ test("a broken snapshot still lets the app open", async () => {
 test("a failed legacy import still lets the app open", async () => {
   const error = new Error("corrupt");
   const deps = makeDeps({ importLegacyProgress: jest.fn().mockRejectedValue(error) });
+
+  const { result } = renderHook(() => usePrepareApp(deps));
+
+  await waitFor(() => expect(result.current.status).toBe("ready"));
+  expect(mockCaptureException).toHaveBeenCalledWith(error, { stage: "legacy_import" });
+});
+
+test("unreadable 4.x storage is reported and the app still opens", async () => {
+  const error = new Error("database is locked");
+  (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(error);
+  const deps = makeDeps({ importLegacyProgress });
 
   const { result } = renderHook(() => usePrepareApp(deps));
 
