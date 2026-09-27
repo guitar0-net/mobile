@@ -25,7 +25,7 @@ import { ActivitySessionTracker } from "@/features/activity";
 import { DonationIapProvider } from "@/features/donations";
 import { AnalyticsScreenTracker, capture } from "@/lib/analytics";
 import { queryClient } from "@/lib/network/query-client";
-import { useBackgroundSync, usePrepareApp } from "@/lib/sync";
+import { usePrepareApp } from "@/lib/sync";
 import { ThemeProvider, useTheme, useThemedScreenOptions } from "@/lib/themes";
 
 SplashScreen.preventAutoHideAsync();
@@ -114,8 +114,6 @@ export default function RootLayout() {
 }
 
 function PreparedApp() {
-  useBackgroundSync();
-
   return (
     <>
       <ActivitySessionTracker />

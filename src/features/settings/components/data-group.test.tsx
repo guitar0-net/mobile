@@ -28,7 +28,6 @@ function contentDeps(syncAll: jest.Mock) {
     getDb: () => ({}) as AppDb,
     syncAll,
     invalidateContentQueries: jest.fn(),
-    startSchemeImageSync: jest.fn().mockResolvedValue(undefined),
   };
 }
 
