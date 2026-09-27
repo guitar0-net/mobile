@@ -29,6 +29,10 @@ function BottomSheetBackdrop() {
   return null;
 }
 
+function BottomSheetModalProvider({ children }) {
+  return children;
+}
+
 const BottomSheetTextInput = React.forwardRef(
   function BottomSheetTextInput(props, ref) {
     return React.createElement(TextInput, { ...props, ref });
@@ -42,4 +46,5 @@ module.exports = {
   BottomSheetScrollView,
   BottomSheetBackdrop,
   BottomSheetTextInput,
+  BottomSheetModalProvider,
 };

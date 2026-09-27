@@ -15,7 +15,7 @@ import {
 } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -31,6 +31,7 @@ import { ThemeProvider, useTheme, useThemedScreenOptions } from "@/lib/themes";
 SplashScreen.preventAutoHideAsync();
 
 const jsStartedAt = Date.now();
+let isReadyReported = false;
 
 function StatusBarAdapter() {
   const { theme } = useTheme();
@@ -87,13 +88,12 @@ export default function RootLayout() {
   });
   const { status, snapshotApplied, retry } = usePrepareApp();
   const isSettled = (fontsLoaded || fontError != null) && status !== "preparing";
-  const isReadyReported = useRef(false);
 
   useEffect(() => {
     if (!isSettled) return;
     void SplashScreen.hideAsync();
-    if (status !== "ready" || isReadyReported.current) return;
-    isReadyReported.current = true;
+    if (status !== "ready" || isReadyReported) return;
+    isReadyReported = true;
     capture("app_ready", {
       duration_ms: Date.now() - jsStartedAt,
       snapshot_applied: snapshotApplied,
