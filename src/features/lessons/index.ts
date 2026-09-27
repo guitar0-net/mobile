@@ -11,13 +11,8 @@ export {
   syncAll,
 } from "./sync";
 export type { SnapshotDeps, SnapshotResult, SyncDeps, SyncResult } from "./sync";
-export {
-  resumeSchemeImageSync,
-  startSchemeImageSync,
-  useSchemeImage,
-  useSchemeImageStatus,
-} from "./scheme-images";
-export type { SchemeImageState, SchemeImageStatus } from "./scheme-images";
+export { useSchemeImage } from "./scheme-images";
+export type { SchemeImageState } from "./scheme-images";
 export {
   fetchAllLessonSongCounts,
   fetchCourses,
