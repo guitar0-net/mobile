@@ -640,4 +640,20 @@ describe("DonationIapProvider — analytics", () => {
       .map(([, props]) => props.product_id);
     expect(failedProducts).toEqual(["donation_coffee", "donation_thanks"]);
   });
+
+  test("reports a purchase the store hands back on restore as restored, not as a new donation", async () => {
+    mockIAP({ availablePurchases: [makePurchase()] });
+
+    renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() =>
+      expect(mockCapture).toHaveBeenCalledWith("donation_purchase_restored", {
+        product_id: "donation_thanks",
+      }),
+    );
+    expect(mockCapture).not.toHaveBeenCalledWith(
+      "donation_purchase_confirmed",
+      expect.anything(),
+    );
+  });
 });
