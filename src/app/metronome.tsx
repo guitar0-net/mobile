@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import ExpoPrecisionMetronomeModule, {
   setBpm as setMetronomeBpm,
   setPattern as setMetronomePattern,
@@ -33,6 +32,7 @@ import { SoundSheet } from "@/features/metronome/components/sound-sheet";
 import { TapTempoSheet } from "@/features/metronome/components/tap-tempo-sheet";
 import { TimeSignatureSheet } from "@/features/metronome/components/time-signature-sheet";
 import { capture } from "@/lib/analytics";
+import { useScreenAwake } from "@/lib/screen-awake";
 import { useColors } from "@/lib/themes";
 import { withAlpha } from "@/lib/utils";
 
@@ -71,13 +71,7 @@ export default function MetronomeScreen() {
     soundPresetRef.current = soundPreset;
   }, [soundPreset]);
 
-  useEffect(() => {
-    if (screenAwakeEnabled && isPlaying) {
-      void activateKeepAwakeAsync();
-    } else {
-      deactivateKeepAwake();
-    }
-  }, [screenAwakeEnabled, isPlaying]);
+  useScreenAwake(screenAwakeEnabled && isPlaying);
 
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
