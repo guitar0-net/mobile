@@ -13,6 +13,7 @@ import { SchemesSection } from "@/features/songs/components/schemes-section";
 import { SongToolbar } from "@/features/songs/components/song-toolbar";
 import { TextSection } from "@/features/songs/components/text-section";
 import { useAutoScroll } from "@/features/songs/use-auto-scroll";
+import { useScreenAwake } from "@/lib/screen-awake";
 
 export default function SongScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +28,7 @@ export default function SongScreen() {
     onMomentumScrollBegin,
     onMomentumScrollEnd,
   } = useAutoScroll(scrollRef);
+  useScreenAwake(true);
 
   const headerRight = () =>
     songDetail?.lessonUuid ? (

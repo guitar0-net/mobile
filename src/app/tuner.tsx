@@ -26,6 +26,7 @@ import {
 } from "@/features/tuner/pitch-detector";
 import { playTuningFork } from "@/features/tuner/sine-wave";
 import { capture } from "@/lib/analytics";
+import { useScreenAwake } from "@/lib/screen-awake";
 import { useColors } from "@/lib/themes";
 
 export default function TunerScreen() {
@@ -41,6 +42,7 @@ export default function TunerScreen() {
   } = useTunerStore();
 
   const colors = useColors();
+  useScreenAwake(true);
   const [permStatus, setPermStatus] = useState<"checking" | "granted" | "denied">(
     "checking",
   );
