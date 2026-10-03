@@ -52,8 +52,10 @@ export function DownloadButton({ status, progress, onPress }: Props) {
       onPress={onPress}
     >
       {({ pressed }) => (
-        <View style={{ opacity: pressed ? 0.7 : 1 }}>
+        // Opacity and border toggle Fabric view flattening; see the note in ui/button.tsx (rn-screens#4677).
+        <View collapsable={false} style={{ opacity: pressed ? 0.7 : 1 }}>
           <View
+            collapsable={false}
             style={{
               width: SIZE,
               height: SIZE,
