@@ -35,9 +35,13 @@ export function startPitchDetection(
     },
   );
 
-  recorder.start();
+  const started = recorder.start();
 
   return () => {
-    recorder.stop();
+    recorder.clearOnAudioReady();
+    void started.then(
+      () => recorder.stop(),
+      () => {},
+    );
   };
 }

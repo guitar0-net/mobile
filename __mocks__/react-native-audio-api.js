@@ -8,7 +8,8 @@ const AudioManager = {
 
 const AudioRecorder = jest.fn().mockImplementation(() => ({
   onAudioReady: jest.fn(),
-  start: jest.fn().mockReturnValue({ status: "ok" }),
+  start: jest.fn().mockResolvedValue({ status: "success" }),
+  clearOnAudioReady: jest.fn(),
   stop: jest.fn(),
   isRecording: jest.fn().mockReturnValue(false),
 }));
