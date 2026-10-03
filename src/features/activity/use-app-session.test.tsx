@@ -2,19 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
 import { _resetDbForTesting, activityEvents, initDb } from "@/lib/db";
+import { createTestQueryClient } from "@/lib/network/__tests__/testing";
 
 import { resetActivityStatsForTesting } from "./__tests__/testing";
 import { useActivityStatsStore } from "./stats-store";
 import { useAppSession } from "./use-app-session";
 
 function makeWrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = createTestQueryClient();
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
