@@ -11,13 +11,16 @@ type ActiveDownload = {
 
 type DownloadStoreState = {
   activeDownloads: Record<string, ActiveDownload>;
+  stalledDownloads: Record<string, boolean>;
   setActive: (lessonId: string, entry: ActiveDownload) => void;
   updateProgress: (lessonId: string, progress: number) => void;
   clearActive: (lessonId: string) => void;
+  setStalled: (lessonId: string, stalled: boolean) => void;
 };
 
 export const useDownloadStore = create<DownloadStoreState>((set) => ({
   activeDownloads: {},
+  stalledDownloads: {},
 
   setActive: (lessonId, entry) =>
     set((state) => ({
@@ -42,4 +45,9 @@ export const useDownloadStore = create<DownloadStoreState>((set) => ({
       delete next[lessonId];
       return { activeDownloads: next };
     }),
+
+  setStalled: (lessonId, stalled) =>
+    set((state) => ({
+      stalledDownloads: { ...state.stalledDownloads, [lessonId]: stalled },
+    })),
 }));

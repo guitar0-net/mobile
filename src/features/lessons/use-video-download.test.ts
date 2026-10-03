@@ -70,7 +70,7 @@ function createWrapper() {
 beforeEach(async () => {
   resetDbForTesting();
   resetSettingsForTesting();
-  useDownloadStore.setState({ activeDownloads: {} });
+  useDownloadStore.setState({ activeDownloads: {}, stalledDownloads: {} });
   capturedProgressCallback = undefined;
   jest.clearAllMocks();
   mockGetNetworkStateAsync.mockResolvedValue({ type: "WIFI" });
@@ -83,6 +83,10 @@ beforeEach(async () => {
     videoUrl: "https://youtube.com/watch?v=test",
     updatedAt: "2026-01-01T00:00:00Z",
   });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 // ---------------------------------------------------------------------------
@@ -152,6 +156,7 @@ test("idle → downloading → failed on download error", async () => {
   expect(mockCapture).toHaveBeenCalledWith("video_download_failed", {
     lesson_id: "lesson-1",
     reason: "exception",
+    bytes_written: 0,
   });
 });
 
@@ -177,8 +182,93 @@ test("marks a non-2xx response as failed without reporting an exception", async 
   expect(mockCapture).toHaveBeenCalledWith("video_download_failed", {
     lesson_id: "lesson-1",
     reason: "http_404",
+    bytes_written: 0,
   });
   expect(mockCaptureException).not.toHaveBeenCalled();
+});
+
+test("flags a download that stops receiving data without cancelling it", async () => {
+  jest.useFakeTimers();
+  mockDownloadAsync.mockReturnValue(new Promise(() => {}));
+
+  const { result } = renderHook(() => useVideoDownload("lesson-1", "idle"), {
+    wrapper: createWrapper(),
+  });
+
+  act(() => {
+    void result.current.startDownload();
+  });
+  await waitFor(() => expect(result.current.status).toBe("downloading"));
+
+  act(() => {
+    capturedProgressCallback?.({
+      totalBytesWritten: 16_384,
+      totalBytesExpectedToWrite: 50_000_000,
+    });
+  });
+  await act(async () => {
+    jest.advanceTimersByTime(14_000);
+  });
+  expect(result.current.stalled).toBe(false);
+
+  await act(async () => {
+    jest.advanceTimersByTime(2_000);
+  });
+  expect(result.current.stalled).toBe(true);
+  expect(result.current.status).toBe("downloading");
+  expect(mockCancelAsync).not.toHaveBeenCalled();
+
+  act(() => {
+    capturedProgressCallback?.({
+      totalBytesWritten: 32_768,
+      totalBytesExpectedToWrite: 50_000_000,
+    });
+  });
+  expect(result.current.stalled).toBe(false);
+});
+
+test("keeps the stall flag after the stalled download fails, until a retry", async () => {
+  jest.useFakeTimers();
+  let rejectDownload!: (error: Error) => void;
+  mockDownloadAsync.mockReturnValueOnce(
+    new Promise((_, reject) => {
+      rejectDownload = reject;
+    }),
+  );
+
+  const { result } = renderHook(() => useVideoDownload("lesson-1", "idle"), {
+    wrapper: createWrapper(),
+  });
+
+  act(() => {
+    void result.current.startDownload();
+  });
+  await waitFor(() => expect(result.current.status).toBe("downloading"));
+  act(() => {
+    capturedProgressCallback?.({
+      totalBytesWritten: 16_384,
+      totalBytesExpectedToWrite: 50_000_000,
+    });
+  });
+  await act(async () => {
+    jest.advanceTimersByTime(60_000);
+    rejectDownload(new Error("timeout"));
+  });
+
+  await waitFor(() =>
+    expect(mockCapture).toHaveBeenCalledWith("video_download_failed", {
+      lesson_id: "lesson-1",
+      reason: "exception",
+      bytes_written: 16_384,
+    }),
+  );
+  expect(result.current.stalled).toBe(true);
+
+  mockDownloadAsync.mockReturnValueOnce(new Promise(() => {}));
+  act(() => {
+    void result.current.startDownload();
+  });
+  await waitFor(() => expect(result.current.stalled).toBe(false));
 });
 
 test("progress callback updates download percentage", async () => {
