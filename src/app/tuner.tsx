@@ -47,6 +47,9 @@ export default function TunerScreen() {
     "checking",
   );
   const [tuningSheetVisible, setTuningSheetVisible] = useState(false);
+  const [inForeground, setInForeground] = useState(
+    AppState.currentState !== "background",
+  );
   const stopForkRef = useRef<(() => void) | null>(null);
 
   const tuning = useMemo(
@@ -75,9 +78,17 @@ export default function TunerScreen() {
     return () => sub.remove();
   }, [permStatus]);
 
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      setInForeground(state !== "background");
+    });
+
+    return () => sub.remove();
+  }, []);
+
   // Start/stop pitch detection based on permission
   useEffect(() => {
-    if (permStatus !== "granted") return;
+    if (permStatus !== "granted" || !inForeground) return;
 
     // Hold the last detected frequency for HOLD_MS before clearing.
     // Short null gaps from the detector (normal during playing) are invisible.
@@ -114,7 +125,7 @@ export default function TunerScreen() {
       if (clearTimer) clearTimeout(clearTimer);
       setDetectedFrequency(null);
     };
-  }, [permStatus, setDetectedFrequency]);
+  }, [permStatus, inForeground, setDetectedFrequency]);
 
   // Tuning fork: play reference tone when a string is manually selected
   useEffect(() => {
