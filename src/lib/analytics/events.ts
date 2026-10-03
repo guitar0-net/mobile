@@ -22,6 +22,10 @@ export type AnalyticsEvents = {
     columns_count: number;
   };
 
+  video_fullscreen_entered: { lesson_id: string };
+  video_fullscreen_exited: { lesson_id: string };
+  video_screen_closed: { lesson_id: string; landscape: boolean; had_error: boolean };
+
   video_download_started: { lesson_id: string };
   video_download_completed: { lesson_id: string };
   video_download_failed: {
