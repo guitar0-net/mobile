@@ -424,6 +424,7 @@ test("does not start download when wifi-only is enabled on a cellular connection
 });
 
 test("starts download when wifi-only is enabled on a Wi-Fi connection", async () => {
+  jest.useFakeTimers();
   useSettingsStore.getState().setWifiOnlyDownloads(true);
   mockGetNetworkStateAsync.mockResolvedValue({ type: "WIFI" });
   mockDownloadAsync.mockReturnValue(
@@ -444,6 +445,7 @@ test("starts download when wifi-only is enabled on a Wi-Fi connection", async ()
 });
 
 test("starts download on a cellular connection when wifi-only is disabled", async () => {
+  jest.useFakeTimers();
   mockGetNetworkStateAsync.mockResolvedValue({ type: "CELLULAR" });
   mockDownloadAsync.mockReturnValue(
     new Promise(() => {
