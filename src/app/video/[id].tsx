@@ -9,6 +9,7 @@ import { SymbolView } from "expo-symbols";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
 import { fetchLessonVideoPath, videoStreamUrl } from "@/features/lessons";
@@ -65,10 +66,13 @@ export default function VideoScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }]}>
+      <SafeAreaView
+        edges={["bottom", "left", "right"]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }]}
+      >
         <VideoView
           player={player}
-          style={StyleSheet.absoluteFill}
+          style={{ flex: 1 }}
           nativeControls
           contentFit="contain"
           onFullscreenEnter={() =>
@@ -105,7 +109,7 @@ export default function VideoScreen() {
             </Pressable>
           </View>
         )}
-      </View>
+      </SafeAreaView>
     </>
   );
 }
