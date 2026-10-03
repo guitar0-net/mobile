@@ -122,7 +122,10 @@ export function Button({
       {...props}
     >
       {({ pressed }) => (
+        // Opacity toggles Fabric view flattening; on Android, re-parenting the label
+        // while react-native-screens animates the screen out crashes (rn-screens#4677).
         <View
+          collapsable={false}
           className={cn(
             "flex-row items-center justify-center",
             !isIconOnly && SIZE_INNER_GAP[size],
