@@ -2,11 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
+import { createTestQueryClient } from "@/lib/network/__tests__/testing";
 import { ThemeProvider } from "@/lib/themes";
 
 import { AnnouncementsPreview } from "./announcements-preview";
@@ -32,9 +33,7 @@ beforeEach(() => {
 });
 
 function wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const client = createTestQueryClient();
   return (
     <QueryClientProvider client={client}>
       <ThemeProvider>{children}</ThemeProvider>

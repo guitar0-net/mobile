@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { eq } from "drizzle-orm";
 import type { ReactNode } from "react";
@@ -12,6 +12,7 @@ import { Alert } from "react-native";
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { useSettingsStore } from "@/features/settings/store";
 import { getDb, initDb, lessons } from "@/lib/db";
+import { createTestQueryClient } from "@/lib/network/__tests__/testing";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { useDownloadStore } from "./download-store";
@@ -58,9 +59,7 @@ jest.mock("@/lib/analytics", () => ({
 // ---------------------------------------------------------------------------
 
 function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const queryClient = createTestQueryClient();
   function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: queryClient }, children);
   }

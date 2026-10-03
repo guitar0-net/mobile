@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import React from "react";
+
+import { createTestQueryClient } from "@/lib/network/__tests__/testing";
 
 import { resetPrintSettingsForTesting } from "../__tests__/testing";
 import { usePrintSettingsStore } from "../print-settings-store";
@@ -18,9 +20,7 @@ jest.mock("../print-song", () => ({
 const { printSong } = require("../print-song") as { printSong: jest.Mock };
 
 function makeWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { mutations: { retry: false } },
-  });
+  const client = createTestQueryClient();
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );

@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
 
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { useSettingsStore } from "@/features/settings/store";
 import { courseLessons, courses, initDb, lessons, lessonSongs, songs } from "@/lib/db";
+import { createTestQueryClient } from "@/lib/network/__tests__/testing";
 import { queryClient } from "@/lib/network/query-client";
 
 import { resetDbForTesting } from "./__tests__/testing";
@@ -43,9 +44,7 @@ jest.mock("expo-file-system/legacy", () => ({
 // ---------------------------------------------------------------------------
 
 function makeWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const client = createTestQueryClient();
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
