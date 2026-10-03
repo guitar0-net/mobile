@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { Alert, Linking, View } from "react-native";
 
 import { Button } from "@/components/ui/button";
+import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 import { recordLessonViewed } from "@/features/activity";
 import { useProgress } from "@/features/settings";
@@ -31,7 +32,7 @@ export function VideoCard({
 }: VideoCardProps) {
   const router = useRouter();
   const { setVideoViewed } = useProgress();
-  const { status, progress, startDownload, cancelDownload, deleteDownload } =
+  const { status, progress, stalled, startDownload, cancelDownload, deleteDownload } =
     useVideoDownload(lessonId, dbDownloadStatus);
 
   const isDownloaded = status === "downloaded";
@@ -108,6 +109,14 @@ export function VideoCard({
           onPress={isDownloaded ? handleDeletePress : handleDownloadPress}
         />
       </View>
+      {stalled && (
+        <View className="mt-3">
+          <StatusMessage variant="warning" inline>
+            Загрузка остановилась: сервер не отвечает. Возможно, он недоступен из вашей
+            сети. Подключитесь к другой сети или повторите загрузку позже.
+          </StatusMessage>
+        </View>
+      )}
     </View>
   );
 }

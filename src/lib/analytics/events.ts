@@ -31,6 +31,7 @@ export type AnalyticsEvents = {
   video_download_failed: {
     lesson_id: string;
     reason: `http_${number}` | "exception";
+    bytes_written: number;
   };
 
   metronome_started: {

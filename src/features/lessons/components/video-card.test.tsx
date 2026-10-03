@@ -49,6 +49,7 @@ function makeHook(overrides: Partial<VideoDownloadHook> = {}): VideoDownloadHook
   return {
     status: "idle",
     progress: 0,
+    stalled: false,
     startDownload: jest.fn(),
     cancelDownload: jest.fn(),
     deleteDownload: jest.fn(),
@@ -111,6 +112,16 @@ describe("VideoCard", () => {
     renderCard({ status: "failed", startDownload });
     fireEvent.press(screen.getByLabelText("Повторить загрузку"));
     expect(startDownload).toHaveBeenCalledTimes(1);
+  });
+
+  test("explains a stalled download", () => {
+    renderCard({ status: "downloading", stalled: true });
+    expect(screen.getByText(/сервер не отвечает/)).toBeTruthy();
+  });
+
+  test("shows no stall hint while the download is receiving data", () => {
+    renderCard({ status: "downloading", stalled: false });
+    expect(screen.queryByText(/сервер не отвечает/)).toBeNull();
   });
 
   test("pressing offline button navigates with source=offline", () => {

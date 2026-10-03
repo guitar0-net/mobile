@@ -37,6 +37,7 @@ function makeHook(overrides: Partial<VideoDownloadHook> = {}): VideoDownloadHook
   return {
     status: "downloaded",
     progress: 0,
+    stalled: false,
     startDownload: jest.fn(),
     cancelDownload: jest.fn(),
     deleteDownload: jest.fn().mockResolvedValue(undefined),

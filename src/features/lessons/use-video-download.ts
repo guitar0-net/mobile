@@ -7,7 +7,7 @@ import { eq, inArray } from "drizzle-orm";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Network from "expo-network";
 import { useEffect } from "react";
-import { Alert } from "react-native";
+import { Alert, AppState } from "react-native";
 
 import { useWifiOnlyDownloads } from "@/features/settings";
 import { capture, captureException } from "@/lib/analytics";
@@ -17,9 +17,13 @@ import { queryClient as appQueryClient } from "@/lib/network/query-client";
 
 import { useDownloadStore } from "./download-store";
 
+const STALL_TIMEOUT_MS = 15_000;
+const STALL_CHECK_INTERVAL_MS = 1_000;
+
 export type VideoDownloadHook = {
   status: VideoDownloadStatus;
   progress: number;
+  stalled: boolean;
   startDownload: () => Promise<void>;
   cancelDownload: () => Promise<void>;
   deleteDownload: () => Promise<void>;
@@ -37,8 +41,14 @@ export function useVideoDownload(
   lessonId: string,
   dbStatus: VideoDownloadStatus,
 ): VideoDownloadHook {
-  const { activeDownloads, setActive, updateProgress, clearActive } =
-    useDownloadStore();
+  const {
+    activeDownloads,
+    stalledDownloads,
+    setActive,
+    updateProgress,
+    clearActive,
+    setStalled,
+  } = useDownloadStore();
   const { wifiOnlyDownloads } = useWifiOnlyDownloads();
   const queryClient = useQueryClient();
 
@@ -56,6 +66,7 @@ export function useVideoDownload(
   }
 
   const progress = activeEntry?.progress ?? 0;
+  const stalled = stalledDownloads[lessonId] ?? false;
 
   function invalidateDownloadQueries() {
     void queryClient.invalidateQueries({ queryKey: ["lesson-detail", lessonId] });
@@ -118,11 +129,20 @@ export function useVideoDownload(
     }
 
     let active = true;
+    let isStalled = false;
+    let bytesWritten = 0;
+    let lastProgressAt = Date.now();
     const resumable = FileSystem.createDownloadResumable(
       url,
       dest,
       {},
       ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
+        bytesWritten = totalBytesWritten;
+        lastProgressAt = Date.now();
+        if (isStalled) {
+          isStalled = false;
+          setStalled(lessonId, false);
+        }
         if (totalBytesExpectedToWrite > 0) {
           updateProgress(
             lessonId,
@@ -133,6 +153,7 @@ export function useVideoDownload(
     );
 
     capture("video_download_started", { lesson_id: lessonId });
+    setStalled(lessonId, false);
 
     setActive(lessonId, {
       progress: 0,
@@ -141,6 +162,16 @@ export function useVideoDownload(
         return resumable.cancelAsync();
       },
     });
+
+    // JS timers are suspended in the background while the native download goes on.
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") lastProgressAt = Date.now();
+    });
+    const stallWatchdog = setInterval(() => {
+      if (isStalled || Date.now() - lastProgressAt < STALL_TIMEOUT_MS) return;
+      isStalled = true;
+      setStalled(lessonId, true);
+    }, STALL_CHECK_INTERVAL_MS);
 
     let failureReason: `http_${number}` | "exception";
     try {
@@ -169,10 +200,17 @@ export function useVideoDownload(
       if (!active) return;
       captureException(error, { stage: "video_download", lesson_id: lessonId });
       failureReason = "exception";
+    } finally {
+      clearInterval(stallWatchdog);
+      appStateSubscription.remove();
     }
 
     clearActive(lessonId);
-    capture("video_download_failed", { lesson_id: lessonId, reason: failureReason });
+    capture("video_download_failed", {
+      lesson_id: lessonId,
+      reason: failureReason,
+      bytes_written: bytesWritten,
+    });
     await getDb()
       .update(lessons)
       .set({ videoDownloadStatus: "failed" })
@@ -186,6 +224,7 @@ export function useVideoDownload(
   async function cancelDownload() {
     const cancel = activeDownloads[lessonId]?.cancel;
     clearActive(lessonId);
+    setStalled(lessonId, false);
     await cancel?.();
     await getDb()
       .update(lessons)
@@ -219,7 +258,7 @@ export function useVideoDownload(
     }
   }
 
-  return { status, progress, startDownload, cancelDownload, deleteDownload };
+  return { status, progress, stalled, startDownload, cancelDownload, deleteDownload };
 }
 
 export async function deleteAllDownloadedVideos(): Promise<void> {
