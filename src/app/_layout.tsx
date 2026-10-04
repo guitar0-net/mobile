@@ -16,7 +16,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,12 @@ SplashScreen.preventAutoHideAsync();
 
 const jsStartedAt = Date.now();
 let isReadyReported = false;
+
+// Android: a stack screen hidden under the video keeps a stale Fabric layout after rotation,
+// so its Pressables drop presses. transparentModal keeps it attached and laid out.
+const videoScreenOptions = {
+  presentation: Platform.OS === "android" ? "transparentModal" : "card",
+} as const;
 
 function StatusBarAdapter() {
   const { theme } = useTheme();
@@ -75,6 +81,7 @@ function ThemedStack() {
         <Stack.Screen name="migration" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="lesson/[id]" options={{ headerBackTitle: "Назад" }} />
+        <Stack.Screen name="video/[id]" options={videoScreenOptions} />
       </Stack>
     </NavThemeProvider>
   );
