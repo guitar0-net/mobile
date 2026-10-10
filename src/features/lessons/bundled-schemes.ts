@@ -11,7 +11,7 @@ export const BUNDLED_SCHEME_IMAGES: Record<string, number> = {
   "/media/lesson_schemes/action_lesson22.jpg": require("@/assets/images/schemes/action_lesson22.jpg"),
   "/media/lesson_schemes/beat1.jpg": require("@/assets/images/schemes/beat1.jpg"),
   "/media/lesson_schemes/beat1_2.jpg": require("@/assets/images/schemes/beat1_2.jpg"),
-  "/media/lesson_schemes/beat2.jpg": require("@/assets/images/schemes/beat2.jpg"),
+  "/media/lesson_schemes/beat2_v2.png": require("@/assets/images/schemes/beat2_v2.png"),
   "/media/lesson_schemes/beat34.jpg": require("@/assets/images/schemes/beat34.jpg"),
   "/media/lesson_schemes/beat3_4.jpg": require("@/assets/images/schemes/beat3_4.jpg"),
   "/media/lesson_schemes/beat_1_galop.jpg": require("@/assets/images/schemes/beat_1_galop.jpg"),
