@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 
 import { useProgress } from "@/features/settings";
 
+import { remainingLessonSteps } from "../logic";
 import { useContinueLesson } from "../queries";
 import { CompactCourseCard } from "./compact-course-card";
 import { FeaturedCourseCard } from "./featured-course-card";
@@ -36,18 +37,19 @@ export function CourseContinueCard({
 
   if (!row || !data) return null;
 
-  const lessonProgress = progress[row.lessonUuid];
-  const completedSongs = lessonProgress?.completedSongIds.length ?? 0;
-  const videoViewed = lessonProgress?.videoViewed ?? false;
+  const { remainingSongs, videoRemaining } = remainingLessonSteps(
+    row,
+    progress[row.lessonUuid],
+  );
+  const totalSteps = row.songCount + 1;
+  const remainingSteps = remainingSongs + (videoRemaining ? 1 : 0);
   const lesson: LessonInfo = {
     order: row.order,
     title: row.title,
-    remainingSongs: row.songCount - completedSongs,
-    videoRemaining: !videoViewed,
-    progressPct: Math.round(
-      ((completedSongs + (videoViewed ? 1 : 0)) / (row.songCount + 1)) * 100,
-    ),
-    hasProgress: completedSongs > 0 || videoViewed,
+    remainingSongs,
+    videoRemaining,
+    progressPct: Math.round(((totalSteps - remainingSteps) / totalSteps) * 100),
+    hasProgress: remainingSteps < totalSteps,
   };
 
   const handlePress = () =>
