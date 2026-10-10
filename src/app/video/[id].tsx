@@ -95,7 +95,9 @@ export default function VideoScreen() {
             </Text>
             <Pressable onPress={() => router.back()}>
               {({ pressed }) => (
+                // Same Android crash as in Button (rn-screens#4677).
                 <View
+                  collapsable={false}
                   className={cn(
                     "rounded-full border border-white/40 px-6 py-3",
                     pressed && "opacity-70",
