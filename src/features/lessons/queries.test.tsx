@@ -22,6 +22,7 @@ import {
   fetchSongIdsByLesson,
   invalidateContentQueries,
   listDownloadedVideos,
+  useAdjacentLessons,
   useCompletedLessonsCount,
   useContinueLesson,
   useDownloadedVideos,
@@ -932,5 +933,62 @@ describe("invalidateContentQueries", () => {
       ["chords", "count"],
       ["migration", "review-sections"],
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useAdjacentLessons
+// ---------------------------------------------------------------------------
+
+describe("useAdjacentLessons", () => {
+  test("the first lesson has only a next neighbour", async () => {
+    await seedCourse();
+    const { result } = renderHook(() => useAdjacentLessons("lesson-1", "course-1"), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.next?.lessonUuid).toBe("lesson-2"));
+    expect(result.current.previous).toBeNull();
+  });
+
+  test("the last lesson has only a previous neighbour", async () => {
+    await seedCourse();
+    const { result } = renderHook(() => useAdjacentLessons("lesson-2", "course-1"), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.previous?.lessonUuid).toBe("lesson-1"));
+    expect(result.current.next).toBeNull();
+  });
+
+  test("a lesson outside the course has no neighbours", async () => {
+    await seedCourse();
+    const client = createTestQueryClient();
+    const { result } = renderHook(() => useAdjacentLessons("lesson-x", "course-1"), {
+      wrapper: ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    });
+
+    await waitFor(() =>
+      expect(client.getQueryData(["course-lessons", "course-1"])).toHaveLength(2),
+    );
+    expect(result.current).toEqual({ previous: null, next: null });
+  });
+
+  test("loads the neighbour's detail ahead of time", async () => {
+    await seedCourse();
+    const client = createTestQueryClient();
+    renderHook(() => useAdjacentLessons("lesson-1", "course-1"), {
+      wrapper: ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    });
+
+    await waitFor(() =>
+      expect(client.getQueryData(["lesson-detail", "lesson-2", "course-1"])).toEqual(
+        expect.objectContaining({ uuid: "lesson-2", title: "Barre chords" }),
+      ),
+    );
   });
 });

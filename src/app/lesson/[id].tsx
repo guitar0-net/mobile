@@ -9,7 +9,13 @@ import { View } from "react-native";
 import { Badge } from "@/components/ui/badge";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
-import { useLessonDetail, SongRow, VideoCard } from "@/features/lessons";
+import {
+  LessonSwipeNavigator,
+  SongRow,
+  useLessonDetail,
+  VideoCard,
+} from "@/features/lessons";
+import type { CourseLessonRow } from "@/features/lessons";
 import { BookmarkButton } from "@/features/lessons/components/bookmark-button";
 import { useProgress } from "@/features/settings";
 
@@ -42,9 +48,14 @@ export default function LessonScreen() {
     () => ({ title: headerTitle, headerRight }),
     [headerTitle, headerRight],
   );
+  const showLesson = useCallback(
+    (lesson: CourseLessonRow) =>
+      router.setParams({ id: lesson.lessonUuid, order: String(lesson.order) }),
+    [router],
+  );
 
   return (
-    <>
+    <LessonSwipeNavigator lessonId={id} courseId={courseId} onNavigate={showLesson}>
       <Stack.Screen options={screenOptions} />
       <ScreenScrollView
         className="flex-1 bg-background"
@@ -113,6 +124,6 @@ export default function LessonScreen() {
           </View>
         )}
       </ScreenScrollView>
-    </>
+    </LessonSwipeNavigator>
   );
 }
