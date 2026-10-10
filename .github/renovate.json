@@ -62,6 +62,12 @@
       "enabled": false
     },
     {
+      "description": "npm rejects lock-file-only updates of overridden packages with EOVERRIDE; lockFileMaintenance refreshes them instead",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["overrides"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["github-actions"],
       "groupName": "github-actions",
       "labels": ["dependencies", "ci"]
