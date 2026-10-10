@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 import * as FileSystem from "expo-file-system/legacy";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import { useFavorites, useProgress } from "@/features/settings";
 import { getDb, courseLessons, courses, lessons, lessonSongs, songs } from "@/lib/db";
@@ -178,12 +178,58 @@ export async function fetchLessonVideoPath(lessonUuid: string): Promise<string |
   return lesson?.localVideoPath ?? null;
 }
 
-export function useLessonDetail(lessonUuid: string, courseUuid: string) {
-  return useQuery({
+function lessonDetailQuery(lessonUuid: string, courseUuid: string) {
+  return {
     queryKey: ["lesson-detail", lessonUuid, courseUuid],
     queryFn: () => fetchLessonDetail(lessonUuid, courseUuid),
+  };
+}
+
+export function useLessonDetail(lessonUuid: string, courseUuid: string) {
+  return useQuery({
+    ...lessonDetailQuery(lessonUuid, courseUuid),
     enabled: lessonUuid.length > 0 && courseUuid.length > 0,
   });
+}
+
+export type AdjacentLessons = {
+  previous: CourseLessonRow | null;
+  next: CourseLessonRow | null;
+};
+
+/**
+ * Neighbours of a lesson within a course. Their details are loaded ahead of
+ * time so switching to one renders its content on the first frame.
+ */
+export function useAdjacentLessons(
+  lessonUuid: string,
+  courseUuid: string,
+): AdjacentLessons {
+  const client = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["course-lessons", courseUuid],
+    queryFn: () => fetchCourseLessons(courseUuid),
+    enabled: courseUuid.length > 0,
+  });
+
+  const adjacent = useMemo<AdjacentLessons>(() => {
+    const index = data?.findIndex((row) => row.lessonUuid === lessonUuid) ?? -1;
+    if (!data || index === -1) return { previous: null, next: null };
+    return {
+      previous: index > 0 ? data[index - 1] : null,
+      next: index < data.length - 1 ? data[index + 1] : null,
+    };
+  }, [data, lessonUuid]);
+
+  useEffect(() => {
+    for (const lesson of [adjacent.previous, adjacent.next]) {
+      if (lesson) {
+        void client.prefetchQuery(lessonDetailQuery(lesson.lessonUuid, courseUuid));
+      }
+    }
+  }, [client, adjacent, courseUuid]);
+
+  return adjacent;
 }
 
 export type LessonSongCount = { lessonUuid: string; songCount: number };

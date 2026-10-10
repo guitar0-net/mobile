@@ -8,35 +8,25 @@ const config = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testMatch: ["<rootDir>/src/**/*.test.{ts,tsx}"],
   transform: {
-    // Transform .sql files as string exports (same as Metro does in production)
+    // Metro exports .sql files as strings.
     "\\.sql$": "<rootDir>/jest.transform.sql.js",
   },
   transformIgnorePatterns: [
-    // jest-expo sets a broad transformIgnorePatterns; override it to also
-    // transform drizzle's ESM migration bundle (drizzle/migrations.js).
+    // The jest-expo default plus drizzle-orm, whose migration bundle is ESM.
     "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/(?!vector-icons)|@expo-google-fonts|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|drizzle-orm|standard-navigation)",
   ],
   moduleNameMapper: {
-    // Replace react-native-mmkv with a pure in-memory mock so tests never
-    // touch native Nitro/TurboModule code.
     "^react-native-mmkv$": "<rootDir>/__mocks__/react-native-mmkv.js",
-    // Replace expo-sqlite with a better-sqlite3-backed in-memory mock so
-    // tests never touch native TurboModule code.
     "^expo-sqlite$": "<rootDir>/__mocks__/expo-sqlite.js",
-    // Replace expo-crypto with a Node crypto-backed mock — jest-expo's
-    // generic native-module auto-mock returns undefined from randomUUID().
+    // jest-expo's auto-mock returns undefined from randomUUID().
     "^expo-crypto$": "<rootDir>/__mocks__/expo-crypto.js",
-    // Replace @gorhom/bottom-sheet with a pure JS mock — the real package
-    // requires native Worklets/Reanimated initialization unavailable in Jest.
     "^@gorhom/bottom-sheet$": "<rootDir>/__mocks__/@gorhom/bottom-sheet.js",
-    // Replace react-native-audio-api with a pure JS mock — the real package
-    // requires native TurboModule code unavailable in Jest.
     "^react-native-audio-api$": "<rootDir>/__mocks__/react-native-audio-api.js",
-    // Replace posthog-react-native with a stub client — the real one resolves
-    // native storage and the crash plugin while it is being constructed.
+    // The real client resolves native storage while it is being constructed.
     "^posthog-react-native$": "<rootDir>/__mocks__/posthog-react-native.js",
-    // The jest-expo preset maps @/ → src/, but static assets live in the
-    // project root. This more-specific entry takes precedence over the preset.
+    "^react-native-worklets$":
+      "<rootDir>/node_modules/react-native-worklets/src/mock.ts",
+    // Must precede the preset's @/ → src/ mapping: assets live in the project root.
     "^@/assets/(.*)$": "<rootDir>/assets/$1",
   },
   collectCoverageFrom: [
@@ -73,9 +63,7 @@ const config = {
       statements: 80,
       branches: 80,
       lines: 80,
-      // functions threshold intentionally omitted: JSX prop callbacks, useMemo
-      // lambdas, and pass-through wrappers distort this metric and create
-      // pressure to write smoke tests with no behavioral assertions.
+      // No functions threshold: JSX callbacks and useMemo lambdas distort it.
     },
   },
 };
