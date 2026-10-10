@@ -4,7 +4,11 @@
 
 import type { LessonProgress } from "@/features/settings";
 
-import { computeCourseProgress, deriveLessonState } from "./logic";
+import {
+  computeCourseProgress,
+  deriveLessonState,
+  remainingLessonSteps,
+} from "./logic";
 import type { CourseLessonRow } from "./queries";
 
 function row(
@@ -91,6 +95,29 @@ describe("deriveLessonState", () => {
     expect(deriveLessonState(row("l1", 2), prog(false, ["s1"]), "l2")).toBe(
       "in-progress",
     );
+  });
+});
+
+describe("remainingLessonSteps", () => {
+  test("an untouched lesson still needs the video and every song", () => {
+    expect(remainingLessonSteps(row("l1", 2), undefined)).toEqual({
+      remainingSongs: 2,
+      videoRemaining: true,
+    });
+  });
+
+  test("counts only the songs that are not completed yet", () => {
+    expect(remainingLessonSteps(row("l1", 3), prog(true, ["s1"]))).toEqual({
+      remainingSongs: 2,
+      videoRemaining: false,
+    });
+  });
+
+  test("never goes negative when a completed song has left the lesson", () => {
+    expect(remainingLessonSteps(row("l1", 1), prog(true, ["s1", "s2"]))).toEqual({
+      remainingSongs: 0,
+      videoRemaining: false,
+    });
   });
 });
 

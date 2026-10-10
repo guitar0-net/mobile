@@ -42,6 +42,7 @@ export { CourseContinueCard } from "./components/course-continue-card";
 export { DownloadedVideosList } from "./components/downloaded-videos-list";
 export { FavoriteLessonsList } from "./components/favorite-lessons-list";
 export { FavoritesPreview } from "./components/favorites-preview";
+export { LessonStatus } from "./components/lesson-status";
 export { LessonSwipeNavigator } from "./components/lesson-swipe-navigator";
 export { SongRow } from "./components/song-row";
 export { VideoCard } from "./components/video-card";

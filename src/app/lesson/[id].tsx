@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
 import {
+  LessonStatus,
   LessonSwipeNavigator,
   SongRow,
   useLessonDetail,
@@ -37,6 +38,9 @@ export default function LessonScreen() {
 
   const router = useRouter();
   const completedSongIds = progress[id]?.completedSongIds ?? [];
+  const completedSongCount = (lessonDetail?.songs ?? []).filter((song) =>
+    completedSongIds.includes(song.uuid),
+  ).length;
   let headerTitle = "Урок";
   if (lessonDetail) {
     headerTitle = `Урок ${lessonDetail.lessonOrder} / ${lessonDetail.totalLessonsInCourse}`;
@@ -77,7 +81,7 @@ export default function LessonScreen() {
                 {lessonDetail.description}
               </Text>
             )}
-            <View className="mt-1 flex-row gap-2">
+            <View className="mt-1 flex-row flex-wrap gap-2">
               {lessonDetail.duration != null && (
                 <Badge variant="outline">
                   {formatDuration(lessonDetail.duration)} мин.
@@ -91,6 +95,7 @@ export default function LessonScreen() {
                   Offline
                 </Badge>
               )}
+              <LessonStatus lessonId={id} songCount={lessonDetail.songs.length} />
             </View>
 
             <VideoCard
@@ -106,7 +111,9 @@ export default function LessonScreen() {
                   <Text variant="caption" className="text-xs uppercase tracking-wider">
                     Песни в этом уроке
                   </Text>
-                  <Badge variant="secondary">{String(lessonDetail.songs.length)}</Badge>
+                  <Badge variant="secondary">
+                    {completedSongCount} / {lessonDetail.songs.length}
+                  </Badge>
                 </View>
                 <View className="mt-3 gap-2">
                   {lessonDetail.songs.map((song) => (

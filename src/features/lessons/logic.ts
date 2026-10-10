@@ -13,13 +13,28 @@ export function isIntroLesson(lesson: { order: number }): boolean {
   return lesson.order === 0;
 }
 
+export type RemainingLessonSteps = {
+  remainingSongs: number;
+  videoRemaining: boolean;
+};
+
+export function remainingLessonSteps(
+  lesson: { songCount: number },
+  progress: LessonProgress | undefined,
+): RemainingLessonSteps {
+  const completedSongs = progress?.completedSongIds.length ?? 0;
+  return {
+    remainingSongs: Math.max(0, lesson.songCount - completedSongs),
+    videoRemaining: !(progress?.videoViewed ?? false),
+  };
+}
+
 export function isLessonCompleted(
   lesson: { songCount: number },
   progress: LessonProgress | undefined,
 ): boolean {
-  const videoViewed = progress?.videoViewed ?? false;
-  const completedSongs = progress?.completedSongIds.length ?? 0;
-  return videoViewed && completedSongs >= lesson.songCount;
+  const { remainingSongs, videoRemaining } = remainingLessonSteps(lesson, progress);
+  return remainingSongs === 0 && !videoRemaining;
 }
 
 export function deriveLessonState(
