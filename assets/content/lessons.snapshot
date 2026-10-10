@@ -1,5 +1,5 @@
 {
-  "version": "2026-05-30T05:29:18.303356+00:00",
+  "version": "2026-10-10T12:23:58.194554+00:00",
   "lesson_uuids": [
     "00056251-80f6-485e-b8e1-acc498d1c0d6",
     "02b12411-89a3-4f7f-80cb-830453745ffa",
@@ -83,7 +83,7 @@
   "lessons": [
     {
       "uuid": "00056251-80f6-485e-b8e1-acc498d1c0d6",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Урок № 6. Учимся играть бой с перебором",
       "description": "",
       "video_url": "https://www.youtube.com/embed/ZPDL5i5TS54",
@@ -91,7 +91,7 @@
     },
     {
       "uuid": "02b12411-89a3-4f7f-80cb-830453745ffa",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Урок № 19. Совмещаем разнообразные приемы",
       "description": "",
       "video_url": "https://www.youtube.com/embed/MjKg-8Yh4mg",
@@ -155,7 +155,7 @@
     },
     {
       "uuid": "1860323c-7d4f-4a54-9b09-1da00786c15d",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Сплин - Орбит без сахара",
       "description": "",
       "video_url": "https://www.youtube.com/embed/5Oz5OuVC6uk",
@@ -163,7 +163,7 @@
     },
     {
       "uuid": "1b032207-7ba5-4d1d-aec9-512b7a231346",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Кино - Восьмиклассница",
       "description": "",
       "video_url": "https://www.youtube.com/embed/SifxRnzo_hc",
@@ -171,7 +171,7 @@
     },
     {
       "uuid": "219a8604-7110-4fd2-a4ed-8cbf1c928db2",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Урок № 4. Улучшаем переставление аккордов и бой № 2",
       "description": "",
       "video_url": "https://www.youtube.com/embed/zo2IinVDyXM",
@@ -251,7 +251,7 @@
     },
     {
       "uuid": "3fc430fa-1623-45df-a51c-89b55acb79a6",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Урок № 9. Учимся быстро переставлять баррэ",
       "description": "",
       "video_url": "https://www.youtube.com/embed/nTyIhYXtjfI",
@@ -275,7 +275,7 @@
     },
     {
       "uuid": "449651dc-a980-4036-8def-e3dd96429b17",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Урок № 3. Бой № 2 и быстрое переставление аккордов",
       "description": "",
       "video_url": "https://www.youtube.com/embed/qTJ6pwdYkyk",
@@ -531,7 +531,7 @@
     },
     {
       "uuid": "b250636a-ebf2-4f65-a96c-bf7af8ad49b7",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Урок № 8. Учимся быстро ставить баррэ",
       "description": "",
       "video_url": "https://www.youtube.com/embed/MpnYAAiBPMc",
@@ -539,7 +539,7 @@
     },
     {
       "uuid": "b36680b9-10b9-4a7d-ac1a-f43890aec876",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Кино - Кукушка",
       "description": "",
       "video_url": "https://www.youtube.com/embed/lN5Efon-lvk",
@@ -667,7 +667,7 @@
     },
     {
       "uuid": "e6d2ca30-44ae-4243-81eb-c4072d696b05",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-10-10T12:23:58.194554Z",
       "title": "Сектор Газа - Демобилизация",
       "description": "",
       "video_url": "https://www.youtube.com/embed/5HGviWwom-0",
@@ -2791,7 +2791,7 @@
     },
     {
       "id": 2,
-      "image": "/media/lesson_schemes/beat2.jpg",
+      "image": "/media/lesson_schemes/beat2_v2.png",
       "inscription": "Бой № 2",
       "height": 144,
       "width": 256
