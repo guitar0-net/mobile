@@ -90,7 +90,7 @@ export default function LessonScreen() {
               {lessonDetail.videoDownloadStatus === "downloaded" && (
                 <Badge
                   variant="outline"
-                  icon={{ ios: "arrow.down.circle.fill", android: "download_done" }}
+                  icon={{ ios: "arrow.down.to.line", android: "download" }}
                 >
                   Offline
                 </Badge>

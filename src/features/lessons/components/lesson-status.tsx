@@ -22,10 +22,7 @@ export function LessonStatus({ lessonId, songCount }: Props) {
 
   if (remainingSongs === 0 && !videoRemaining) {
     return (
-      <Badge
-        variant="outline"
-        icon={{ ios: "checkmark.circle.fill", android: "check_circle" }}
-      >
+      <Badge variant="outline" icon={{ ios: "checkmark", android: "check" }}>
         Пройден
       </Badge>
     );
