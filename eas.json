@@ -31,6 +31,9 @@
         "track": "production",
         "releaseStatus": "inProgress",
         "rollout": 0.05
+      },
+      "ios": {
+        "ascAppId": "6818752464"
       }
     }
   }

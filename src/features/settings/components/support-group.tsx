@@ -10,6 +10,7 @@ import { SettingsRow } from "@/components/ui/settings-row";
 
 const STORE_REVIEW_URLS: Partial<Record<typeof Platform.OS, string>> = {
   android: "https://play.google.com/store/apps/details?id=com.andreykotlyar.guitar0",
+  ios: "https://apps.apple.com/app/id6818752464?action=write-review",
 };
 
 export function SupportGroup() {

@@ -33,7 +33,23 @@ describe("SupportGroup", () => {
     expect(mockPush).toHaveBeenCalledWith("/donate");
   });
 
-  test("hides the store rating row on iOS", () => {
+  test("opens the App Store review form when the rating row is pressed on iOS", () => {
+    render(<SupportGroup />, { wrapper });
+
+    fireEvent.press(screen.getByText("Оценить приложение"));
+
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      "https://apps.apple.com/app/id6818752464?action=write-review",
+    );
+  });
+});
+
+describe("SupportGroup on a platform without a store", () => {
+  beforeEach(() => {
+    jest.replaceProperty(Platform, "OS", "web");
+  });
+
+  test("hides the store rating row", () => {
     render(<SupportGroup />, { wrapper });
 
     expect(screen.queryByText("Оценить приложение")).toBeNull();
