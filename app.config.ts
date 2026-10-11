@@ -28,6 +28,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     icon: "./assets/guitar0.icon",
     bundleIdentifier: "com.andreykotlyar.guitar0",
+    config: {
+      usesNonExemptEncryption: false,
+    },
   },
   android: {
     package: "com.andreykotlyar.guitar0",
@@ -63,6 +66,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         iosMicrophonePermission:
           "Тюнер использует микрофон для определения высоты звука",
+        iosBackgroundMode: false,
         androidPermissions: ["android.permission.RECORD_AUDIO"],
       },
     ],
