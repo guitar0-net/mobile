@@ -125,7 +125,7 @@
     "uuid": ">=14.0.0",
     "esbuild": ">=0.25.0",
     "linkify-it": "^5.0.2",
-    "markdown-it": "^14.3.0",
+    "markdown-it": "^14.3.3",
     "openapi-typescript": {
       "typescript": "$typescript"
     }
