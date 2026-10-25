@@ -8,12 +8,11 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { SymbolView } from "expo-symbols";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
 import { fetchLessonVideoPath, videoStreamUrl } from "@/features/lessons";
-import { capture } from "@/lib/analytics";
 import { useColors } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +22,6 @@ export default function VideoScreen() {
   const { id, source } = useLocalSearchParams<{ id: string; source: string }>();
   const colors = useColors();
   const [hasError, setHasError] = useState(false);
-  const { width, height } = useWindowDimensions();
-  const landscape = width > height;
 
   const { data: localVideoPath } = useQuery({
     queryKey: ["lesson-video-path", id],
@@ -45,9 +42,8 @@ export default function VideoScreen() {
     // iOS swipe-back gesture — so the player is reliably paused before navigating away.
     return navigation.addListener("beforeRemove", () => {
       player.pause();
-      capture("video_screen_closed", { lesson_id: id, landscape, had_error: hasError });
     });
-  }, [navigation, player, id, landscape, hasError]);
+  }, [navigation, player]);
 
   useEffect(() => {
     void ScreenOrientation.unlockAsync();
@@ -75,10 +71,6 @@ export default function VideoScreen() {
           style={{ flex: 1 }}
           nativeControls
           contentFit="contain"
-          onFullscreenEnter={() =>
-            capture("video_fullscreen_entered", { lesson_id: id })
-          }
-          onFullscreenExit={() => capture("video_fullscreen_exited", { lesson_id: id })}
         />
         {hasError && (
           <View
