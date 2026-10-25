@@ -12,6 +12,7 @@ export const posthog = new PostHog(apiKey || "phc_disabled", {
   host: POSTHOG_HOST,
   disabled: __DEV__ || !apiKey,
   disableGeoip: true,
+  captureAppLifecycleEvents: false,
   errorTracking: {
     autocapture: {
       uncaughtExceptions: true,
