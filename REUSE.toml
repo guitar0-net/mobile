@@ -23,6 +23,7 @@ path = [
   "nativewind-env.d.ts",
   ".github/renovate.json",
   "patches/react-native-css-interop+0.2.4.patch",
+  "patches/react-native-audio-api+0.13.6.patch",
   "src/lib/network/api.types.ts",
   "src/features/migration/legacy-lesson-map.json",
   "drizzle/**",
