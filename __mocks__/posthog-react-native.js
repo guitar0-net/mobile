@@ -8,6 +8,7 @@ class PostHog {
     this.screen = jest.fn();
     this.captureException = jest.fn();
     this.register = jest.fn();
+    this.registerForSession = jest.fn();
     this.flush = jest.fn(() => Promise.resolve());
   }
 }

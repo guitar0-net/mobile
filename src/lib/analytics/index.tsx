@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { usePathname, useSegments } from "expo-router";
-import { useEffect } from "react";
+import { usePathname, useRootNavigationState, useSegments } from "expo-router";
+import { useEffect, useRef } from "react";
 
 import { posthog } from "./client";
 import type { AnalyticsEvents } from "./events";
@@ -26,13 +26,35 @@ export function captureException(
   posthog.captureException(error, properties);
 }
 
+type NavigationState = {
+  index?: number;
+  routes: readonly { key?: string; state?: NavigationState }[];
+};
+
+function focusedRouteKey(state: NavigationState | undefined): string | undefined {
+  const route = state?.routes[state.index ?? 0];
+  return route?.state ? focusedRouteKey(route.state) : route?.key;
+}
+
 export function AnalyticsScreenTracker() {
   const screen = `/${useSegments().join("/")}`;
   const pathname = usePathname();
+  const routeKey = focusedRouteKey(useRootNavigationState());
+  const visitedRouteKeys = useRef(new Set<string>());
+  const lastPathname = useRef<string | null>(null);
 
   useEffect(() => {
-    void posthog.screen(screen, { pathname });
-  }, [screen, pathname]);
+    const isReturn = routeKey !== undefined && visitedRouteKeys.current.has(routeKey);
+    if (routeKey) visitedRouteKeys.current.add(routeKey);
+    if (pathname === lastPathname.current) return;
+    lastPathname.current = pathname;
+
+    if (isReturn) {
+      posthog.registerForSession({ $screen_name: screen });
+    } else {
+      void posthog.screen(screen, { pathname });
+    }
+  }, [screen, pathname, routeKey]);
 
   return null;
 }
