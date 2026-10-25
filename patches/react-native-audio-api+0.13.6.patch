@@ -1,0 +1,18 @@
+diff --git a/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AndroidAudioRecorder.cpp b/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AndroidAudioRecorder.cpp
+index 0f997f8..a8a99f1 100644
+--- a/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AndroidAudioRecorder.cpp
++++ b/node_modules/react-native-audio-api/android/src/main/cpp/audioapi/android/core/AndroidAudioRecorder.cpp
+@@ -69,11 +69,11 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
+   }
+ 
+   oboe::AudioStreamBuilder builder;
+-  builder.setSharingMode(oboe::SharingMode::Exclusive)
++  builder.setSharingMode(oboe::SharingMode::Shared)
+       ->setDirection(oboe::Direction::Input)
+       ->setFormat(oboe::AudioFormat::Float)
+       ->setFormatConversionAllowed(true)
+-      ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
++      ->setPerformanceMode(oboe::PerformanceMode::None)
+       ->setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium)
+       ->setDataCallback(shared_from_this())
+       ->setErrorCallback(shared_from_this());
