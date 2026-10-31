@@ -55,7 +55,7 @@ export function describePurchaseError(error: unknown): string | null {
     case ErrorCode.SkuNotFound:
       return "Этот вариант поддержки сейчас недоступен в магазине";
     case ErrorCode.BillingUnavailable:
-      return "Покупки в магазине недоступны на этом устройстве";
+      return "Оплата не прошла. Проверьте способ оплаты в магазине или попробуйте позже";
     case ErrorCode.NetworkError:
     case ErrorCode.ServiceTimeout:
     case ErrorCode.ServiceDisconnected:
