@@ -10,6 +10,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -98,8 +99,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const [thanks, setThanks] = useState<DonationThanks | null>(null);
   const reconcilingRef = useRef<Set<string>>(new Set());
   const reconciledRef = useRef<Set<string>>(new Set());
-  const [settledKeys, setSettledKeys] = useState<ReadonlySet<string>>(new Set());
   const [isHydrated, setIsHydrated] = useState(false);
+  const [purchasesRefreshRequest, requestPurchasesRefresh] = useReducer(
+    (count: number) => count + 1,
+    0,
+  );
   const [storeError, setStoreError] = useState(false);
 
   const reportStoreFailure = useCallback(
@@ -132,7 +136,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       purchaseAttemptRef.current = null;
       setPurchasingProductId(null);
       if (isAwaitingPayment(purchase)) {
-        void refreshPurchases();
+        requestPurchasesRefresh();
         return;
       }
       void reconcile(purchase);
@@ -143,7 +147,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       reportStoreFailure(error, attempt);
       // Play refuses a consumable whose previous purchase was never consumed;
       // re-reading the purchase list hands that purchase to reconcile().
-      if (isAlreadyOwned(error)) void refreshPurchases();
+      if (isAlreadyOwned(error)) requestPurchasesRefresh();
     },
   });
 
@@ -161,22 +165,20 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     [reconnect],
   );
 
+  // finishTransaction() leaves useIAP's availablePurchases as it was, so only
+  // a fresh getAvailablePurchases() drops the finished purchase from the list.
   const finish = useCallback(
     async (purchase: Purchase): Promise<boolean> => {
       try {
         await finishTransaction({ purchase, isConsumable: true });
-        return true;
       } catch {
         return false;
       }
+      requestPurchasesRefresh();
+      return true;
     },
     [finishTransaction],
   );
-
-  const settle = useCallback((key: string) => {
-    reconciledRef.current.add(key);
-    setSettledKeys((prev) => new Set(prev).add(key));
-  }, []);
 
   const reconcile = useCallback(
     async (purchase: Purchase, { silent = false } = {}) => {
@@ -197,7 +199,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           const isPermanent = isPermanentVerifyRejection(error);
           if (isPermanent) {
             await finish(purchase);
-            settle(key);
+            reconciledRef.current.add(key);
           }
           if (!silent || isPermanent) {
             capture("donation_purchase_failed", {
@@ -210,11 +212,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        setThanks({ productId: purchase.productId, transactionId: key });
         setErrorMessage(null);
         const finished = await finish(purchase);
         if (!finished) return;
-        settle(key);
+        reconciledRef.current.add(key);
+        setThanks({ productId: purchase.productId, transactionId: key });
         capture("donation_purchase_confirmed", {
           product_id: purchase.productId,
           source: silent ? "background" : "purchase",
@@ -228,7 +230,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         reconcilingRef.current.delete(key);
       }
     },
-    [deviceId, finish, settle],
+    [deviceId, finish],
   );
 
   useEffect(() => {
@@ -237,7 +239,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       .then((stored) => {
         if (cancelled) return;
         for (const key of stored.keys()) reconciledRef.current.add(key);
-        setSettledKeys((prev) => new Set([...stored.keys(), ...prev]));
       })
       .catch(() => {})
       .finally(() => {
@@ -257,13 +258,17 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     // The store rejects every query until initConnection() resolves.
     if (!connected) return;
     void refreshPurchases();
+  }, [connected, purchasesRefreshRequest, refreshPurchases]);
+
+  useEffect(() => {
+    if (!connected) return;
     // Both stores hand over a purchase completed while the app was away only
     // when asked, so every return to the foreground asks again.
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") void refreshPurchases();
+      if (state === "active") requestPurchasesRefresh();
     });
     return () => subscription.remove();
-  }, [connected, refreshPurchases]);
+  }, [connected]);
 
   // useIAP runs initConnection() once on mount and never retries, and a
   // connection that never came up leaves the purchase listeners unregistered,
@@ -313,14 +318,13 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     const states = new Map<string, DonationPurchaseState>();
     for (const availablePurchase of availablePurchases) {
       if (!isDonationProduct(availablePurchase.productId)) continue;
-      if (settledKeys.has(purchaseKey(availablePurchase))) continue;
       states.set(
         availablePurchase.productId,
         isAwaitingPayment(availablePurchase) ? "awaiting-payment" : "verifying",
       );
     }
     return states;
-  }, [availablePurchases, settledKeys]);
+  }, [availablePurchases]);
 
   const prices = useMemo(
     () => new Map(products.map((product) => [product.id, product.displayPrice])),

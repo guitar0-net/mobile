@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import type { Purchase, UseIAPOptions } from "expo-iap";
-import { ErrorCode, useIAP } from "expo-iap";
+import type { Purchase } from "expo-iap";
+import { ErrorCode } from "expo-iap";
 import React from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
 import { _resetDbForTesting } from "@/lib/db";
 import { ApiError } from "@/lib/network";
 
+import { mockIAP } from "./__tests__/fake-iap";
 import { verifyPurchase } from "./api";
 import { DonationIapProvider, useDonationIapSession } from "./donation-iap-provider";
 
@@ -32,7 +33,6 @@ jest.mock("@/lib/analytics", () => ({
   capture: (...args: unknown[]) => mockCapture(...args),
 }));
 
-const mockUseIAP = jest.mocked(useIAP);
 const mockVerifyPurchase = jest.mocked(verifyPurchase);
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -47,59 +47,6 @@ function makePurchase(overrides: Partial<Purchase> = {}): Purchase {
     purchaseToken: "opaque-token",
     ...overrides,
   } as Purchase;
-}
-
-type IAPMock = {
-  connected: boolean;
-  products: { id: string; displayPrice: string }[];
-  fetchProducts: jest.Mock;
-  availablePurchases: Purchase[];
-  getAvailablePurchases: jest.Mock;
-  requestPurchase: jest.Mock;
-  finishTransaction: jest.Mock;
-  reconnect: jest.Mock;
-};
-
-// expo-iap reports every failed store call to onError *and* rejects, so a mock
-// that only rejects hides whatever the provider does in onError.
-const REPORTED_TO_ON_ERROR = [
-  "fetchProducts",
-  "getAvailablePurchases",
-  "reconnect",
-] as const;
-
-function mockIAP(overrides: Partial<IAPMock> = {}) {
-  let capturedOptions: UseIAPOptions | undefined;
-  const base: IAPMock = {
-    connected: true,
-    products: [],
-    fetchProducts: jest.fn().mockResolvedValue(undefined),
-    availablePurchases: [],
-    getAvailablePurchases: jest.fn().mockResolvedValue(undefined),
-    requestPurchase: jest.fn().mockResolvedValue(undefined),
-    finishTransaction: jest.fn().mockResolvedValue(undefined),
-    reconnect: jest.fn().mockResolvedValue(true),
-    ...overrides,
-  };
-  const session = { ...base };
-  for (const name of REPORTED_TO_ON_ERROR) {
-    const call = base[name];
-    session[name] = jest.fn((...args: unknown[]) =>
-      call(...args).catch((error: unknown) => {
-        capturedOptions?.onError?.(error as Error);
-        throw error;
-      }),
-    );
-  }
-  mockUseIAP.mockImplementation((options) => {
-    capturedOptions = options;
-    return session as unknown as ReturnType<typeof useIAP>;
-  });
-  return {
-    ...base,
-    getOptions: () => capturedOptions!,
-    update: (patch: Partial<IAPMock>) => Object.assign(session, patch),
-  };
 }
 
 function disconnectedError() {
@@ -156,11 +103,10 @@ describe("DonationIapProvider", () => {
   test("clears the verification error once a background check confirms the purchase", async () => {
     const purchase = makePurchase();
     mockVerifyPurchase.mockRejectedValueOnce(new Error("offline"));
-    const { getOptions, update } = mockIAP();
+    const sendAppState = captureAppStateHandlers();
+    const { getOptions, setStorePurchases } = mockIAP();
 
-    const { result, rerender } = renderHook(() => useDonationIapSession(), {
-      wrapper,
-    });
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await act(async () => getOptions().onPurchaseSuccess?.(purchase));
     await waitFor(() =>
@@ -169,10 +115,8 @@ describe("DonationIapProvider", () => {
       ),
     );
 
-    await act(async () => {
-      update({ availablePurchases: [purchase] });
-      rerender(undefined);
-    });
+    setStorePurchases([purchase]);
+    await act(async () => sendAppState("active"));
 
     await waitFor(() => expect(result.current.errorMessage).toBeNull());
     expect(result.current.thanks?.productId).toBe("tip_thanks");
@@ -524,23 +468,39 @@ describe("DonationIapProvider", () => {
   test("lets the same tier be bought again once its donation is confirmed", async () => {
     const first = makePurchase({ transactionId: "txn-1" });
     const second = makePurchase({ transactionId: "txn-2" });
-    const { getOptions, update } = mockIAP();
+    const { getOptions } = mockIAP({ availablePurchases: [first] });
 
-    const { result, rerender } = renderHook(() => useDonationIapSession(), {
-      wrapper,
-    });
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    await act(async () => getOptions().onPurchaseSuccess?.(first));
-    await act(async () => {
-      update({ availablePurchases: [first] });
-      rerender(undefined);
-    });
+    await waitFor(() => expect(result.current.thanks?.transactionId).toBe("txn-1"));
     expect(result.current.purchaseStates.has("tip_thanks")).toBe(false);
 
     await act(async () => getOptions().onPurchaseSuccess?.(second));
 
     await waitFor(() => expect(result.current.thanks?.transactionId).toBe("txn-2"));
     expect(mockVerifyPurchase).toHaveBeenCalledTimes(2);
+  });
+
+  test("clears a slow payment's waiting row once the cleared purchase is confirmed", async () => {
+    const pending = makePurchase({
+      id: "play-token",
+      transactionId: undefined,
+      purchaseState: "pending",
+    });
+    const cleared = makePurchase({ id: "GPA.1", transactionId: "GPA.1" });
+    const { getOptions } = mockIAP({ availablePurchases: [pending] });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+    await waitFor(() =>
+      expect(result.current.purchaseStates.get("tip_thanks")).toBe("awaiting-payment"),
+    );
+
+    await act(async () => getOptions().onPurchaseSuccess?.(cleared));
+
+    await waitFor(() =>
+      expect(result.current.purchaseStates.has("tip_thanks")).toBe(false),
+    );
+    expect(result.current.thanks?.productId).toBe("tip_thanks");
   });
 
   test("drops the thanks for an earlier donation once a new purchase starts", async () => {
@@ -628,7 +588,7 @@ describe("DonationIapProvider — analytics", () => {
     ]);
   });
 
-  test("does not report a purchase as confirmed while the store refuses to finish it", async () => {
+  test("neither reports nor thanks a donation while the store refuses to consume it", async () => {
     const finishTransaction = jest.fn().mockRejectedValue(new Error("store busy"));
     const { getOptions } = mockIAP({ finishTransaction });
 
@@ -638,7 +598,7 @@ describe("DonationIapProvider — analytics", () => {
 
     await waitFor(() => expect(finishTransaction).toHaveBeenCalled());
     await act(async () => {});
-    expect(result.current.thanks?.productId).toBe("tip_thanks");
+    expect(result.current.thanks).toBeNull();
     expect(mockCapture).not.toHaveBeenCalledWith(
       "donation_purchase_confirmed",
       expect.anything(),
