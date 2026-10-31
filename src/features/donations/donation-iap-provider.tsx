@@ -21,7 +21,6 @@ import { getDeviceId } from "@/lib/device-id";
 
 import { verifyPurchase } from "./api";
 import { isDonationProduct } from "./catalog";
-import { loadConfirmedDonations, saveConfirmedDonation } from "./confirmed-donations";
 import {
   describePurchaseError,
   describeVerifyError,
@@ -103,7 +102,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   >(new Map());
   const reconciledRef = useRef<Set<string>>(new Set());
   const [finishedKeys, setFinishedKeys] = useState<ReadonlySet<string>>(new Set());
-  const [isHydrated, setIsHydrated] = useState(false);
   const [purchasesRefreshRequest, requestPurchasesRefresh] = useReducer(
     (count: number) => count + 1,
     0,
@@ -195,11 +193,8 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         new Map(products).set(key, purchase.productId),
       );
       try {
-        let response;
         try {
-          response = await verifyPurchase(
-            buildVerifyPayload(purchase, PLATFORM, deviceId),
-          );
+          await verifyPurchase(buildVerifyPayload(purchase, PLATFORM, deviceId));
         } catch (error) {
           // An unfinished transaction is auto-refunded by Play after three days
           // and re-delivered by StoreKit on every launch, so a doomed receipt
@@ -228,9 +223,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           product_id: purchase.productId,
           source: silent ? "background" : "purchase",
         });
-        void saveConfirmedDonation(key, purchase.productId, response.verified_at).catch(
-          () => {},
-        );
       } finally {
         reconcilingRef.current.delete(key);
         setVerifyingProducts((products) => {
@@ -242,22 +234,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     },
     [deviceId, finish],
   );
-
-  useEffect(() => {
-    let cancelled = false;
-    void loadConfirmedDonations()
-      .then((stored) => {
-        if (cancelled) return;
-        for (const key of stored.keys()) reconciledRef.current.add(key);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setIsHydrated(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const refreshPurchases = useCallback(
     () => withReconnect(() => getAvailablePurchases()).catch(() => {}),
@@ -317,12 +293,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   }, [connected, reconnect]);
 
   useEffect(() => {
-    if (!isHydrated) return;
     for (const availablePurchase of availablePurchases) {
       if (!isDonationProduct(availablePurchase.productId)) continue;
       void reconcile(availablePurchase, { silent: true });
     }
-  }, [availablePurchases, reconcile, isHydrated]);
+  }, [availablePurchases, reconcile]);
 
   const purchaseStates = useMemo(() => {
     const states = new Map<string, DonationPurchaseState>();
