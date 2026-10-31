@@ -92,7 +92,7 @@ describe("DonationTierList", () => {
           productId: "tip_coffee",
           label: "Угостить кофе",
           icon: { ios: "cup.and.saucer.fill", android: "local_cafe" },
-          thanks: "Кофе принят — уже варю",
+          thanks: "Самый вкусный кофе — подаренный",
           displayPrice: "$3.00",
         },
       ],
@@ -186,7 +186,7 @@ describe("DonationTierList", () => {
           productId: "tip_coffee",
           label: "Угостить кофе",
           icon: { ios: "cup.and.saucer.fill", android: "local_cafe" },
-          thanks: "Кофе принят — уже варю",
+          thanks: "Самый вкусный кофе — подаренный",
           displayPrice: "$3.00",
         },
       ],
@@ -195,7 +195,7 @@ describe("DonationTierList", () => {
     render(<DonationTierList />, { wrapper });
 
     expect(screen.getByText("Спасибо за поддержку!")).toBeTruthy();
-    expect(screen.getByText("Кофе принят — уже варю")).toBeTruthy();
+    expect(screen.getByText("Самый вкусный кофе — подаренный")).toBeTruthy();
     expect(screen.queryByText("Это правда очень приятно")).toBeNull();
     expect(screen.getByText("$3.00")).toBeTruthy();
   });
