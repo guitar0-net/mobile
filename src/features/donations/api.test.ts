@@ -44,21 +44,21 @@ describe("getActiveDonationProductIds", () => {
         new Response(
           JSON.stringify({
             next: `${BASE_URL}/api/v1/donations/products/?limit=50&offset=50`,
-            results: [{ product_id: "donation_thanks" }],
+            results: [{ product_id: "tip_thanks" }],
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         ),
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ next: null, results: [{ product_id: "donation_coffee" }] }),
+          JSON.stringify({ next: null, results: [{ product_id: "tip_coffee" }] }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         ),
       );
 
     const ids = await getActiveDonationProductIds();
 
-    expect(ids).toEqual(["donation_thanks", "donation_coffee"]);
+    expect(ids).toEqual(["tip_thanks", "tip_coffee"]);
     expect(globalThis.fetch).toHaveBeenLastCalledWith(
       `${BASE_URL}/api/v1/donations/products/?limit=50&offset=1`,
       expect.anything(),
@@ -71,7 +71,7 @@ describe("getActiveDonationProductIds", () => {
         new Response(
           JSON.stringify({
             next: `${BASE_URL}/api/v1/donations/products/?limit=50&offset=1`,
-            results: [{ product_id: "donation_thanks" }],
+            results: [{ product_id: "tip_thanks" }],
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         ),
@@ -91,10 +91,7 @@ describe("getActiveDonationProductIds", () => {
           count: 2,
           next: null,
           previous: null,
-          results: [
-            { product_id: "donation_thanks" },
-            { product_id: "donation_coffee" },
-          ],
+          results: [{ product_id: "tip_thanks" }, { product_id: "tip_coffee" }],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -102,7 +99,7 @@ describe("getActiveDonationProductIds", () => {
 
     const ids = await getActiveDonationProductIds();
 
-    expect(ids).toEqual(["donation_thanks", "donation_coffee"]);
+    expect(ids).toEqual(["tip_thanks", "tip_coffee"]);
   });
 
   test("throws on a non-OK HTTP response", async () => {
@@ -117,7 +114,7 @@ describe("getActiveDonationProductIds", () => {
 describe("verifyPurchase", () => {
   const payload: PurchaseVerifyRequest = {
     platform: "ios",
-    product_id: "donation_thanks",
+    product_id: "tip_thanks",
     store_transaction_id: "txn-123",
     purchase_token: "",
     signed_transaction_info: "jws-blob",
@@ -129,7 +126,7 @@ describe("verifyPurchase", () => {
       new Response(
         JSON.stringify({
           platform: "ios",
-          product_id: "donation_thanks",
+          product_id: "tip_thanks",
           status: "completed",
           verified_at: "2026-01-01T00:00:00Z",
         }),
@@ -148,7 +145,7 @@ describe("verifyPurchase", () => {
   test("returns the verified purchase", async () => {
     const response = {
       platform: "ios" as const,
-      product_id: "donation_thanks",
+      product_id: "tip_thanks",
       status: "completed",
       verified_at: "2026-01-01T00:00:00Z",
     };

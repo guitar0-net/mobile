@@ -25,10 +25,9 @@ const defaults: ReturnType<typeof useDonationIap> = {
   refetch: jest.fn(),
   purchaseStates: new Map(),
   purchasingProductId: null,
-  isRestoring: false,
+  thanks: null,
   errorMessage: null,
   purchase: jest.fn(),
-  restore: jest.fn(),
 };
 
 beforeEach(() => {
@@ -78,20 +77,22 @@ describe("DonationTierList", () => {
     expect(screen.getByText("Сейчас поддержка временно недоступна")).toBeTruthy();
   });
 
-  test("renders a row for every visible tier and a restore button", () => {
+  test("renders a row for every visible tier and no restore button", () => {
     mockUseDonationIap.mockReturnValue({
       ...defaults,
       tiers: [
         {
-          productId: "donation_thanks",
+          productId: "tip_thanks",
           label: "Сказать спасибо",
           icon: { ios: "heart.fill", android: "favorite" },
+          thanks: "Это правда очень приятно",
           displayPrice: "$1.00",
         },
         {
-          productId: "donation_coffee",
+          productId: "tip_coffee",
           label: "Угостить кофе",
           icon: { ios: "cup.and.saucer.fill", android: "local_cafe" },
+          thanks: "Кофе принят — уже варю",
           displayPrice: "$3.00",
         },
       ],
@@ -101,7 +102,7 @@ describe("DonationTierList", () => {
 
     expect(screen.getByText("Сказать спасибо")).toBeTruthy();
     expect(screen.getByText("Угостить кофе")).toBeTruthy();
-    expect(screen.getByText("Восстановить покупки")).toBeTruthy();
+    expect(screen.queryByText("Восстановить покупки")).toBeNull();
   });
 
   test("taps a tier row through to purchase(productId)", () => {
@@ -111,9 +112,10 @@ describe("DonationTierList", () => {
       purchase,
       tiers: [
         {
-          productId: "donation_thanks",
+          productId: "tip_thanks",
           label: "Сказать спасибо",
           icon: { ios: "heart.fill", android: "favorite" },
+          thanks: "Это правда очень приятно",
           displayPrice: "$1.00",
         },
       ],
@@ -122,38 +124,19 @@ describe("DonationTierList", () => {
     render(<DonationTierList />, { wrapper });
     fireEvent.press(screen.getByText("Сказать спасибо"));
 
-    expect(purchase).toHaveBeenCalledWith("donation_thanks");
-  });
-
-  test("shows a checkmark for a confirmed tier instead of its price", () => {
-    mockUseDonationIap.mockReturnValue({
-      ...defaults,
-      purchaseStates: new Map([["donation_thanks", "confirmed" as const]]),
-      tiers: [
-        {
-          productId: "donation_thanks",
-          label: "Сказать спасибо",
-          icon: { ios: "heart.fill", android: "favorite" },
-          displayPrice: "$1.00",
-        },
-      ],
-    });
-
-    render(<DonationTierList />, { wrapper });
-
-    expect(screen.queryByText("$1.00")).toBeNull();
-    expect(screen.queryByText("Проверяем…")).toBeNull();
+    expect(purchase).toHaveBeenCalledWith("tip_thanks");
   });
 
   test("says a purchase is still being checked while the server has not confirmed it", () => {
     mockUseDonationIap.mockReturnValue({
       ...defaults,
-      purchaseStates: new Map([["donation_thanks", "verifying" as const]]),
+      purchaseStates: new Map([["tip_thanks", "verifying" as const]]),
       tiers: [
         {
-          productId: "donation_thanks",
+          productId: "tip_thanks",
           label: "Сказать спасибо",
           icon: { ios: "heart.fill", android: "favorite" },
+          thanks: "Это правда очень приятно",
           displayPrice: "$1.00",
         },
       ],
@@ -171,9 +154,10 @@ describe("DonationTierList", () => {
       errorMessage: "Покупка ещё не подтверждена. Мы попробуем ещё раз позже",
       tiers: [
         {
-          productId: "donation_thanks",
+          productId: "tip_thanks",
           label: "Сказать спасибо",
           icon: { ios: "heart.fill", android: "favorite" },
+          thanks: "Это правда очень приятно",
           displayPrice: "$1.00",
         },
       ],
@@ -186,24 +170,52 @@ describe("DonationTierList", () => {
     ).toBeTruthy();
   });
 
-  test("calls restore when the restore button is pressed", () => {
-    const restore = jest.fn();
+  test("thanks the donor for the tier just bought and keeps its price on the row", () => {
     mockUseDonationIap.mockReturnValue({
       ...defaults,
-      restore,
+      thanks: { productId: "tip_coffee", transactionId: "txn-1" },
       tiers: [
         {
-          productId: "donation_thanks",
+          productId: "tip_thanks",
           label: "Сказать спасибо",
           icon: { ios: "heart.fill", android: "favorite" },
+          thanks: "Это правда очень приятно",
+          displayPrice: "$1.00",
+        },
+        {
+          productId: "tip_coffee",
+          label: "Угостить кофе",
+          icon: { ios: "cup.and.saucer.fill", android: "local_cafe" },
+          thanks: "Кофе принят — уже варю",
+          displayPrice: "$3.00",
+        },
+      ],
+    });
+
+    render(<DonationTierList />, { wrapper });
+
+    expect(screen.getByText("Спасибо за поддержку!")).toBeTruthy();
+    expect(screen.getByText("Кофе принят — уже варю")).toBeTruthy();
+    expect(screen.queryByText("Это правда очень приятно")).toBeNull();
+    expect(screen.getByText("$3.00")).toBeTruthy();
+  });
+
+  test("shows no thanks before anything is bought", () => {
+    mockUseDonationIap.mockReturnValue({
+      ...defaults,
+      tiers: [
+        {
+          productId: "tip_thanks",
+          label: "Сказать спасибо",
+          icon: { ios: "heart.fill", android: "favorite" },
+          thanks: "Это правда очень приятно",
           displayPrice: "$1.00",
         },
       ],
     });
 
     render(<DonationTierList />, { wrapper });
-    fireEvent.press(screen.getByText("Восстановить покупки"));
 
-    expect(restore).toHaveBeenCalled();
+    expect(screen.queryByText("Спасибо за поддержку!")).toBeNull();
   });
 });

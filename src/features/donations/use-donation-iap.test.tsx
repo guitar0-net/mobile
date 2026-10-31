@@ -44,7 +44,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 function makePurchase(overrides: Partial<Purchase> = {}): Purchase {
   return {
     id: "purchase-id",
-    productId: "donation_thanks",
+    productId: "tip_thanks",
     transactionId: "txn-123",
     purchaseToken: "opaque-token",
     ...overrides,
@@ -59,7 +59,6 @@ type IAPMock = {
   getAvailablePurchases: jest.Mock;
   requestPurchase: jest.Mock;
   finishTransaction: jest.Mock;
-  restorePurchases: jest.Mock;
   reconnect: jest.Mock;
 };
 
@@ -73,7 +72,6 @@ function mockIAP(overrides: Partial<IAPMock> = {}) {
     getAvailablePurchases: jest.fn().mockResolvedValue(undefined),
     requestPurchase: jest.fn().mockResolvedValue(undefined),
     finishTransaction: jest.fn().mockResolvedValue(undefined),
-    restorePurchases: jest.fn().mockResolvedValue(undefined),
     reconnect: jest.fn().mockResolvedValue(true),
     ...overrides,
   };
@@ -91,7 +89,7 @@ beforeEach(() => {
   mockIAP();
   mockVerifyPurchase.mockResolvedValue({
     platform: "ios",
-    product_id: "donation_thanks",
+    product_id: "tip_thanks",
     status: "completed",
     verified_at: "2026-01-01T00:00:00Z",
   });
@@ -124,15 +122,15 @@ describe("useDonationIap — tiers", () => {
   });
 
   test("attaches the store's display price to a visible tier", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
-    mockIAP({ products: [{ id: "donation_thanks", displayPrice: "$1.00" }] });
+    mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks"]);
+    mockIAP({ products: [{ id: "tip_thanks", displayPrice: "$1.00" }] });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
 
     await waitFor(() =>
       expect(result.current.tiers).toEqual([
         expect.objectContaining({
-          productId: "donation_thanks",
+          productId: "tip_thanks",
           displayPrice: "$1.00",
         }),
       ]),
@@ -140,24 +138,19 @@ describe("useDonationIap — tiers", () => {
   });
 
   test("drops a tier the store has no price for", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue([
-      "donation_thanks",
-      "donation_coffee",
-    ]);
-    mockIAP({ products: [{ id: "donation_thanks", displayPrice: "$1.00" }] });
+    mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks", "tip_coffee"]);
+    mockIAP({ products: [{ id: "tip_thanks", displayPrice: "$1.00" }] });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.tiers.map((tier) => tier.productId)).toEqual([
-      "donation_thanks",
-    ]);
+    expect(result.current.tiers.map((tier) => tier.productId)).toEqual(["tip_thanks"]);
   });
 
   test("stops waiting when the store connection never comes up", async () => {
     jest.useFakeTimers();
     try {
-      mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+      mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks"]);
       mockIAP({ connected: false });
 
       const { result } = renderHook(() => useDonationIap(), { wrapper });
@@ -178,7 +171,7 @@ describe("useDonationIap — tiers", () => {
   });
 
   test("refetch(): reconnects to the store when it never connected", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+    mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks"]);
     const reconnect = jest.fn().mockResolvedValue(true);
     mockIAP({ connected: false, reconnect });
 
@@ -206,7 +199,7 @@ describe("useDonationIap — tiers", () => {
   });
 
   test("refetch(): surfaces an error when reconnect reports failure by resolving false", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+    mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks"]);
     const reconnect = jest.fn().mockResolvedValue(false);
     mockIAP({ connected: false, reconnect });
 
@@ -220,7 +213,7 @@ describe("useDonationIap — tiers", () => {
   });
 
   test("refetch(): surfaces an error when reconnect rejects outright", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+    mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks"]);
     const reconnect = jest.fn().mockRejectedValue(new Error("no billing service"));
     mockIAP({ connected: false, reconnect });
 
@@ -233,7 +226,7 @@ describe("useDonationIap — tiers", () => {
   });
 
   test("refetch(): does not reconnect a store that is already connected", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+    mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks"]);
     const reconnect = jest.fn().mockResolvedValue(true);
     mockIAP({ connected: true, reconnect });
 
@@ -246,7 +239,7 @@ describe("useDonationIap — tiers", () => {
   });
 
   test("clears a prior IAP error and retries fetchProducts when refetch is called", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+    mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks"]);
     const fetchProducts = jest
       .fn()
       .mockRejectedValueOnce(new Error("network blip"))
@@ -261,7 +254,7 @@ describe("useDonationIap — tiers", () => {
 
     expect(result.current.loadError).toBeNull();
     expect(fetchProducts).toHaveBeenCalledWith({
-      skus: ["donation_thanks"],
+      skus: ["tip_thanks"],
       type: "in-app",
     });
   });
@@ -271,7 +264,7 @@ describe("useDonationIap — tiers", () => {
     const record = (reason: unknown) => rejections.push(reason);
     process.on("unhandledRejection", record);
     try {
-      mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
+      mockGetActiveDonationProductIds.mockResolvedValue(["tip_thanks"]);
       const notConnected = () =>
         Promise.reject(new Error("Play Store service is not connected"));
       mockIAP({
@@ -300,7 +293,7 @@ describe("useDonationIap — purchase", () => {
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
 
-    act(() => result.current.purchase("donation_thanks"));
+    act(() => result.current.purchase("tip_thanks"));
 
     await waitFor(() => expect(result.current.purchasingProductId).toBeNull());
     expect(result.current.errorMessage).toBe(
@@ -308,7 +301,7 @@ describe("useDonationIap — purchase", () => {
     );
   });
 
-  test("verifies and finishes a purchase reported via onPurchaseSuccess, marking it owned", async () => {
+  test("verifies and consumes a purchase reported via onPurchaseSuccess, then thanks the donor", async () => {
     const finishTransaction = jest.fn().mockResolvedValue(undefined);
     const { getOptions } = mockIAP({ finishTransaction });
 
@@ -318,15 +311,18 @@ describe("useDonationIap — purchase", () => {
     act(() => getOptions().onPurchaseSuccess?.(purchase));
 
     await waitFor(() =>
-      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
+      expect(result.current.thanks).toEqual({
+        productId: "tip_thanks",
+        transactionId: "txn-123",
+      }),
     );
     expect(mockVerifyPurchase).toHaveBeenCalledWith(
       expect.objectContaining({
-        product_id: "donation_thanks",
+        product_id: "tip_thanks",
         device_id: "device-abc",
       }),
     );
-    expect(finishTransaction).toHaveBeenCalledWith({ purchase, isConsumable: false });
+    expect(finishTransaction).toHaveBeenCalledWith({ purchase, isConsumable: true });
   });
 
   test("sets an inline error when server verification fails after a successful store purchase", async () => {
@@ -356,9 +352,7 @@ describe("useDonationIap — purchase", () => {
 
     act(() => getOptions().onPurchaseSuccess?.(purchase));
 
-    await waitFor(() =>
-      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
-    );
+    await waitFor(() => expect(result.current.thanks).not.toBeNull());
     expect(result.current.errorMessage).toBeNull();
   });
 
@@ -376,7 +370,7 @@ describe("useDonationIap — purchase", () => {
 
     await waitFor(() =>
       expect(result.current.errorMessage).toBe(
-        "Вы уже подарили этот вариант поддержки",
+        "Предыдущая покупка ещё не завершена. Попробуйте через минуту",
       ),
     );
     expect(result.current.purchasingProductId).toBeNull();
@@ -393,7 +387,7 @@ describe("useDonationIap — purchase", () => {
     act(() => getOptions().onPurchaseSuccess?.(purchase));
 
     await waitFor(() =>
-      expect(finishTransaction).toHaveBeenCalledWith({ purchase, isConsumable: false }),
+      expect(finishTransaction).toHaveBeenCalledWith({ purchase, isConsumable: true }),
     );
     expect(result.current.errorMessage).toBe("Не удалось подтвердить покупку");
   });
@@ -421,9 +415,7 @@ describe("useDonationIap — purchase", () => {
 
     act(() => getOptions().onPurchaseSuccess?.(makePurchase()));
 
-    await waitFor(() =>
-      expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed"),
-    );
+    await waitFor(() => expect(result.current.thanks).not.toBeNull());
     expect(result.current.errorMessage).toBeNull();
   });
 
@@ -437,7 +429,7 @@ describe("useDonationIap — purchase", () => {
     expect(result.current.errorMessage).toBeNull();
   });
 
-  test("verifies a restored purchase once, not again on every store refresh", async () => {
+  test("verifies a purchase the store still holds once, not again on every store refresh", async () => {
     mockIAP({ availablePurchases: [makePurchase()] });
 
     const { rerender } = renderHook(() => useDonationIap(), { wrapper });
@@ -453,13 +445,12 @@ describe("useDonationIap — purchase", () => {
   });
 
   test("confirms purchases the store already knows about", async () => {
-    mockIAP({ availablePurchases: [makePurchase({ productId: "donation_coffee" })] });
+    mockIAP({ availablePurchases: [makePurchase({ productId: "tip_coffee" })] });
 
     const { result } = renderHook(() => useDonationIap(), { wrapper });
 
-    await waitFor(() =>
-      expect(result.current.purchaseStates.get("donation_coffee")).toBe("confirmed"),
-    );
+    await waitFor(() => expect(result.current.thanks?.productId).toBe("tip_coffee"));
+    expect(result.current.purchaseStates.has("tip_coffee")).toBe(false);
   });
 
   test("does not check existing purchases until the store connection is ready", async () => {
@@ -473,82 +464,5 @@ describe("useDonationIap — purchase", () => {
     rerender(undefined);
 
     await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(1));
-  });
-
-  test("restore(): calls restorePurchases without a redundant getAvailablePurchases round-trip, then clears isRestoring", async () => {
-    const restorePurchases = jest.fn().mockResolvedValue(undefined);
-    const getAvailablePurchases = jest.fn().mockResolvedValue(undefined);
-    mockIAP({ restorePurchases, getAvailablePurchases });
-
-    const { result } = renderHook(() => useDonationIap(), { wrapper });
-    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(1));
-    getAvailablePurchases.mockClear();
-
-    act(() => result.current.restore());
-    expect(result.current.isRestoring).toBe(true);
-
-    await waitFor(() => expect(result.current.isRestoring).toBe(false));
-    expect(restorePurchases).toHaveBeenCalled();
-    expect(getAvailablePurchases).not.toHaveBeenCalled();
-  });
-
-  test("restore(): ignores a second call while one is still running", async () => {
-    let finishRestore = () => {};
-    const restorePurchases = jest.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          finishRestore = resolve;
-        }),
-    );
-    mockIAP({ restorePurchases });
-
-    const { result } = renderHook(() => useDonationIap(), { wrapper });
-
-    act(() => result.current.restore());
-    act(() => result.current.restore());
-
-    expect(restorePurchases).toHaveBeenCalledTimes(1);
-    await act(async () => {
-      finishRestore();
-    });
-    expect(result.current.isRestoring).toBe(false);
-  });
-
-  test("restore(): sets an error message when restorePurchases rejects", async () => {
-    const restorePurchases = jest.fn().mockRejectedValue(new Error("offline"));
-    mockIAP({ restorePurchases });
-
-    const { result } = renderHook(() => useDonationIap(), { wrapper });
-
-    act(() => result.current.restore());
-
-    await waitFor(() =>
-      expect(result.current.errorMessage).toBe(
-        "Не удалось восстановить покупки. Проверьте подключение к интернету",
-      ),
-    );
-    expect(result.current.isRestoring).toBe(false);
-  });
-
-  test("restore(): reports a failure inline instead of blanking the tier list", async () => {
-    mockGetActiveDonationProductIds.mockResolvedValue(["donation_thanks"]);
-    const restorePurchases = jest.fn().mockRejectedValue(new Error("offline"));
-    mockIAP({
-      restorePurchases,
-      products: [{ id: "donation_thanks", displayPrice: "$1.00" }],
-    });
-
-    const { result } = renderHook(() => useDonationIap(), { wrapper });
-    await waitFor(() => expect(result.current.tiers).toHaveLength(1));
-
-    act(() => result.current.restore());
-
-    await waitFor(() =>
-      expect(result.current.errorMessage).toBe(
-        "Не удалось восстановить покупки. Проверьте подключение к интернету",
-      ),
-    );
-    expect(result.current.loadError).toBeNull();
-    expect(result.current.tiers).toHaveLength(1);
   });
 });

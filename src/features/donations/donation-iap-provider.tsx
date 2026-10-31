@@ -20,22 +20,20 @@ import { getDeviceId } from "@/lib/device-id";
 
 import { verifyPurchase } from "./api";
 import { isDonationProduct } from "./catalog";
-import {
-  type ConfirmedDonations,
-  loadConfirmedDonations,
-  saveConfirmedDonation,
-} from "./confirmed-donations";
+import { loadConfirmedDonations, saveConfirmedDonation } from "./confirmed-donations";
 import {
   describePurchaseError,
   describeVerifyError,
   isPermanentVerifyRejection,
   purchaseFailureReason,
-  RESTORE_FAILED_MESSAGE,
 } from "./purchase-errors";
 import type { DonationPlatform } from "./verify-payload";
 import { buildVerifyPayload } from "./verify-payload";
 
-export type DonationPurchaseState = "awaiting-payment" | "verifying" | "confirmed";
+export type DonationPurchaseState = "awaiting-payment" | "verifying";
+
+/** The latest donation the server confirmed in this app session. */
+export type DonationThanks = { productId: string; transactionId: string };
 
 type DonationIapSession = {
   connected: boolean;
@@ -45,10 +43,9 @@ type DonationIapSession = {
   retryConnection: () => void;
   purchaseStates: ReadonlyMap<string, DonationPurchaseState>;
   purchasingProductId: string | null;
-  isRestoring: boolean;
+  thanks: DonationThanks | null;
   errorMessage: string | null;
   purchase: (productId: string) => void;
-  restore: () => void;
 };
 
 type PurchaseAttempt = { productId: string; failureReported: boolean };
@@ -83,6 +80,10 @@ function purchaseKey(purchase: Purchase): string {
   return purchase.transactionId ?? purchase.id;
 }
 
+function isAlreadyOwned(error: unknown): boolean {
+  return (error as { code?: ErrorCode } | null)?.code === ErrorCode.AlreadyOwned;
+}
+
 function isAwaitingPayment(purchase: Purchase): boolean {
   return purchase.purchaseState === "pending";
 }
@@ -93,15 +94,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const deviceId = useMemo(() => getDeviceId(), []);
   const [purchasingProductId, setPurchasingProductId] = useState<string | null>(null);
   const purchaseAttemptRef = useRef<PurchaseAttempt | null>(null);
-  const [isRestoring, setIsRestoring] = useState(false);
-  const restoringRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [confirmedReceipts, setConfirmedReceipts] = useState<ConfirmedDonations>(
-    new Map(),
-  );
+  const [thanks, setThanks] = useState<DonationThanks | null>(null);
   const reconcilingRef = useRef<Set<string>>(new Set());
   const reconciledRef = useRef<Set<string>>(new Set());
-  const [rejectedKeys, setRejectedKeys] = useState<ReadonlySet<string>>(new Set());
+  const [settledKeys, setSettledKeys] = useState<ReadonlySet<string>>(new Set());
   const [isHydrated, setIsHydrated] = useState(false);
   const [storeError, setStoreError] = useState(false);
 
@@ -129,7 +126,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     getAvailablePurchases,
     requestPurchase,
     finishTransaction,
-    restorePurchases,
     reconnect,
   } = useIAP({
     onPurchaseSuccess: (purchase) => {
@@ -145,6 +141,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       const attempt = purchaseAttemptRef.current;
       purchaseAttemptRef.current = null;
       reportStoreFailure(error, attempt);
+      // Play refuses a consumable whose previous purchase was never consumed;
+      // re-reading the purchase list hands that purchase to reconcile().
+      if (isAlreadyOwned(error)) void refreshPurchases();
     },
   });
 
@@ -165,7 +164,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const finish = useCallback(
     async (purchase: Purchase): Promise<boolean> => {
       try {
-        await finishTransaction({ purchase, isConsumable: false });
+        await finishTransaction({ purchase, isConsumable: true });
         return true;
       } catch {
         return false;
@@ -173,6 +172,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     },
     [finishTransaction],
   );
+
+  const settle = useCallback((key: string) => {
+    reconciledRef.current.add(key);
+    setSettledKeys((prev) => new Set(prev).add(key));
+  }, []);
 
   const reconcile = useCallback(
     async (purchase: Purchase, { silent = false } = {}) => {
@@ -193,8 +197,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           const isPermanent = isPermanentVerifyRejection(error);
           if (isPermanent) {
             await finish(purchase);
-            reconciledRef.current.add(key);
-            setRejectedKeys((prev) => new Set(prev).add(key));
+            settle(key);
           }
           if (!silent || isPermanent) {
             capture("donation_purchase_failed", {
@@ -207,11 +210,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        setConfirmedReceipts((prev) => new Map(prev).set(key, purchase.productId));
+        setThanks({ productId: purchase.productId, transactionId: key });
         setErrorMessage(null);
         const finished = await finish(purchase);
         if (!finished) return;
-        reconciledRef.current.add(key);
+        settle(key);
         capture("donation_purchase_confirmed", {
           product_id: purchase.productId,
           source: silent ? "background" : "purchase",
@@ -225,7 +228,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         reconcilingRef.current.delete(key);
       }
     },
-    [deviceId, finish],
+    [deviceId, finish, settle],
   );
 
   useEffect(() => {
@@ -234,7 +237,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       .then((stored) => {
         if (cancelled) return;
         for (const key of stored.keys()) reconciledRef.current.add(key);
-        setConfirmedReceipts((prev) => new Map([...stored, ...prev]));
+        setSettledKeys((prev) => new Set([...stored.keys(), ...prev]));
       })
       .catch(() => {})
       .finally(() => {
@@ -310,17 +313,14 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     const states = new Map<string, DonationPurchaseState>();
     for (const availablePurchase of availablePurchases) {
       if (!isDonationProduct(availablePurchase.productId)) continue;
-      if (rejectedKeys.has(purchaseKey(availablePurchase))) continue;
+      if (settledKeys.has(purchaseKey(availablePurchase))) continue;
       states.set(
         availablePurchase.productId,
         isAwaitingPayment(availablePurchase) ? "awaiting-payment" : "verifying",
       );
     }
-    for (const productId of confirmedReceipts.values()) {
-      states.set(productId, "confirmed");
-    }
     return states;
-  }, [confirmedReceipts, availablePurchases, rejectedKeys]);
+  }, [availablePurchases, settledKeys]);
 
   const prices = useMemo(
     () => new Map(products.map((product) => [product.id, product.displayPrice])),
@@ -359,20 +359,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     [requestPurchase, purchasingProductId, reportStoreFailure],
   );
 
-  const restore = useCallback(() => {
-    if (restoringRef.current) return;
-    restoringRef.current = true;
-    setErrorMessage(null);
-    setIsRestoring(true);
-    // restorePurchases() refreshes availablePurchases itself.
-    withReconnect(() => restorePurchases())
-      .catch(() => setErrorMessage(RESTORE_FAILED_MESSAGE))
-      .finally(() => {
-        restoringRef.current = false;
-        setIsRestoring(false);
-      });
-  }, [restorePurchases, withReconnect]);
-
   const retryConnection = useCallback(() => {
     setStoreError(false);
     if (connected) return;
@@ -394,10 +380,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       retryConnection,
       purchaseStates,
       purchasingProductId,
-      isRestoring,
+      thanks,
       errorMessage,
       purchase,
-      restore,
     }),
     [
       connected,
@@ -407,10 +392,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       retryConnection,
       purchaseStates,
       purchasingProductId,
-      isRestoring,
+      thanks,
       errorMessage,
       purchase,
-      restore,
     ],
   );
 

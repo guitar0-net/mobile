@@ -9,6 +9,7 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 
 import { type DonationLoadError, useDonationIap } from "../use-donation-iap";
+import { DonationThanksCard } from "./donation-thanks-card";
 import { DonationTierRow } from "./donation-tier-row";
 
 const LOAD_ERROR_MESSAGES: Record<DonationLoadError, string> = {
@@ -24,10 +25,9 @@ export function DonationTierList() {
     refetch,
     purchaseStates,
     purchasingProductId,
-    isRestoring,
+    thanks,
     errorMessage,
     purchase,
-    restore,
   } = useDonationIap();
 
   if (loadError !== null) {
@@ -61,8 +61,17 @@ export function DonationTierList() {
     );
   }
 
+  const thankedTier =
+    thanks === null
+      ? undefined
+      : tiers.find((tier) => tier.productId === thanks.productId);
+
   return (
     <View className="gap-4">
+      {thanks !== null && thankedTier !== undefined && (
+        <DonationThanksCard key={thanks.transactionId} tier={thankedTier} />
+      )}
+
       {errorMessage !== null && (
         <StatusMessage variant="error" inline>
           {errorMessage}
@@ -82,10 +91,6 @@ export function DonationTierList() {
           </View>
         ))}
       </View>
-
-      <Button variant="link" size="sm" onPress={restore} disabled={isRestoring}>
-        {isRestoring ? "Восстановление…" : "Восстановить покупки"}
-      </Button>
     </View>
   );
 }

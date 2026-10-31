@@ -10,9 +10,6 @@ import { ApiError } from "@/lib/network";
 // disagree on whether `code` is required, so this accepts either shape.
 type PurchaseErrorLike = { code?: ErrorCode | null };
 
-export const RESTORE_FAILED_MESSAGE =
-  "Не удалось восстановить покупки. Проверьте подключение к интернету";
-
 // The server rejects the receipt itself with 400/422 (PurchaseVerificationError
 // and UnknownDonationProductError in its services.py); 409 means the payment
 // hasn't cleared and 502 that it only failed to reach the store, both of which
@@ -53,7 +50,7 @@ export function describePurchaseError(error: unknown): string | null {
     case ErrorCode.UserCancelled:
       return null;
     case ErrorCode.AlreadyOwned:
-      return "Вы уже подарили этот вариант поддержки";
+      return "Предыдущая покупка ещё не завершена. Попробуйте через минуту";
     case ErrorCode.ItemUnavailable:
     case ErrorCode.SkuNotFound:
       return "Этот вариант поддержки сейчас недоступен в магазине";

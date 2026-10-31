@@ -65,9 +65,9 @@ describe("describePurchaseError", () => {
     ).toBeNull();
   });
 
-  test("tells the user they already own this tier", () => {
+  test("asks the user to wait while the tier's previous purchase settles", () => {
     expect(describePurchaseError(makePurchaseError(ErrorCode.AlreadyOwned))).toBe(
-      "Вы уже подарили этот вариант поддержки",
+      "Предыдущая покупка ещё не завершена. Попробуйте через минуту",
     );
   });
 

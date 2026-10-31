@@ -8,31 +8,37 @@ export type DonationTier = {
   productId: string;
   label: string;
   icon: SymbolViewProps["name"];
+  thanks: string;
 };
 
 // Product IDs must match exactly in three places with no single source of
-// truth: this list, the non-consumable SKUs in App Store Connect / Google Play
-// Console, and the DonationProduct rows in the Django admin.
+// truth: this list, the consumable SKUs in App Store Connect / Google Play
+// Console, and the DonationProduct rows in the Django admin. An ID retired
+// from App Store Connect can never be reused.
 export const DONATION_TIERS: readonly DonationTier[] = [
   {
-    productId: "donation_thanks",
+    productId: "tip_thanks",
     label: "Сказать спасибо",
     icon: { ios: "heart.fill", android: "favorite" },
+    thanks: "Это правда очень приятно",
   },
   {
-    productId: "donation_coffee",
+    productId: "tip_coffee",
     label: "Угостить кофе",
     icon: { ios: "cup.and.saucer.fill", android: "local_cafe" },
+    thanks: "Кофе принят — уже варю",
   },
   {
-    productId: "donation_servers",
+    productId: "tip_servers",
     label: "Оплатить сервера на месяц",
     icon: { ios: "server.rack", android: "dns" },
+    thanks: "Серверы оплачены ещё на месяц",
   },
   {
-    productId: "donation_motivate",
+    productId: "tip_motivate",
     label: "Мотивировать на разработку",
     icon: { ios: "sparkles", android: "auto_awesome" },
+    thanks: "Мотивация зашкаливает — иду писать код",
   },
 ];
 

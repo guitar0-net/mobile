@@ -42,7 +42,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 function makePurchase(overrides: Partial<Purchase> = {}): Purchase {
   return {
     id: "purchase-id",
-    productId: "donation_thanks",
+    productId: "tip_thanks",
     transactionId: "txn-123",
     purchaseToken: "opaque-token",
     ...overrides,
@@ -57,7 +57,6 @@ type IAPMock = {
   getAvailablePurchases: jest.Mock;
   requestPurchase: jest.Mock;
   finishTransaction: jest.Mock;
-  restorePurchases: jest.Mock;
   reconnect: jest.Mock;
 };
 
@@ -66,7 +65,6 @@ type IAPMock = {
 const REPORTED_TO_ON_ERROR = [
   "fetchProducts",
   "getAvailablePurchases",
-  "restorePurchases",
   "reconnect",
 ] as const;
 
@@ -80,7 +78,6 @@ function mockIAP(overrides: Partial<IAPMock> = {}) {
     getAvailablePurchases: jest.fn().mockResolvedValue(undefined),
     requestPurchase: jest.fn().mockResolvedValue(undefined),
     finishTransaction: jest.fn().mockResolvedValue(undefined),
-    restorePurchases: jest.fn().mockResolvedValue(undefined),
     reconnect: jest.fn().mockResolvedValue(true),
     ...overrides,
   };
@@ -130,7 +127,7 @@ beforeEach(() => {
   mockIAP();
   mockVerifyPurchase.mockResolvedValue({
     platform: "android",
-    product_id: "donation_thanks",
+    product_id: "tip_thanks",
     status: "completed",
     verified_at: "2026-01-01T00:00:00Z",
   });
@@ -150,10 +147,10 @@ describe("DonationIapProvider", () => {
 
     await waitFor(() =>
       expect(mockVerifyPurchase).toHaveBeenCalledWith(
-        expect.objectContaining({ product_id: "donation_thanks" }),
+        expect.objectContaining({ product_id: "tip_thanks" }),
       ),
     );
-    expect(finishTransaction).toHaveBeenCalledWith({ purchase, isConsumable: false });
+    expect(finishTransaction).toHaveBeenCalledWith({ purchase, isConsumable: true });
   });
 
   test("clears the verification error once a background check confirms the purchase", async () => {
@@ -178,54 +175,56 @@ describe("DonationIapProvider", () => {
     });
 
     await waitFor(() => expect(result.current.errorMessage).toBeNull());
-    expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed");
+    expect(result.current.thanks?.productId).toBe("tip_thanks");
+    expect(result.current.purchaseStates.has("tip_thanks")).toBe(false);
   });
 
   test("holds a store purchase as verifying until the server records it", async () => {
     mockVerifyPurchase.mockRejectedValue(new ApiError(502, "Store unavailable"));
-    mockIAP({ availablePurchases: [makePurchase({ productId: "donation_thanks" })] });
+    mockIAP({ availablePurchases: [makePurchase({ productId: "tip_thanks" })] });
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await waitFor(() => expect(mockVerifyPurchase).toHaveBeenCalled());
-    expect(result.current.purchaseStates.get("donation_thanks")).toBe("verifying");
+    expect(result.current.purchaseStates.get("tip_thanks")).toBe("verifying");
   });
 
   test("does not re-verify a donation confirmed on an earlier launch", async () => {
-    const purchase = makePurchase({ productId: "donation_thanks" });
+    const purchase = makePurchase({ productId: "tip_thanks" });
     mockIAP({ availablePurchases: [purchase] });
 
     const first = renderHook(() => useDonationIapSession(), { wrapper });
     await waitFor(() =>
-      expect(first.result.current.purchaseStates.get("donation_thanks")).toBe(
-        "confirmed",
+      expect(mockCapture).toHaveBeenCalledWith(
+        "donation_purchase_confirmed",
+        expect.anything(),
       ),
     );
+    await act(async () => {});
     first.unmount();
     mockVerifyPurchase.mockClear();
 
     const second = renderHook(() => useDonationIapSession(), { wrapper });
 
     await waitFor(() =>
-      expect(second.result.current.purchaseStates.get("donation_thanks")).toBe(
-        "confirmed",
-      ),
+      expect(second.result.current.purchaseStates.has("tip_thanks")).toBe(false),
     );
     expect(mockVerifyPurchase).not.toHaveBeenCalled();
+    expect(second.result.current.thanks).toBeNull();
   });
 
   test("stops calling a tier bought once the server rejects its receipt for good", async () => {
     const finishTransaction = jest.fn().mockResolvedValue(undefined);
     mockVerifyPurchase.mockRejectedValue(new ApiError(422, "Purchase was cancelled."));
     mockIAP({
-      availablePurchases: [makePurchase({ productId: "donation_thanks" })],
+      availablePurchases: [makePurchase({ productId: "tip_thanks" })],
       finishTransaction,
     });
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await waitFor(() =>
-      expect(result.current.purchaseStates.has("donation_thanks")).toBe(false),
+      expect(result.current.purchaseStates.has("tip_thanks")).toBe(false),
     );
     expect(finishTransaction).toHaveBeenCalled();
   });
@@ -234,7 +233,7 @@ describe("DonationIapProvider", () => {
     const finishTransaction = jest.fn().mockResolvedValue(undefined);
     mockIAP({
       availablePurchases: [
-        makePurchase({ productId: "donation_thanks", purchaseState: "pending" }),
+        makePurchase({ productId: "tip_thanks", purchaseState: "pending" }),
       ],
       finishTransaction,
     });
@@ -242,9 +241,7 @@ describe("DonationIapProvider", () => {
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await waitFor(() =>
-      expect(result.current.purchaseStates.get("donation_thanks")).toBe(
-        "awaiting-payment",
-      ),
+      expect(result.current.purchaseStates.get("tip_thanks")).toBe("awaiting-payment"),
     );
     expect(mockVerifyPurchase).not.toHaveBeenCalled();
     expect(finishTransaction).not.toHaveBeenCalled();
@@ -378,7 +375,7 @@ describe("DonationIapProvider", () => {
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await act(async () => {
-      await result.current.fetchPrices(["donation_thanks"]);
+      await result.current.fetchPrices(["tip_thanks"]);
     });
 
     expect(reconnect).toHaveBeenCalledTimes(1);
@@ -402,7 +399,7 @@ describe("DonationIapProvider", () => {
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await act(async () => {
-      await result.current.fetchPrices(["donation_thanks"]);
+      await result.current.fetchPrices(["tip_thanks"]);
     });
 
     expect(reconnect).toHaveBeenCalledTimes(1);
@@ -420,7 +417,7 @@ describe("DonationIapProvider", () => {
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    await act(async () => result.current.purchase("donation_thanks"));
+    await act(async () => result.current.purchase("tip_thanks"));
 
     expect(result.current.errorMessage).toBe(
       "Нет соединения с магазином. Проверьте интернет",
@@ -438,7 +435,7 @@ describe("DonationIapProvider", () => {
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    await act(async () => result.current.purchase("donation_thanks"));
+    await act(async () => result.current.purchase("tip_thanks"));
 
     expect(result.current.errorMessage).toBeNull();
     expect(result.current.purchasingProductId).toBeNull();
@@ -454,12 +451,12 @@ describe("DonationIapProvider", () => {
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await act(async () => {
-      await result.current.fetchPrices(["donation_thanks"]);
+      await result.current.fetchPrices(["tip_thanks"]);
     });
     expect(result.current.storeError).toBe(true);
 
     await act(async () => {
-      await result.current.fetchPrices(["donation_thanks"]);
+      await result.current.fetchPrices(["tip_thanks"]);
     });
     expect(result.current.storeError).toBe(false);
   });
@@ -502,7 +499,7 @@ describe("DonationIapProvider", () => {
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await act(async () => {
-      await result.current.fetchPrices(["donation_thanks"]);
+      await result.current.fetchPrices(["tip_thanks"]);
     });
 
     expect(fetchProducts).toHaveBeenCalledTimes(1);
@@ -517,11 +514,74 @@ describe("DonationIapProvider", () => {
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
     await act(async () => {
-      await result.current.fetchPrices(["donation_thanks"]);
+      await result.current.fetchPrices(["tip_thanks"]);
     });
 
     expect(reconnect).not.toHaveBeenCalled();
     await waitFor(() => expect(result.current.storeError).toBe(true));
+  });
+
+  test("lets the same tier be bought again once its donation is confirmed", async () => {
+    const first = makePurchase({ transactionId: "txn-1" });
+    const second = makePurchase({ transactionId: "txn-2" });
+    const { getOptions, update } = mockIAP();
+
+    const { result, rerender } = renderHook(() => useDonationIapSession(), {
+      wrapper,
+    });
+
+    await act(async () => getOptions().onPurchaseSuccess?.(first));
+    await act(async () => {
+      update({ availablePurchases: [first] });
+      rerender(undefined);
+    });
+    expect(result.current.purchaseStates.has("tip_thanks")).toBe(false);
+
+    await act(async () => getOptions().onPurchaseSuccess?.(second));
+
+    await waitFor(() => expect(result.current.thanks?.transactionId).toBe("txn-2"));
+    expect(mockVerifyPurchase).toHaveBeenCalledTimes(2);
+  });
+
+  test("consumes on the next launch a donation whose consume failed after verification", async () => {
+    const purchase = makePurchase();
+    const failingFinish = jest.fn().mockRejectedValue(new Error("store busy"));
+    mockIAP({ availablePurchases: [purchase], finishTransaction: failingFinish });
+
+    const first = renderHook(() => useDonationIapSession(), { wrapper });
+    await waitFor(() => expect(failingFinish).toHaveBeenCalled());
+    await act(async () => {});
+    first.unmount();
+
+    const finishTransaction = jest.fn().mockResolvedValue(undefined);
+    mockIAP({ availablePurchases: [purchase], finishTransaction });
+
+    const second = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() =>
+      expect(finishTransaction).toHaveBeenCalledWith({ purchase, isConsumable: true }),
+    );
+    await waitFor(() =>
+      expect(second.result.current.purchaseStates.has("tip_thanks")).toBe(false),
+    );
+  });
+
+  test("re-reads the purchase list when Play still holds the tier's previous purchase", async () => {
+    const getAvailablePurchases = jest.fn().mockResolvedValue(undefined);
+    const { getOptions } = mockIAP({ getAvailablePurchases });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(1));
+
+    act(() => result.current.purchase("tip_thanks"));
+    await act(async () =>
+      getOptions().onPurchaseError?.({
+        code: ErrorCode.AlreadyOwned,
+        message: "already owned",
+      } as never),
+    );
+
+    expect(getAvailablePurchases).toHaveBeenCalledTimes(2);
   });
 
   test("fails loudly when the session is used outside the provider", () => {
@@ -538,12 +598,12 @@ describe("DonationIapProvider — analytics", () => {
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    await act(async () => result.current.purchase("donation_thanks"));
+    await act(async () => result.current.purchase("tip_thanks"));
     act(() => getOptions().onPurchaseSuccess?.(makePurchase()));
 
     await waitFor(() =>
       expect(mockCapture).toHaveBeenCalledWith("donation_purchase_confirmed", {
-        product_id: "donation_thanks",
+        product_id: "tip_thanks",
         source: "purchase",
       }),
     );
@@ -563,7 +623,7 @@ describe("DonationIapProvider — analytics", () => {
 
     await waitFor(() => expect(finishTransaction).toHaveBeenCalled());
     await act(async () => {});
-    expect(result.current.purchaseStates.get("donation_thanks")).toBe("confirmed");
+    expect(result.current.thanks?.productId).toBe("tip_thanks");
     expect(mockCapture).not.toHaveBeenCalledWith(
       "donation_purchase_confirmed",
       expect.anything(),
@@ -576,7 +636,7 @@ describe("DonationIapProvider — analytics", () => {
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    act(() => result.current.purchase("donation_thanks"));
+    act(() => result.current.purchase("tip_thanks"));
     act(() =>
       getOptions().onPurchaseError?.({
         code: ErrorCode.AlreadyOwned,
@@ -585,7 +645,7 @@ describe("DonationIapProvider — analytics", () => {
     );
 
     expect(mockCapture).toHaveBeenCalledWith("donation_purchase_failed", {
-      product_id: "donation_thanks",
+      product_id: "tip_thanks",
       stage: "store",
       reason: ErrorCode.AlreadyOwned,
     });
@@ -604,7 +664,7 @@ describe("DonationIapProvider — analytics", () => {
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    act(() => result.current.purchase("donation_coffee"));
+    act(() => result.current.purchase("tip_coffee"));
     await act(async () => rejectRequest(error));
     act(() => getOptions().onPurchaseError?.(error as never));
 
@@ -615,7 +675,7 @@ describe("DonationIapProvider — analytics", () => {
       [
         "donation_purchase_failed",
         {
-          product_id: "donation_coffee",
+          product_id: "tip_coffee",
           stage: "store",
           reason: ErrorCode.BillingUnavailable,
         },
@@ -631,15 +691,15 @@ describe("DonationIapProvider — analytics", () => {
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    act(() => result.current.purchase("donation_coffee"));
+    act(() => result.current.purchase("tip_coffee"));
     act(() => getOptions().onPurchaseError?.(error as never));
-    act(() => result.current.purchase("donation_thanks"));
+    act(() => result.current.purchase("tip_thanks"));
     act(() => getOptions().onPurchaseError?.(error as never));
 
     const failedProducts = mockCapture.mock.calls
       .filter(([event]) => event === "donation_purchase_failed")
       .map(([, props]) => props.product_id);
-    expect(failedProducts).toEqual(["donation_coffee", "donation_thanks"]);
+    expect(failedProducts).toEqual(["tip_coffee", "tip_thanks"]);
   });
 
   test("reports a late rejection only against the attempt that made the request", async () => {
@@ -652,16 +712,16 @@ describe("DonationIapProvider — analytics", () => {
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    act(() => result.current.purchase("donation_coffee"));
+    act(() => result.current.purchase("tip_coffee"));
     act(() => getOptions().onPurchaseError?.(error as never));
-    act(() => result.current.purchase("donation_thanks"));
+    act(() => result.current.purchase("tip_thanks"));
     await act(async () => rejections[0](error));
 
     const failedProducts = mockCapture.mock.calls
       .filter(([event]) => event === "donation_purchase_failed")
       .map(([, props]) => props.product_id);
-    expect(failedProducts).toEqual(["donation_coffee"]);
-    expect(result.current.purchasingProductId).toBe("donation_thanks");
+    expect(failedProducts).toEqual(["tip_coffee"]);
+    expect(result.current.purchasingProductId).toBe("tip_thanks");
   });
 
   test("reports a store error that arrives after a failed attempt was already reported", async () => {
@@ -672,14 +732,14 @@ describe("DonationIapProvider — analytics", () => {
 
     const { result } = renderHook(() => useDonationIapSession(), { wrapper });
 
-    act(() => result.current.purchase("donation_coffee"));
+    act(() => result.current.purchase("tip_coffee"));
     act(() => getOptions().onPurchaseError?.(error as never));
     act(() => getOptions().onPurchaseError?.(error as never));
 
     const failedProducts = mockCapture.mock.calls
       .filter(([event]) => event === "donation_purchase_failed")
       .map(([, props]) => props.product_id);
-    expect(failedProducts).toEqual(["donation_coffee", null]);
+    expect(failedProducts).toEqual(["tip_coffee", null]);
   });
 
   test("reports a donation settled outside the purchase flow as confirmed in the background", async () => {
@@ -689,7 +749,7 @@ describe("DonationIapProvider — analytics", () => {
 
     await waitFor(() =>
       expect(mockCapture).toHaveBeenCalledWith("donation_purchase_confirmed", {
-        product_id: "donation_thanks",
+        product_id: "tip_thanks",
         source: "background",
       }),
     );
