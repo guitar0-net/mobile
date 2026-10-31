@@ -543,6 +543,21 @@ describe("DonationIapProvider", () => {
     expect(mockVerifyPurchase).toHaveBeenCalledTimes(2);
   });
 
+  test("drops the thanks for an earlier donation once a new purchase starts", async () => {
+    const { getOptions } = mockIAP({
+      requestPurchase: jest.fn(() => new Promise(() => {})),
+    });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await act(async () => getOptions().onPurchaseSuccess?.(makePurchase()));
+    await waitFor(() => expect(result.current.thanks).not.toBeNull());
+
+    act(() => result.current.purchase("tip_coffee"));
+
+    expect(result.current.thanks).toBeNull();
+  });
+
   test("consumes on the next launch a donation whose consume failed after verification", async () => {
     const purchase = makePurchase();
     const failingFinish = jest.fn().mockRejectedValue(new Error("store busy"));

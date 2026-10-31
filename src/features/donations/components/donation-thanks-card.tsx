@@ -20,6 +20,8 @@ import { useColors } from "@/lib/themes";
 
 import type { DonationTier } from "../catalog";
 
+const POP_SCALE = 1.4;
+const POP_MS = 150;
 const WIGGLE_DEGREES = 12;
 const WIGGLE_STEP_MS = 110;
 const WIGGLE_REPEATS = 2;
@@ -31,11 +33,14 @@ type Props = {
 
 export function DonationThanksCard({ tier }: Props) {
   const colors = useColors();
-  const scale = useSharedValue(0);
+  const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
 
   useEffect(() => {
-    scale.value = withSpring(1, { damping: 7, stiffness: 160 });
+    scale.value = withSequence(
+      withTiming(POP_SCALE, { duration: POP_MS }),
+      withSpring(1, { damping: 7, stiffness: 160 }),
+    );
     rotation.value = withDelay(
       WIGGLE_DELAY_MS,
       withRepeat(
