@@ -20,7 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: "Гитара с нуля",
   slug: "Guitar0",
   owner: "kotlyar",
-  version: "5.2.1",
+  version: "5.3.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "mobile",
