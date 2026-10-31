@@ -173,6 +173,26 @@ describe("DonationIapProvider", () => {
     expect(finishTransaction).toHaveBeenCalled();
   });
 
+  test("retries finishing a rejected receipt whose first finish failed", async () => {
+    const finishTransaction = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("store busy"))
+      .mockResolvedValue(undefined);
+    mockVerifyPurchase.mockRejectedValue(new ApiError(422, "Purchase was cancelled."));
+    const sendAppState = captureAppStateHandlers();
+    mockIAP({ availablePurchases: [makePurchase()], finishTransaction });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+    await waitFor(() => expect(finishTransaction).toHaveBeenCalled());
+
+    await act(async () => sendAppState("active"));
+
+    await waitFor(() => expect(finishTransaction).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(result.current.purchaseStates.has("tip_thanks")).toBe(false),
+    );
+  });
+
   test("leaves a purchase whose payment has not cleared unverified and unfinished", async () => {
     const finishTransaction = jest.fn().mockResolvedValue(undefined);
     mockIAP({

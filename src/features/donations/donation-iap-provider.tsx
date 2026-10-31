@@ -199,8 +199,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           // and re-delivered by StoreKit on every launch, so a doomed receipt
           // still has to be finished.
           const isPermanent = isPermanentVerifyRejection(error);
-          if (isPermanent) {
-            await finish(purchase);
+          if (isPermanent && (await finish(purchase))) {
             reconciledRef.current.add(key);
           }
           if (!silent || isPermanent) {
