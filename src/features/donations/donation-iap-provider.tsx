@@ -342,6 +342,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     (productId: string) => {
       if (purchasingProductId !== null) return;
       setErrorMessage(null);
+      setThanks(null);
       setPurchasingProductId(productId);
       const attempt = { productId, failureReported: false };
       purchaseAttemptRef.current = attempt;
