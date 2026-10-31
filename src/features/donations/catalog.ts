@@ -26,7 +26,7 @@ export const DONATION_TIERS: readonly DonationTier[] = [
     productId: "tip_coffee",
     label: "Угостить кофе",
     icon: { ios: "cup.and.saucer.fill", android: "local_cafe" },
-    thanks: "Кофе принят — уже варю",
+    thanks: "Самый вкусный кофе — подаренный",
   },
   {
     productId: "tip_servers",
@@ -38,7 +38,7 @@ export const DONATION_TIERS: readonly DonationTier[] = [
     productId: "tip_motivate",
     label: "Мотивировать на разработку",
     icon: { ios: "sparkles", android: "auto_awesome" },
-    thanks: "Мотивация зашкаливает — иду писать код",
+    thanks: "Теперь точно есть ради кого стараться",
   },
 ];
 
