@@ -9,6 +9,7 @@ import { getActiveDonationProductIds } from "./api";
 import { type DonationTier, getVisibleTiers } from "./catalog";
 import {
   type DonationPurchaseState,
+  type DonationThanks,
   useDonationIapSession,
 } from "./donation-iap-provider";
 
@@ -25,10 +26,9 @@ type UseDonationIapResult = {
   refetch: () => void;
   purchaseStates: ReadonlyMap<string, DonationPurchaseState>;
   purchasingProductId: string | null;
-  isRestoring: boolean;
+  thanks: DonationThanks | null;
   errorMessage: string | null;
   purchase: (productId: string) => void;
-  restore: () => void;
 };
 
 // The store connection is opened at app start, but the screen can still be
@@ -47,10 +47,9 @@ export function useDonationIap(): UseDonationIapResult {
     retryConnection,
     purchaseStates,
     purchasingProductId,
-    isRestoring,
+    thanks,
     errorMessage,
     purchase,
-    restore,
   } = useDonationIapSession();
 
   const [connectionTimedOut, setConnectionTimedOut] = useState(false);
@@ -127,9 +126,8 @@ export function useDonationIap(): UseDonationIapResult {
     },
     purchaseStates,
     purchasingProductId,
-    isRestoring,
+    thanks,
     errorMessage,
     purchase,
-    restore,
   };
 }

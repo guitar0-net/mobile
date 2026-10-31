@@ -15,9 +15,10 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 const baseTier: DonationTierView = {
-  productId: "donation_thanks",
+  productId: "tip_thanks",
   label: "Сказать спасибо",
   icon: { ios: "heart.fill", android: "favorite" },
+  thanks: "Это правда очень приятно",
   displayPrice: "$1.00",
 };
 
@@ -46,20 +47,6 @@ describe("DonationTierRow", () => {
       { wrapper },
     );
     expect(screen.getByText("$1.00")).toBeTruthy();
-  });
-
-  test("shows a checkmark and hides the price once the server confirms", () => {
-    render(
-      <DonationTierRow
-        tier={baseTier}
-        purchaseState="confirmed"
-        isPurchasing={false}
-        onPress={jest.fn()}
-      />,
-      { wrapper },
-    );
-    expect(screen.queryByText("$1.00")).toBeNull();
-    expect(screen.queryByText("Проверяем…")).toBeNull();
   });
 
   test("says the purchase is still being checked while the server has not confirmed", () => {
@@ -118,23 +105,6 @@ describe("DonationTierRow", () => {
     fireEvent.press(screen.getByText("Сказать спасибо"));
 
     expect(onPress).toHaveBeenCalled();
-  });
-
-  test("does not call onPress once already owned", () => {
-    const onPress = jest.fn();
-    render(
-      <DonationTierRow
-        tier={baseTier}
-        purchaseState="confirmed"
-        isPurchasing={false}
-        onPress={onPress}
-      />,
-      { wrapper },
-    );
-
-    fireEvent.press(screen.getByText("Сказать спасибо"));
-
-    expect(onPress).not.toHaveBeenCalled();
   });
 
   test("does not call onPress while a purchase is still unverified", () => {

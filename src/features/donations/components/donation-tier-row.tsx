@@ -23,15 +23,7 @@ export function DonationTierRow({ tier, purchaseState, isPurchasing, onPress }: 
   const disabled = purchaseState !== undefined || isPurchasing;
 
   let trailing: React.ReactNode;
-  if (purchaseState === "confirmed") {
-    trailing = (
-      <SymbolView
-        name={{ ios: "checkmark.circle.fill", android: "check_circle" }}
-        size={20}
-        tintColor={colors.success}
-      />
-    );
-  } else if (purchaseState === "verifying") {
+  if (purchaseState === "verifying") {
     trailing = (
       <Text variant="caption" className="text-muted-fg">
         Проверяем…

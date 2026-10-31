@@ -9,7 +9,7 @@ import { buildVerifyPayload } from "./verify-payload";
 function makePurchase(overrides: Partial<Purchase>): Purchase {
   return {
     id: "fallback-id",
-    productId: "donation_thanks",
+    productId: "tip_thanks",
     transactionId: "txn-123",
     purchaseToken: "opaque-token",
     ...overrides,
@@ -22,7 +22,7 @@ describe("buildVerifyPayload", () => {
 
     expect(payload).toEqual({
       platform: "android",
-      product_id: "donation_thanks",
+      product_id: "tip_thanks",
       store_transaction_id: "txn-123",
       purchase_token: "opaque-token",
       signed_transaction_info: "",
@@ -35,7 +35,7 @@ describe("buildVerifyPayload", () => {
 
     expect(payload).toEqual({
       platform: "ios",
-      product_id: "donation_thanks",
+      product_id: "tip_thanks",
       store_transaction_id: "txn-123",
       purchase_token: "",
       signed_transaction_info: "opaque-token",

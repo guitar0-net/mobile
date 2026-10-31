@@ -6,11 +6,11 @@ import { DONATION_TIERS, getVisibleTiers } from "./catalog";
 
 describe("getVisibleTiers", () => {
   test("returns only tiers whose product_id is in the active list", () => {
-    const visible = getVisibleTiers(["donation_thanks", "donation_servers"]);
+    const visible = getVisibleTiers(["tip_thanks", "tip_servers"]);
 
     expect(visible.map((tier) => tier.productId)).toEqual([
-      "donation_thanks",
-      "donation_servers",
+      "tip_thanks",
+      "tip_servers",
     ]);
   });
 
@@ -19,9 +19,9 @@ describe("getVisibleTiers", () => {
   });
 
   test("ignores active ids the client doesn't recognize", () => {
-    const visible = getVisibleTiers(["donation_thanks", "some_future_tier"]);
+    const visible = getVisibleTiers(["tip_thanks", "some_future_tier"]);
 
-    expect(visible.map((tier) => tier.productId)).toEqual(["donation_thanks"]);
+    expect(visible.map((tier) => tier.productId)).toEqual(["tip_thanks"]);
   });
 
   test("preserves the client's own display order regardless of server order", () => {
