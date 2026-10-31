@@ -98,6 +98,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [thanks, setThanks] = useState<DonationThanks | null>(null);
   const reconcilingRef = useRef<Set<string>>(new Set());
+  const [verifyingProducts, setVerifyingProducts] = useState<
+    ReadonlyMap<string, string>
+  >(new Map());
   const reconciledRef = useRef<Set<string>>(new Set());
   const [finishedKeys, setFinishedKeys] = useState<ReadonlySet<string>>(new Set());
   const [isHydrated, setIsHydrated] = useState(false);
@@ -188,6 +191,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       const key = purchaseKey(purchase);
       if (reconciledRef.current.has(key) || reconcilingRef.current.has(key)) return;
       reconcilingRef.current.add(key);
+      setVerifyingProducts((products) =>
+        new Map(products).set(key, purchase.productId),
+      );
       try {
         let response;
         try {
@@ -222,13 +228,16 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
           product_id: purchase.productId,
           source: silent ? "background" : "purchase",
         });
-        await saveConfirmedDonation(
-          key,
-          purchase.productId,
-          response.verified_at,
-        ).catch(() => {});
+        void saveConfirmedDonation(key, purchase.productId, response.verified_at).catch(
+          () => {},
+        );
       } finally {
         reconcilingRef.current.delete(key);
+        setVerifyingProducts((products) => {
+          const next = new Map(products);
+          next.delete(key);
+          return next;
+        });
       }
     },
     [deviceId, finish],
@@ -325,8 +334,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
         isAwaitingPayment(availablePurchase) ? "awaiting-payment" : "verifying",
       );
     }
+    for (const productId of verifyingProducts.values()) {
+      states.set(productId, "verifying");
+    }
     return states;
-  }, [availablePurchases, finishedKeys]);
+  }, [availablePurchases, finishedKeys, verifyingProducts]);
 
   const prices = useMemo(
     () => new Map(products.map((product) => [product.id, product.displayPrice])),
