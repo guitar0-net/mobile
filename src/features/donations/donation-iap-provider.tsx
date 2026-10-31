@@ -119,6 +119,9 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       });
       const message = describePurchaseError(error);
       if (message) setErrorMessage(message);
+      // Play refuses a consumable whose previous purchase was never consumed;
+      // re-reading the purchase list hands that purchase to reconcile().
+      if (isAlreadyOwned(error)) requestPurchasesRefresh();
     },
     [],
   );
@@ -146,9 +149,6 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       const attempt = purchaseAttemptRef.current;
       purchaseAttemptRef.current = null;
       reportStoreFailure(error, attempt);
-      // Play refuses a consumable whose previous purchase was never consumed;
-      // re-reading the purchase list hands that purchase to reconcile().
-      if (isAlreadyOwned(error)) requestPurchasesRefresh();
     },
   });
 

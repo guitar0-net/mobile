@@ -593,6 +593,25 @@ describe("DonationIapProvider", () => {
     expect(getAvailablePurchases).toHaveBeenCalledTimes(2);
   });
 
+  test("re-reads the purchase list when the purchase request itself rejects as already owned", async () => {
+    const getAvailablePurchases = jest.fn().mockResolvedValue(undefined);
+    mockIAP({
+      getAvailablePurchases,
+      requestPurchase: jest
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error("already owned"), { code: ErrorCode.AlreadyOwned }),
+        ),
+    });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(1));
+
+    await act(async () => result.current.purchase("tip_thanks"));
+
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(2));
+  });
+
   test("fails loudly when the session is used outside the provider", () => {
     expect(() => renderHook(() => useDonationIapSession())).toThrow(
       /DonationIapProvider/,
