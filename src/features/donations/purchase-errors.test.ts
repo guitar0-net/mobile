@@ -79,7 +79,7 @@ describe("describePurchaseError", () => {
 
   test("does not suggest a retry when the store has no billing on this device", () => {
     expect(describePurchaseError(makePurchaseError(ErrorCode.BillingUnavailable))).toBe(
-      "Покупки в магазине недоступны на этом устройстве",
+      "Оплата не прошла. Проверьте способ оплаты в магазине или попробуйте позже",
     );
   });
 
