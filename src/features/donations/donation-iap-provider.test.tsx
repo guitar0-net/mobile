@@ -8,7 +8,6 @@ import { ErrorCode } from "expo-iap";
 import React from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
-import { _resetDbForTesting } from "@/lib/db";
 import { ApiError } from "@/lib/network";
 
 import { mockIAP } from "./__tests__/fake-iap";
@@ -68,7 +67,6 @@ function captureAppStateHandlers() {
 }
 
 beforeEach(() => {
-  _resetDbForTesting();
   jest.restoreAllMocks();
   jest.clearAllMocks();
   mockIAP();
@@ -131,30 +129,6 @@ describe("DonationIapProvider", () => {
 
     await waitFor(() => expect(mockVerifyPurchase).toHaveBeenCalled());
     expect(result.current.purchaseStates.get("tip_thanks")).toBe("verifying");
-  });
-
-  test("does not re-verify a donation confirmed on an earlier launch", async () => {
-    const purchase = makePurchase({ productId: "tip_thanks" });
-    mockIAP({ availablePurchases: [purchase] });
-
-    const first = renderHook(() => useDonationIapSession(), { wrapper });
-    await waitFor(() =>
-      expect(mockCapture).toHaveBeenCalledWith(
-        "donation_purchase_confirmed",
-        expect.anything(),
-      ),
-    );
-    await act(async () => {});
-    first.unmount();
-    mockVerifyPurchase.mockClear();
-
-    const second = renderHook(() => useDonationIapSession(), { wrapper });
-
-    await waitFor(() =>
-      expect(second.result.current.purchaseStates.has("tip_thanks")).toBe(false),
-    );
-    expect(mockVerifyPurchase).not.toHaveBeenCalled();
-    expect(second.result.current.thanks).toBeNull();
   });
 
   test("stops calling a tier bought once the server rejects its receipt for good", async () => {

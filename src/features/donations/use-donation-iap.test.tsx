@@ -8,7 +8,6 @@ import type { Purchase } from "expo-iap";
 import { ErrorCode } from "expo-iap";
 import React from "react";
 
-import { _resetDbForTesting } from "@/lib/db";
 import { ApiError } from "@/lib/network";
 import { createTestQueryClient } from "@/lib/network/__tests__/testing";
 
@@ -52,7 +51,6 @@ function makePurchase(overrides: Partial<Purchase> = {}): Purchase {
 }
 
 beforeEach(() => {
-  _resetDbForTesting();
   jest.clearAllMocks();
   mockGetActiveDonationProductIds.mockResolvedValue([]);
   mockIAP();
