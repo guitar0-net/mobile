@@ -4,14 +4,15 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import type { Purchase, UseIAPOptions } from "expo-iap";
-import { ErrorCode, useIAP } from "expo-iap";
+import type { Purchase } from "expo-iap";
+import { ErrorCode } from "expo-iap";
 import React from "react";
 
 import { _resetDbForTesting } from "@/lib/db";
 import { ApiError } from "@/lib/network";
 import { createTestQueryClient } from "@/lib/network/__tests__/testing";
 
+import { mockIAP } from "./__tests__/fake-iap";
 import { getActiveDonationProductIds, verifyPurchase } from "./api";
 import { DonationIapProvider } from "./donation-iap-provider";
 import { useDonationIap } from "./use-donation-iap";
@@ -28,7 +29,6 @@ jest.mock("./api", () => ({
 }));
 jest.mock("@/lib/device-id", () => ({ getDeviceId: () => "device-abc" }));
 
-const mockUseIAP = jest.mocked(useIAP);
 const mockGetActiveDonationProductIds = jest.mocked(getActiveDonationProductIds);
 const mockVerifyPurchase = jest.mocked(verifyPurchase);
 
@@ -49,37 +49,6 @@ function makePurchase(overrides: Partial<Purchase> = {}): Purchase {
     purchaseToken: "opaque-token",
     ...overrides,
   } as Purchase;
-}
-
-type IAPMock = {
-  connected: boolean;
-  products: { id: string; displayPrice: string }[];
-  fetchProducts: jest.Mock;
-  availablePurchases: Purchase[];
-  getAvailablePurchases: jest.Mock;
-  requestPurchase: jest.Mock;
-  finishTransaction: jest.Mock;
-  reconnect: jest.Mock;
-};
-
-function mockIAP(overrides: Partial<IAPMock> = {}) {
-  let capturedOptions: UseIAPOptions | undefined;
-  const base: IAPMock = {
-    connected: true,
-    products: [],
-    fetchProducts: jest.fn().mockResolvedValue(undefined),
-    availablePurchases: [],
-    getAvailablePurchases: jest.fn().mockResolvedValue(undefined),
-    requestPurchase: jest.fn().mockResolvedValue(undefined),
-    finishTransaction: jest.fn().mockResolvedValue(undefined),
-    reconnect: jest.fn().mockResolvedValue(true),
-    ...overrides,
-  };
-  mockUseIAP.mockImplementation((options) => {
-    capturedOptions = options;
-    return base as unknown as ReturnType<typeof useIAP>;
-  });
-  return { ...base, getOptions: () => capturedOptions! };
 }
 
 beforeEach(() => {
@@ -415,7 +384,8 @@ describe("useDonationIap — purchase", () => {
 
     act(() => getOptions().onPurchaseSuccess?.(makePurchase()));
 
-    await waitFor(() => expect(result.current.thanks).not.toBeNull());
+    await waitFor(() => expect(finishTransaction).toHaveBeenCalled());
+    await act(async () => {});
     expect(result.current.errorMessage).toBeNull();
   });
 
