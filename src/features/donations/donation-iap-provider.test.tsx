@@ -481,6 +481,20 @@ describe("DonationIapProvider", () => {
     expect(mockVerifyPurchase).toHaveBeenCalledTimes(2);
   });
 
+  test("frees a confirmed tier even when re-reading the purchase list fails", async () => {
+    const getAvailablePurchases = jest
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValue(new Error("offline"));
+    mockIAP({ availablePurchases: [makePurchase()], getAvailablePurchases });
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+
+    await waitFor(() => expect(result.current.thanks?.productId).toBe("tip_thanks"));
+    await waitFor(() => expect(getAvailablePurchases).toHaveBeenCalledTimes(2));
+    expect(result.current.purchaseStates.has("tip_thanks")).toBe(false);
+  });
+
   test("clears a slow payment's waiting row once the cleared purchase is confirmed", async () => {
     const pending = makePurchase({
       id: "play-token",

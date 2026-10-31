@@ -99,6 +99,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   const [thanks, setThanks] = useState<DonationThanks | null>(null);
   const reconcilingRef = useRef<Set<string>>(new Set());
   const reconciledRef = useRef<Set<string>>(new Set());
+  const [finishedKeys, setFinishedKeys] = useState<ReadonlySet<string>>(new Set());
   const [isHydrated, setIsHydrated] = useState(false);
   const [purchasesRefreshRequest, requestPurchasesRefresh] = useReducer(
     (count: number) => count + 1,
@@ -174,6 +175,7 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
       } catch {
         return false;
       }
+      setFinishedKeys((keys) => new Set(keys).add(purchaseKey(purchase)));
       requestPurchasesRefresh();
       return true;
     },
@@ -318,13 +320,14 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
     const states = new Map<string, DonationPurchaseState>();
     for (const availablePurchase of availablePurchases) {
       if (!isDonationProduct(availablePurchase.productId)) continue;
+      if (finishedKeys.has(purchaseKey(availablePurchase))) continue;
       states.set(
         availablePurchase.productId,
         isAwaitingPayment(availablePurchase) ? "awaiting-payment" : "verifying",
       );
     }
     return states;
-  }, [availablePurchases]);
+  }, [availablePurchases, finishedKeys]);
 
   const prices = useMemo(
     () => new Map(products.map((product) => [product.id, product.displayPrice])),
