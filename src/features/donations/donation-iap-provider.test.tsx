@@ -501,6 +501,45 @@ describe("DonationIapProvider", () => {
     expect(mockVerifyPurchase).toHaveBeenCalledTimes(2);
   });
 
+  test("holds a just-paid tier as verifying until the server answers", async () => {
+    let answerServer: () => void = () => {};
+    mockVerifyPurchase.mockReturnValueOnce(
+      new Promise((resolve) => {
+        answerServer = () =>
+          resolve({
+            platform: "android",
+            product_id: "tip_coffee",
+            status: "completed",
+            verified_at: "2026-01-01T00:00:00Z",
+          });
+      }),
+    );
+    const { getOptions } = mockIAP();
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+    await act(async () =>
+      getOptions().onPurchaseSuccess?.(makePurchase({ productId: "tip_coffee" })),
+    );
+
+    expect(result.current.purchaseStates.get("tip_coffee")).toBe("verifying");
+
+    await act(async () => answerServer());
+
+    await waitFor(() => expect(result.current.thanks?.productId).toBe("tip_coffee"));
+    expect(result.current.purchaseStates.has("tip_coffee")).toBe(false);
+  });
+
+  test("frees a just-paid tier when the server cannot be reached", async () => {
+    mockVerifyPurchase.mockRejectedValueOnce(new Error("offline"));
+    const { getOptions } = mockIAP();
+
+    const { result } = renderHook(() => useDonationIapSession(), { wrapper });
+    await act(async () => getOptions().onPurchaseSuccess?.(makePurchase()));
+
+    await waitFor(() => expect(result.current.errorMessage).not.toBeNull());
+    expect(result.current.purchaseStates.has("tip_thanks")).toBe(false);
+  });
+
   test("frees a confirmed tier even when re-reading the purchase list fails", async () => {
     const getAvailablePurchases = jest
       .fn()
