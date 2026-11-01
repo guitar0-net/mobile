@@ -210,7 +210,10 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
               reason: purchaseFailureReason(error),
             });
           }
-          if (!silent) setErrorMessage(describeVerifyError(error));
+          if (!silent) {
+            setErrorMessage(describeVerifyError(error));
+            if (!isPermanent) requestPurchasesRefresh();
+          }
           return;
         }
 
@@ -236,7 +239,11 @@ export function DonationIapProvider({ children }: { children: React.ReactNode })
   );
 
   const refreshPurchases = useCallback(
-    () => withReconnect(() => getAvailablePurchases()).catch(() => {}),
+    () =>
+      withReconnect(() =>
+        // expo-iap defaults to currentEntitlements, which never lists consumables.
+        getAvailablePurchases({ onlyIncludeActiveItemsIOS: false }),
+      ).catch(() => {}),
     [getAvailablePurchases, withReconnect],
   );
 

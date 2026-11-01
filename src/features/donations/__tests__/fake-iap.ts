@@ -59,8 +59,8 @@ export function mockIAP(options: FakeIAPOptions = {}) {
     connected: options.connected ?? true,
     products: options.products ?? [],
     fetchProducts: reportingFailure(calls.fetchProducts),
-    getAvailablePurchases: reportingFailure(async () => {
-      await calls.getAvailablePurchases();
+    getAvailablePurchases: reportingFailure(async (...args: unknown[]) => {
+      await calls.getAvailablePurchases(...args);
       setSnapshot([...storePurchases]);
     }),
     requestPurchase: calls.requestPurchase,
