@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useRouter } from "expo-router";
-import type { SymbolViewProps } from "expo-symbols";
 import { View } from "react-native";
 
 import { Button } from "@/components/ui/button";
@@ -11,11 +10,6 @@ import { Text } from "@/components/ui/text";
 
 import { useFavoriteLessons } from "../queries";
 import { LessonLinkCard } from "./lesson-link-card";
-
-const BOOKMARK_ICON: SymbolViewProps["name"] = {
-  ios: "bookmark.fill",
-  android: "bookmark",
-};
 
 const PREVIEW_LIMIT = 3;
 
@@ -36,7 +30,7 @@ export function FavoritesPreview() {
         </Button>
       </View>
       {lessons.map((lesson) => (
-        <LessonLinkCard key={lesson.lessonUuid} lesson={lesson} icon={BOOKMARK_ICON} />
+        <LessonLinkCard key={lesson.lessonUuid} lesson={lesson} />
       ))}
     </View>
   );

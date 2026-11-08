@@ -33,21 +33,19 @@ const lesson: LessonLinkRow = {
   totalInCourse: 10,
 };
 
-const ICON = { ios: "bookmark.fill", android: "bookmark" } as const;
-
 describe("LessonLinkCard", () => {
   test("renders the lesson title", () => {
-    render(<LessonLinkCard lesson={lesson} icon={ICON} />, { wrapper });
+    render(<LessonLinkCard lesson={lesson} />, { wrapper });
     expect(screen.getByText("Открытые аккорды")).toBeTruthy();
   });
 
   test("renders the course title", () => {
-    render(<LessonLinkCard lesson={lesson} icon={ICON} />, { wrapper });
+    render(<LessonLinkCard lesson={lesson} />, { wrapper });
     expect(screen.getByText("Основы гитары")).toBeTruthy();
   });
 
   test("navigates to the lesson with its course, order, and total on press", () => {
-    render(<LessonLinkCard lesson={lesson} icon={ICON} />, { wrapper });
+    render(<LessonLinkCard lesson={lesson} />, { wrapper });
     fireEvent.press(screen.getByText("Открытые аккорды"));
     expect(mockPush).toHaveBeenCalledWith(
       "/lesson/lesson-1?courseId=course-1&order=3&total=10",

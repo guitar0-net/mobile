@@ -38,11 +38,11 @@ export { deriveLessonState, computeCourseProgress, isLessonCompleted } from "./l
 export type { LessonState } from "./logic";
 
 export { deleteAllDownloadedVideos, videoStreamUrl } from "./use-video-download";
+export { AdditionLessonsList } from "./components/addition-lessons-list";
 export { CourseContinueCard } from "./components/course-continue-card";
 export { DownloadedVideosList } from "./components/downloaded-videos-list";
 export { FavoriteLessonsList } from "./components/favorite-lessons-list";
 export { FavoritesPreview } from "./components/favorites-preview";
-export { LessonLinkCard } from "./components/lesson-link-card";
 export { LessonStatus } from "./components/lesson-status";
 export { LessonSwipeNavigator } from "./components/lesson-swipe-navigator";
 export { SongRow } from "./components/song-row";

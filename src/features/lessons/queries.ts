@@ -117,8 +117,10 @@ export type LessonDetailRow = {
   lessonOrder: number;
   totalLessonsInCourse: number;
   songs: LessonDetailSong[];
-  additionLessons: LessonLinkRow[];
+  additionLessons: AdditionLessonRow[];
 };
+
+export type AdditionLessonRow = LessonLinkRow & { songCount: number };
 
 function toYoutubeWatchUrl(url: string): string {
   return url.replace(/youtube\.com\/embed\/([^?#/]+)/, "youtube.com/watch?v=$1");
@@ -174,7 +176,27 @@ export async function fetchLessonDetail(
     .select({ uuid: lessonAdditionLessons.additionLessonUuid })
     .from(lessonAdditionLessons)
     .where(eq(lessonAdditionLessons.lessonUuid, lessonUuid));
-  const additionLessons = await fetchLessonLinks(additionRows.map((row) => row.uuid));
+  const additionLinks = await fetchLessonLinks(additionRows.map((row) => row.uuid));
+  const additionSongCounts =
+    additionLinks.length === 0
+      ? []
+      : await db
+          .select({ lessonUuid: lessonSongs.lessonUuid, songCount: count() })
+          .from(lessonSongs)
+          .where(
+            inArray(
+              lessonSongs.lessonUuid,
+              additionLinks.map((link) => link.lessonUuid),
+            ),
+          )
+          .groupBy(lessonSongs.lessonUuid);
+  const songCountByLesson = new Map(
+    additionSongCounts.map((row) => [row.lessonUuid, row.songCount]),
+  );
+  const additionLessons = additionLinks.map((link) => ({
+    ...link,
+    songCount: songCountByLesson.get(link.lessonUuid) ?? 0,
+  }));
 
   return {
     ...lesson,

@@ -596,7 +596,7 @@ describe("fetchLessonDetail", () => {
     expect(result?.videoUrl).toBe("https://www.youtube.com/watch?v=SifxRnzo_hc");
   });
 
-  test("returns addition lessons with the course they open in", async () => {
+  test("returns addition lessons with the course they open in and their song count", async () => {
     await seedLessonDetail();
     const db = await initDb();
     await db.insert(courses).values({
@@ -617,6 +617,9 @@ describe("fetchLessonDetail", () => {
     await db
       .insert(lessonAdditionLessons)
       .values({ lessonUuid: "lesson-1", additionLessonUuid: "breakdown-1" });
+    await db
+      .insert(lessonSongs)
+      .values({ lessonUuid: "breakdown-1", songUuid: "song-1" });
 
     const result = await fetchLessonDetail("lesson-1", "course-1");
     expect(result?.additionLessons).toEqual([
@@ -627,6 +630,7 @@ describe("fetchLessonDetail", () => {
         courseTitle: "Song breakdowns",
         order: 4,
         totalInCourse: 1,
+        songCount: 1,
       },
     ]);
   });
