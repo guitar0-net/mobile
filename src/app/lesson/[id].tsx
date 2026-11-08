@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import type { SymbolViewProps } from "expo-symbols";
 import { useCallback, useMemo } from "react";
 import { View } from "react-native";
 
@@ -11,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
 import {
-  LessonLinkCard,
+  AdditionLessonsList,
   LessonStatus,
   LessonSwipeNavigator,
   SongRow,
@@ -21,11 +20,6 @@ import {
 import type { CourseLessonRow } from "@/features/lessons";
 import { BookmarkButton } from "@/features/lessons/components/bookmark-button";
 import { useProgress } from "@/features/settings";
-
-const ADDITION_LESSON_ICON: SymbolViewProps["name"] = {
-  ios: "play.circle",
-  android: "play_circle",
-};
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -136,22 +130,7 @@ export default function LessonScreen() {
               </View>
             )}
 
-            {lessonDetail.additionLessons.length > 0 && (
-              <View className="mt-6">
-                <Text variant="caption" className="text-xs uppercase tracking-wider">
-                  Дополнительные уроки
-                </Text>
-                <View className="mt-3 gap-2">
-                  {lessonDetail.additionLessons.map((lesson) => (
-                    <LessonLinkCard
-                      key={lesson.lessonUuid}
-                      lesson={lesson}
-                      icon={ADDITION_LESSON_ICON}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
+            <AdditionLessonsList lessons={lessonDetail.additionLessons} />
           </View>
         )}
       </ScreenScrollView>
