@@ -8,7 +8,15 @@ import * as FileSystem from "expo-file-system/legacy";
 import { useEffect, useMemo } from "react";
 
 import { useFavorites, useProgress } from "@/features/settings";
-import { getDb, courseLessons, courses, lessons, lessonSongs, songs } from "@/lib/db";
+import {
+  getDb,
+  courseLessons,
+  courses,
+  lessonAdditionLessons,
+  lessons,
+  lessonSongs,
+  songs,
+} from "@/lib/db";
 import type { VideoDownloadStatus } from "@/lib/db";
 import { queryClient } from "@/lib/network/query-client";
 
@@ -109,6 +117,7 @@ export type LessonDetailRow = {
   lessonOrder: number;
   totalLessonsInCourse: number;
   songs: LessonDetailSong[];
+  additionLessons: LessonLinkRow[];
 };
 
 function toYoutubeWatchUrl(url: string): string {
@@ -161,11 +170,18 @@ export async function fetchLessonDetail(
     .innerJoin(lessonSongs, eq(lessonSongs.songUuid, songs.uuid))
     .where(eq(lessonSongs.lessonUuid, lessonUuid));
 
+  const additionRows = await db
+    .select({ uuid: lessonAdditionLessons.additionLessonUuid })
+    .from(lessonAdditionLessons)
+    .where(eq(lessonAdditionLessons.lessonUuid, lessonUuid));
+  const additionLessons = await fetchLessonLinks(additionRows.map((row) => row.uuid));
+
   return {
     ...lesson,
     videoUrl: toYoutubeWatchUrl(lesson.videoUrl),
     totalLessonsInCourse: total,
     songs: songRows,
+    additionLessons,
   };
 }
 

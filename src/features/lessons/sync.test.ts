@@ -7,6 +7,7 @@ import {
   courseLessons,
   courses,
   initDb,
+  lessonAdditionLessons,
   lessonSongs,
   lessons,
   schemes,
@@ -55,6 +56,7 @@ function makeLesson(uuid: string, overrides: Partial<LessonSync> = {}): LessonSy
     updated_at: "2026-01-01T00:00:00Z",
     title: "Открытые аккорды",
     video_url: "https://example.com/v.mp4",
+    addition_lesson_uuids: [],
     ...overrides,
   };
 }
@@ -359,6 +361,131 @@ test("scheme is written without touching the network for its image", async () =>
     height: 200,
     width: 300,
     localImagePath: null,
+  });
+});
+
+describe("addition lessons", () => {
+  async function readLinks(db: Awaited<ReturnType<typeof initDb>>) {
+    const rows = await db.select().from(lessonAdditionLessons);
+    return rows.map((row) => `${row.lessonUuid}->${row.additionLessonUuid}`).sort();
+  }
+
+  function syncWith(
+    db: Awaited<ReturnType<typeof initDb>>,
+    payload: SyncLessonsResponse,
+  ) {
+    return syncAll(db, { getSyncData: () => Promise.resolve(payload) });
+  }
+
+  test("links a lesson to addition lessons listed later in the same payload", async () => {
+    const db = await initDb();
+
+    await syncWith(
+      db,
+      makeSyncResponse({
+        lesson_uuids: ["l1", "a1", "a2"],
+        lessons: [
+          makeLesson("l1", { addition_lesson_uuids: ["a1", "a2"] }),
+          makeLesson("a1"),
+          makeLesson("a2"),
+        ],
+      }),
+    );
+
+    expect(await readLinks(db)).toEqual(["l1->a1", "l1->a2"]);
+  });
+
+  test("a delta replaces the links of resent lessons and keeps the others", async () => {
+    const db = await initDb();
+    await syncWith(
+      db,
+      makeSyncResponse({
+        lesson_uuids: ["l1", "l2", "a1", "a2"],
+        lessons: [
+          makeLesson("l1", { addition_lesson_uuids: ["a1"] }),
+          makeLesson("l2", { addition_lesson_uuids: ["a1"] }),
+          makeLesson("a1"),
+          makeLesson("a2"),
+        ],
+      }),
+    );
+
+    await syncWith(
+      db,
+      makeSyncResponse({
+        lesson_uuids: ["l1", "l2", "a1", "a2"],
+        lessons: [makeLesson("l1", { addition_lesson_uuids: ["a2"] })],
+      }),
+    );
+
+    expect(await readLinks(db)).toEqual(["l1->a2", "l2->a1"]);
+  });
+
+  test("drops links to an addition lesson that was unpublished", async () => {
+    const db = await initDb();
+    await syncWith(
+      db,
+      makeSyncResponse({
+        lesson_uuids: ["l1", "a1"],
+        lessons: [
+          makeLesson("l1", { addition_lesson_uuids: ["a1"] }),
+          makeLesson("a1"),
+        ],
+      }),
+    );
+
+    await syncWith(db, makeSyncResponse({ lesson_uuids: ["l1"] }));
+
+    expect(await readLinks(db)).toEqual([]);
+    expect((await db.select().from(lessons)).map((row) => row.uuid)).toEqual(["l1"]);
+  });
+
+  test("drops the links of a lesson that was unpublished", async () => {
+    const db = await initDb();
+    await syncWith(
+      db,
+      makeSyncResponse({
+        lesson_uuids: ["l1", "a1"],
+        lessons: [
+          makeLesson("l1", { addition_lesson_uuids: ["a1"] }),
+          makeLesson("a1"),
+        ],
+      }),
+    );
+
+    await syncWith(db, makeSyncResponse({ lesson_uuids: ["a1"] }));
+
+    expect(await readLinks(db)).toEqual([]);
+  });
+
+  test("skips an addition lesson that is not in the local content", async () => {
+    const db = await initDb();
+
+    await syncWith(
+      db,
+      makeSyncResponse({
+        lesson_uuids: ["l1"],
+        lessons: [makeLesson("l1", { addition_lesson_uuids: ["unknown"] })],
+      }),
+    );
+
+    expect(await readLinks(db)).toEqual([]);
+  });
+
+  test("accepts lessons from a payload that predates addition lessons", async () => {
+    const db = await initDb();
+    const { addition_lesson_uuids: _omitted, ...legacyLesson } = makeLesson("l1");
+
+    await syncWith(
+      db,
+      makeSyncResponse({
+        lesson_uuids: ["l1"],
+        lessons: [legacyLesson as LessonSync],
+      }),
+    );
+
+    expect(await db.select().from(lessons)).toHaveLength(1);
+    expect(await readLinks(db)).toEqual([]);
   });
 });
 

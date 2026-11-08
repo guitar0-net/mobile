@@ -424,6 +424,7 @@ export interface components {
        * @description Общая длительность урока в секундах
        */
       duration?: number;
+      readonly addition_lesson_uuids: string[];
     };
     /** @description Serializer for lessons list. */
     LessonsList: {
