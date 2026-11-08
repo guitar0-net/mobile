@@ -8,7 +8,15 @@ import React from "react";
 
 import { resetSettingsForTesting } from "@/features/settings/__tests__/testing";
 import { useSettingsStore } from "@/features/settings/store";
-import { courseLessons, courses, initDb, lessons, lessonSongs, songs } from "@/lib/db";
+import {
+  courseLessons,
+  courses,
+  initDb,
+  lessonAdditionLessons,
+  lessons,
+  lessonSongs,
+  songs,
+} from "@/lib/db";
 import { createTestQueryClient } from "@/lib/network/__tests__/testing";
 import { queryClient } from "@/lib/network/query-client";
 
@@ -586,6 +594,47 @@ describe("fetchLessonDetail", () => {
 
     const result = await fetchLessonDetail("lesson-yt", "course-yt");
     expect(result?.videoUrl).toBe("https://www.youtube.com/watch?v=SifxRnzo_hc");
+  });
+
+  test("returns addition lessons with the course they open in", async () => {
+    await seedLessonDetail();
+    const db = await initDb();
+    await db.insert(courses).values({
+      uuid: "course-songs",
+      title: "Song breakdowns",
+      createdAt: "2026-02-01T00:00:00Z",
+      updatedAt: "2026-02-01T00:00:00Z",
+    });
+    await db.insert(lessons).values({
+      uuid: "breakdown-1",
+      title: "Kino - Blood type",
+      videoUrl: "https://example.com/b1.mp4",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    await db
+      .insert(courseLessons)
+      .values({ courseUuid: "course-songs", lessonUuid: "breakdown-1", order: 4 });
+    await db
+      .insert(lessonAdditionLessons)
+      .values({ lessonUuid: "lesson-1", additionLessonUuid: "breakdown-1" });
+
+    const result = await fetchLessonDetail("lesson-1", "course-1");
+    expect(result?.additionLessons).toEqual([
+      {
+        lessonUuid: "breakdown-1",
+        title: "Kino - Blood type",
+        courseUuid: "course-songs",
+        courseTitle: "Song breakdowns",
+        order: 4,
+        totalInCourse: 1,
+      },
+    ]);
+  });
+
+  test("returns no addition lessons when the lesson has none", async () => {
+    await seedLessonDetail();
+    const result = await fetchLessonDetail("lesson-2", "course-1");
+    expect(result?.additionLessons).toEqual([]);
   });
 
   test("leaves non-YouTube videoUrl unchanged", async () => {

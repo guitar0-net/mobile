@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { eq, notInArray } from "drizzle-orm";
+import { eq, inArray, notInArray, or } from "drizzle-orm";
 
 import type { AppDb } from "@/lib/db";
 import {
@@ -10,6 +10,7 @@ import {
   contentMeta as contentMetaTable,
   courseLessons as courseLessonsTable,
   courses as coursesTable,
+  lessonAdditionLessons as lessonAdditionLessonsTable,
   lessonSongs as lessonSongsTable,
   lessons as lessonsTable,
   schemes as schemesTable,
@@ -56,8 +57,40 @@ function deleteOrphanedSchemes(tx: SyncTx): string[] {
   return orphans.flatMap(({ fileName }) => (fileName ? [fileName] : []));
 }
 
+function writeAdditionLessons(
+  tx: SyncTx,
+  lessons: SyncLessonsResponse["lessons"],
+): void {
+  if (lessons.length === 0) return;
+  tx.delete(lessonAdditionLessonsTable)
+    .where(
+      inArray(
+        lessonAdditionLessonsTable.lessonUuid,
+        lessons.map((lesson) => lesson.uuid),
+      ),
+    )
+    .run();
+
+  const localUuids = new Set(
+    tx
+      .select({ uuid: lessonsTable.uuid })
+      .from(lessonsTable)
+      .all()
+      .map((row) => row.uuid),
+  );
+  const rows = lessons.flatMap((lesson) =>
+    (lesson.addition_lesson_uuids ?? [])
+      .filter((uuid) => localUuids.has(uuid))
+      .map((additionLessonUuid) => ({ lessonUuid: lesson.uuid, additionLessonUuid })),
+  );
+  if (rows.length > 0) {
+    tx.insert(lessonAdditionLessonsTable).values(rows).onConflictDoNothing().run();
+  }
+}
+
 function deleteRemovedLessons(tx: SyncTx, serverUuids: string[]): void {
   if (serverUuids.length === 0) {
+    tx.delete(lessonAdditionLessonsTable).run();
     tx.delete(lessonSongsTable).run();
     tx.delete(lessonsTable).run();
     return;
@@ -68,6 +101,14 @@ function deleteRemovedLessons(tx: SyncTx, serverUuids: string[]): void {
     .where(notInArray(lessonsTable.uuid, serverUuids))
     .all();
   for (const { uuid } of toDelete) {
+    tx.delete(lessonAdditionLessonsTable)
+      .where(
+        or(
+          eq(lessonAdditionLessonsTable.lessonUuid, uuid),
+          eq(lessonAdditionLessonsTable.additionLessonUuid, uuid),
+        ),
+      )
+      .run();
     tx.delete(lessonSongsTable).where(eq(lessonSongsTable.lessonUuid, uuid)).run();
     tx.delete(lessonsTable).where(eq(lessonsTable.uuid, uuid)).run();
   }
@@ -199,6 +240,7 @@ function writeContent(db: AppDb, payload: SyncLessonsResponse): void {
       }
     }
 
+    writeAdditionLessons(tx, lessons);
     deleteRemovedLessons(tx, lesson_uuids);
     deleteOrphanedSongs(tx);
     staleImageFiles.push(...deleteOrphanedSchemes(tx));
