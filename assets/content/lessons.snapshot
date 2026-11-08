@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-10T12:23:58.194554+00:00",
+  "version": "2026-11-08T05:59:50.445302+00:00",
   "lesson_uuids": [
     "00056251-80f6-485e-b8e1-acc498d1c0d6",
     "02b12411-89a3-4f7f-80cb-830453745ffa",
@@ -83,19 +83,30 @@
   "lessons": [
     {
       "uuid": "00056251-80f6-485e-b8e1-acc498d1c0d6",
-      "updated_at": "2026-10-10T12:23:58.194554Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 6. Учимся играть бой с перебором",
       "description": "",
       "video_url": "https://www.youtube.com/embed/ZPDL5i5TS54",
-      "duration": 942
+      "duration": 942,
+      "addition_lesson_uuids": [
+        "dbb565d4-645c-40d8-a6d3-0e323404137b",
+        "47a358c4-cf96-47f2-9882-c3cd498091ee"
+      ]
     },
     {
       "uuid": "02b12411-89a3-4f7f-80cb-830453745ffa",
-      "updated_at": "2026-10-10T12:23:58.194554Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 19. Совмещаем разнообразные приемы",
       "description": "",
       "video_url": "https://www.youtube.com/embed/MjKg-8Yh4mg",
-      "duration": 665
+      "duration": 665,
+      "addition_lesson_uuids": [
+        "1860323c-7d4f-4a54-9b09-1da00786c15d",
+        "d9781b0a-d817-49fd-a550-2fa446869879",
+        "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177"
+      ]
     },
     {
       "uuid": "0436d4db-e88d-41e4-942b-4a8614c4c423",
@@ -103,15 +114,23 @@
       "title": "Чиж и Ко - На поле танки грохотали",
       "description": "",
       "video_url": "https://www.youtube.com/embed/IjmmQ76xmhY",
-      "duration": 179
+      "duration": 179,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "084962f6-7474-4cd4-ad62-e02dda6f383f",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 12. Ритм регги, заглушенные ноты",
       "description": "",
       "video_url": "https://www.youtube.com/embed/PlDKjbn_QJQ",
-      "duration": 751
+      "duration": 751,
+      "addition_lesson_uuids": [
+        "f8773e51-2051-4abf-af21-aa904b0fed09",
+        "e6d2ca30-44ae-4243-81eb-c4072d696b05",
+        "b36680b9-10b9-4a7d-ac1a-f43890aec876",
+        "929a80f1-6d90-4761-9c1d-3e8f273eb8c5",
+        "12f8392e-8af2-4a2e-bcda-741a48df8177"
+      ]
     },
     {
       "uuid": "0cc27c83-eb41-480d-bea7-beaf86382d6c",
@@ -119,15 +138,23 @@
       "title": "Земфира - Lightbulbs",
       "description": "",
       "video_url": "https://www.youtube.com/embed/CfBF1CulhCI",
-      "duration": 1136
+      "duration": 1136,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "0f4a8a1c-d924-4f0a-a1cb-b210c511aac8",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 40. Продолжаем тему предыдущего урока",
       "description": "",
       "video_url": "https://www.youtube.com/embed/lshSd2fzHEY",
-      "duration": 1004
+      "duration": 1004,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "12f8392e-8af2-4a2e-bcda-741a48df8177",
@@ -135,7 +162,8 @@
       "title": "Земфира - Не отпускай меня",
       "description": "",
       "video_url": "https://www.youtube.com/embed/asdquj3BMok",
-      "duration": 467
+      "duration": 467,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "13d448d2-a9f9-4469-aeae-480bff4e715b",
@@ -143,15 +171,23 @@
       "title": "Ария - Я свободен",
       "description": "",
       "video_url": "https://www.youtube.com/embed/PGZ6najysA4",
-      "duration": 404
+      "duration": 404,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "140a24ea-5009-4500-8830-d2d7166138e6",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 42. Как научится играть на гитаре созвучиями - квинтами, октавами (интервалы)",
       "description": "",
       "video_url": "https://www.youtube.com/embed/oP28BuWKQXE",
-      "duration": 1121
+      "duration": 1121,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "1860323c-7d4f-4a54-9b09-1da00786c15d",
@@ -159,7 +195,8 @@
       "title": "Сплин - Орбит без сахара",
       "description": "",
       "video_url": "https://www.youtube.com/embed/5Oz5OuVC6uk",
-      "duration": 272
+      "duration": 272,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "1b032207-7ba5-4d1d-aec9-512b7a231346",
@@ -167,7 +204,8 @@
       "title": "Кино - Восьмиклассница",
       "description": "",
       "video_url": "https://www.youtube.com/embed/SifxRnzo_hc",
-      "duration": 328
+      "duration": 328,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "219a8604-7110-4fd2-a4ed-8cbf1c928db2",
@@ -175,7 +213,8 @@
       "title": "Урок № 4. Улучшаем переставление аккордов и бой № 2",
       "description": "",
       "video_url": "https://www.youtube.com/embed/zo2IinVDyXM",
-      "duration": 667
+      "duration": 667,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "221e6967-9a71-42bc-96ce-38f73f6a6177",
@@ -183,15 +222,23 @@
       "title": "ДДТ - Родина",
       "description": "",
       "video_url": "https://www.youtube.com/embed/UmCTwWzUx4M",
-      "duration": 354
+      "duration": 354,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "2bfe345c-fb0f-4804-9aca-9a71d81e3a7e",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 31. Сочетание сложных ритмических рисунков",
       "description": "",
       "video_url": "https://www.youtube.com/embed/yeiPBA2krzE",
-      "duration": 1237
+      "duration": 1237,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "30f4c365-8030-4aab-83f1-b37c8ccf9416",
@@ -199,79 +246,143 @@
       "title": "Урок № 1. Бой номер 1 и первые аккорды",
       "description": "",
       "video_url": "https://www.youtube.com/embed/w8eccjOeotQ",
-      "duration": 649
+      "duration": 649,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "371de746-39ed-404b-bcc5-648275c65b41",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 41. Пауэр аккорды, квинты, кварты",
       "description": "",
       "video_url": "https://www.youtube.com/embed/JfivG6jeau0",
-      "duration": 1169
+      "duration": 1169,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "37e524b6-da22-495a-81dc-1da731cb2564",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 16. Бой галоп с глухими и звонкими нотами",
       "description": "",
       "video_url": "https://www.youtube.com/embed/ogcMVkfaBoo",
-      "duration": 927
+      "duration": 927,
+      "addition_lesson_uuids": [
+        "44beda3f-f374-4dde-956b-caccc954606f",
+        "0cc27c83-eb41-480d-bea7-beaf86382d6c",
+        "99cc5099-51ac-4864-ae3e-358996a2630e",
+        "1860323c-7d4f-4a54-9b09-1da00786c15d",
+        "77e14e4f-bd51-48a1-9d82-b2c93d02239b"
+      ]
     },
     {
       "uuid": "3bc0b7e3-1c7a-440a-8625-bc2b9b7f7950",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 38. Ска-ритмы",
       "description": "",
       "video_url": "https://www.youtube.com/embed/1k8QOw_qE7Q",
-      "duration": 817
+      "duration": 817,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "3d1b3490-4025-4a83-926f-5abf2ea74c35",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 11. Бой галоп",
       "description": "",
       "video_url": "https://www.youtube.com/embed/6Lrik7Iwjlw",
-      "duration": 752
+      "duration": 752,
+      "addition_lesson_uuids": [
+        "f8773e51-2051-4abf-af21-aa904b0fed09",
+        "e6d2ca30-44ae-4243-81eb-c4072d696b05",
+        "b36680b9-10b9-4a7d-ac1a-f43890aec876",
+        "929a80f1-6d90-4761-9c1d-3e8f273eb8c5",
+        "12f8392e-8af2-4a2e-bcda-741a48df8177"
+      ]
     },
     {
       "uuid": "3d641943-22ff-4931-9748-0033c33e34a3",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 10. Бой с перебором на баррэ",
       "description": "",
       "video_url": "https://www.youtube.com/embed/Ok9vFuS1gy4",
-      "duration": 797
+      "duration": 797,
+      "addition_lesson_uuids": [
+        "648548e6-4e7a-460d-ac2f-a1bb223ebef4",
+        "0436d4db-e88d-41e4-942b-4a8614c4c423",
+        "e6d2ca30-44ae-4243-81eb-c4072d696b05",
+        "b36680b9-10b9-4a7d-ac1a-f43890aec876",
+        "929a80f1-6d90-4761-9c1d-3e8f273eb8c5"
+      ]
     },
     {
       "uuid": "3f55614f-988e-42db-81b0-cb1e047cb5d8",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 23. Различные переборы и бои",
       "description": "",
       "video_url": "https://www.youtube.com/embed/xkiiqhvPFOk",
-      "duration": 1545
+      "duration": 1545,
+      "addition_lesson_uuids": [
+        "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177"
+      ]
     },
     {
       "uuid": "3fc430fa-1623-45df-a51c-89b55acb79a6",
-      "updated_at": "2026-10-10T12:23:58.194554Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 9. Учимся быстро переставлять баррэ",
       "description": "",
       "video_url": "https://www.youtube.com/embed/nTyIhYXtjfI",
-      "duration": 861
+      "duration": 861,
+      "addition_lesson_uuids": [
+        "daa7e901-aff1-4236-8c6d-9d4606a4f506",
+        "648548e6-4e7a-460d-ac2f-a1bb223ebef4",
+        "0436d4db-e88d-41e4-942b-4a8614c4c423",
+        "e6d2ca30-44ae-4243-81eb-c4072d696b05",
+        "b36680b9-10b9-4a7d-ac1a-f43890aec876"
+      ]
     },
     {
       "uuid": "4068ebee-a445-4323-8856-de63e060faa9",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 25. Начинаем играть сложные ритмы",
       "description": "",
       "video_url": "https://www.youtube.com/embed/zp5lIjCgogc",
-      "duration": 991
+      "duration": 991,
+      "addition_lesson_uuids": [
+        "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177"
+      ]
     },
     {
       "uuid": "40a07160-4217-4f69-95d0-eb6821dcf646",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 34. Учим ноты на грифе гитары, учимся играть бас",
       "description": "",
       "video_url": "https://www.youtube.com/embed/pChGMR7l2Ho",
-      "duration": 823
+      "duration": 823,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "449651dc-a980-4036-8def-e3dd96429b17",
@@ -279,7 +390,8 @@
       "title": "Урок № 3. Бой № 2 и быстрое переставление аккордов",
       "description": "",
       "video_url": "https://www.youtube.com/embed/qTJ6pwdYkyk",
-      "duration": 779
+      "duration": 779,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "44beda3f-f374-4dde-956b-caccc954606f",
@@ -287,7 +399,8 @@
       "title": "Сектор Газа - Возле дома твоего",
       "description": "",
       "video_url": "https://www.youtube.com/embed/P7Zl_z-dsf4",
-      "duration": 172
+      "duration": 172,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "46b860fb-9082-4cfa-8085-96e198c39d07",
@@ -295,15 +408,23 @@
       "title": "Любэ - Ты неси меня река",
       "description": "",
       "video_url": "https://www.youtube.com/embed/zffYnoSYg5g",
-      "duration": 429
+      "duration": 429,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "475b2da3-f6ff-4b12-b5db-cc045f985e49",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 50. Превращаем 3 урок в 50-й, учебный процесс практически Фингерстайл",
       "description": "",
       "video_url": "https://www.youtube.com/embed/JQrvpad9vRQ",
-      "duration": 2347
+      "duration": 2347,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "47a358c4-cf96-47f2-9882-c3cd498091ee",
@@ -311,47 +432,83 @@
       "title": "ДДТ - Метель",
       "description": "",
       "video_url": "https://www.youtube.com/embed/7B4CrfZVf8c",
-      "duration": 302
+      "duration": 302,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "48221315-5d6a-4603-a5f8-43000e8a8271",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 33. Совмещаем бой и перебор, глухие и звонкие ноты",
       "description": "",
       "video_url": "https://www.youtube.com/embed/_8okZaTDugY",
-      "duration": 1224
+      "duration": 1224,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "4baf4c5a-0177-4765-abd1-537dd5e2aa77",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 22. Вступления и проигрышы с переставлением пальцев",
       "description": "",
       "video_url": "https://www.youtube.com/embed/G0XY06UgkE8",
-      "duration": 1376
+      "duration": 1376,
+      "addition_lesson_uuids": [
+        "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177"
+      ]
     },
     {
       "uuid": "4c59c0d4-c237-4696-bcce-140c2f1ea46b",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 46. Фингерстайл",
       "description": "",
       "video_url": "https://www.youtube.com/embed/hHqf4O4EOvg",
-      "duration": 1778
+      "duration": 1778,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "5bc2d1fd-b3fa-46a1-a0c3-ea625241295f",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 28. Табулатура, соло",
       "description": "",
       "video_url": "https://www.youtube.com/embed/KUPwVm0K2fU",
-      "duration": 1346
+      "duration": 1346,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "6469822e-d480-4621-8dcd-9d16af4e3a53",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 27. Сложные ритмы",
       "description": "",
       "video_url": "https://www.youtube.com/embed/Vahw_O5pYEo",
-      "duration": 985
+      "duration": 985,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "648548e6-4e7a-460d-ac2f-a1bb223ebef4",
@@ -359,7 +516,8 @@
       "title": "Кино - Апрель",
       "description": "",
       "video_url": "https://www.youtube.com/embed/64xFIxPDJkU",
-      "duration": 617
+      "duration": 617,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "67bd79d5-9ec6-4981-897f-e776d62383ee",
@@ -367,7 +525,8 @@
       "title": "Сплин - Время назад",
       "description": "",
       "video_url": "https://www.youtube.com/embed/ucUo6Wmf4bY",
-      "duration": 877
+      "duration": 877,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "6b341b51-3d69-4087-8a94-67f07dba971e",
@@ -375,15 +534,23 @@
       "title": "Урок № 0. Как настроить гитару",
       "description": "",
       "video_url": "https://www.youtube.com/embed/tUTu5clQGFw",
-      "duration": 827
+      "duration": 827,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "6b4cfa8d-9deb-4619-a91b-35104e222141",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок №14. Играем переборы",
       "description": "",
       "video_url": "https://www.youtube.com/embed/GtmApWBVFMI",
-      "duration": 770
+      "duration": 770,
+      "addition_lesson_uuids": [
+        "46b860fb-9082-4cfa-8085-96e198c39d07",
+        "13d448d2-a9f9-4469-aeae-480bff4e715b",
+        "a82aecd6-409c-4a25-881f-f1dac550fad3",
+        "f8773e51-2051-4abf-af21-aa904b0fed09",
+        "a5836771-5578-4b0a-aed5-f2fbab9ad5c6"
+      ]
     },
     {
       "uuid": "6c6601ea-f2f6-4cda-b197-4c23a90bcbd4",
@@ -391,15 +558,23 @@
       "title": "Земфира - Бесконечность",
       "description": "",
       "video_url": "https://www.youtube.com/embed/bReZTUPVoRA",
-      "duration": 592
+      "duration": 592,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "77d13a22-b765-489b-a1e3-dfec4459cc7c",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 35. Продолжаем изучать ноты",
       "description": "",
       "video_url": "https://www.youtube.com/embed/kywrAuPtq9A",
-      "duration": 856
+      "duration": 856,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "77e14e4f-bd51-48a1-9d82-b2c93d02239b",
@@ -407,47 +582,79 @@
       "title": "Чайф - Не спеши ты нас хоронить",
       "description": "",
       "video_url": "https://www.youtube.com/embed/zjEd0CNpsk8",
-      "duration": 311
+      "duration": 311,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "7862282e-82d7-4dec-ade0-b00087564860",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 43. Сложные ритмы, сбивки",
       "description": "",
       "video_url": "https://www.youtube.com/embed/_zcfd3MK7-o",
-      "duration": 1307
+      "duration": 1307,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "7b1837d2-b5e5-4c6e-b1a2-d49396111377",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 37. Переборы и растяжка",
       "description": "",
       "video_url": "https://www.youtube.com/embed/ZIUwh-z3oX0",
-      "duration": 950
+      "duration": 950,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "890e787f-b11b-4140-b949-82b71f7d9414",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 5. Бой и перебор на три четверти 3/4",
       "description": "",
       "video_url": "https://www.youtube.com/embed/7DD54t3p0-Y",
-      "duration": 1148
+      "duration": 1148,
+      "addition_lesson_uuids": [
+        "dbb565d4-645c-40d8-a6d3-0e323404137b"
+      ]
     },
     {
       "uuid": "8cd7cc9c-b173-4b16-b51b-c69ac7daad5c",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 29. Продолжаем играть гаммы и соло",
       "description": "",
       "video_url": "https://www.youtube.com/embed/P3xjFdXIRpE",
-      "duration": 1004
+      "duration": 1004,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "90f31800-3500-47da-b059-d030b6e76dd8",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 18. Переход между аккордами с помощью боя галоп",
       "description": "",
       "video_url": "https://www.youtube.com/embed/U1Rtp7U_Mdg",
-      "duration": 836
+      "duration": 836,
+      "addition_lesson_uuids": [
+        "1860323c-7d4f-4a54-9b09-1da00786c15d",
+        "d9781b0a-d817-49fd-a550-2fa446869879",
+        "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177"
+      ]
     },
     {
       "uuid": "929a80f1-6d90-4761-9c1d-3e8f273eb8c5",
@@ -455,15 +662,23 @@
       "title": "Кино - Пачка сигарет",
       "description": "",
       "video_url": "https://www.youtube.com/embed/FPgHXznrVo4",
-      "duration": 785
+      "duration": 785,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "95f9d5de-4dfb-4753-b7ca-4029effa1f86",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 49. Аранжировка, как брать необычные аккорды, соло",
       "description": "",
       "video_url": "https://www.youtube.com/embed/tDkVC9qPLSA",
-      "duration": 2390
+      "duration": 2390,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
@@ -471,7 +686,8 @@
       "title": "Кино - Группа крови",
       "description": "",
       "video_url": "https://www.youtube.com/embed/K21f55CWvLI",
-      "duration": 260
+      "duration": 260,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "99cc5099-51ac-4864-ae3e-358996a2630e",
@@ -479,7 +695,8 @@
       "title": "Сплин - Весь этот бред",
       "description": "",
       "video_url": "https://www.youtube.com/embed/bEcXk-15Jn4",
-      "duration": 374
+      "duration": 374,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
@@ -487,23 +704,38 @@
       "title": "Сплин - Мое сердце",
       "description": "",
       "video_url": "https://www.youtube.com/embed/MLOxC6tiP48",
-      "duration": 259
+      "duration": 259,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "9b6c3862-89ed-4d4b-8ff6-3c48d012c52a",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 20. Бой и пение на раскоординацию",
       "description": "",
       "video_url": "https://www.youtube.com/embed/9vZcWnd8fE8",
-      "duration": 938
+      "duration": 938,
+      "addition_lesson_uuids": [
+        "d9781b0a-d817-49fd-a550-2fa446869879",
+        "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177"
+      ]
     },
     {
       "uuid": "9bb87ae9-ba11-4975-b15b-f517eac29a5e",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 36. Начинаем играть скоростные ритмы",
       "description": "",
       "video_url": "https://www.youtube.com/embed/eBU3STCBbt0",
-      "duration": 1255
+      "duration": 1255,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
@@ -511,7 +743,8 @@
       "title": "Кино - Стук",
       "description": "",
       "video_url": "https://www.youtube.com/embed/NZO-gSwkUQA",
-      "duration": 354
+      "duration": 354,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "a5836771-5578-4b0a-aed5-f2fbab9ad5c6",
@@ -519,7 +752,8 @@
       "title": "Любэ - Давай за",
       "description": "",
       "video_url": "https://www.youtube.com/embed/jqb40iIjPeU",
-      "duration": 391
+      "duration": 391,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "a82aecd6-409c-4a25-881f-f1dac550fad3",
@@ -527,15 +761,22 @@
       "title": "Кино - Ночь",
       "description": "",
       "video_url": "https://www.youtube.com/embed/pQib66qMuGw",
-      "duration": 306
+      "duration": 306,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "b250636a-ebf2-4f65-a96c-bf7af8ad49b7",
-      "updated_at": "2026-10-10T12:23:58.194554Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 8. Учимся быстро ставить баррэ",
       "description": "",
       "video_url": "https://www.youtube.com/embed/MpnYAAiBPMc",
-      "duration": 817
+      "duration": 817,
+      "addition_lesson_uuids": [
+        "dbb565d4-645c-40d8-a6d3-0e323404137b",
+        "47a358c4-cf96-47f2-9882-c3cd498091ee",
+        "daa7e901-aff1-4236-8c6d-9d4606a4f506",
+        "648548e6-4e7a-460d-ac2f-a1bb223ebef4"
+      ]
     },
     {
       "uuid": "b36680b9-10b9-4a7d-ac1a-f43890aec876",
@@ -543,87 +784,157 @@
       "title": "Кино - Кукушка",
       "description": "",
       "video_url": "https://www.youtube.com/embed/lN5Efon-lvk",
-      "duration": 795
+      "duration": 795,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "bc60a463-0c97-402c-a394-65cbb3da614f",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 32. Продолжаем совмещать бои и сбивки",
       "description": "",
       "video_url": "https://www.youtube.com/embed/5EcmpKsdmUo",
-      "duration": 920
+      "duration": 920,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "be3bac2e-c1d0-46ac-abd8-88a3bed508f0",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 21. Ритм на три четверти 3/4",
       "description": "",
       "video_url": "https://www.youtube.com/embed/dh-Hxgu4pOE",
-      "duration": 745
+      "duration": 745,
+      "addition_lesson_uuids": [
+        "d9781b0a-d817-49fd-a550-2fa446869879",
+        "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177"
+      ]
     },
     {
       "uuid": "c00d8193-fec6-40db-93eb-df39e8401ff7",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 24. Переборы с боями",
       "description": "",
       "video_url": "https://www.youtube.com/embed/EU7Ay1L7Q90",
-      "duration": 989
+      "duration": 989,
+      "addition_lesson_uuids": [
+        "9ab932f6-4d84-44f3-96ef-d2da32799ae9",
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177"
+      ]
     },
     {
       "uuid": "c2e64370-3be7-4094-bacb-20eb27bcab26",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 17. Два новых боя (один)",
       "description": "",
       "video_url": "https://www.youtube.com/embed/TP4gwB2w62s",
-      "duration": 824
+      "duration": 824,
+      "addition_lesson_uuids": [
+        "44beda3f-f374-4dde-956b-caccc954606f",
+        "0cc27c83-eb41-480d-bea7-beaf86382d6c",
+        "99cc5099-51ac-4864-ae3e-358996a2630e",
+        "1860323c-7d4f-4a54-9b09-1da00786c15d",
+        "77e14e4f-bd51-48a1-9d82-b2c93d02239b"
+      ]
     },
     {
       "uuid": "c67e34dc-523f-4be3-a16d-6bdc64e21386",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 39. Пунктирные ритмы. Теория - ступени, минор, мажор",
       "description": "",
       "video_url": "https://www.youtube.com/embed/hIBrNpnL60g",
-      "duration": 1443
+      "duration": 1443,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "c989e79a-fc5b-4d98-9759-ca697863e56d",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 26. Продолжаем сложные ритмические рисунки",
       "description": "",
       "video_url": "https://www.youtube.com/embed/ZYkCdCr4-jM",
-      "duration": 1170
+      "duration": 1170,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "d1b68bce-5e6d-44de-8ff1-ee53605f5ac8",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 7. Продолжаем бой с перебором",
       "description": "",
       "video_url": "https://www.youtube.com/embed/pkKj_6jURdM",
-      "duration": 676
+      "duration": 676,
+      "addition_lesson_uuids": [
+        "dbb565d4-645c-40d8-a6d3-0e323404137b",
+        "47a358c4-cf96-47f2-9882-c3cd498091ee",
+        "daa7e901-aff1-4236-8c6d-9d4606a4f506",
+        "648548e6-4e7a-460d-ac2f-a1bb223ebef4"
+      ]
     },
     {
       "uuid": "d240e353-7c43-4812-8a71-cc7897e03fae",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 30. Объединяем разнообразные приемы",
       "description": "",
       "video_url": "https://www.youtube.com/embed/iD_PrN3hAtY",
-      "duration": 1236
+      "duration": 1236,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "d2bff983-a840-480d-ab6f-08c2283a92c6",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 13. Учимся играть разные ритмические рисунки",
       "description": "",
       "video_url": "https://www.youtube.com/embed/0n0HBag48L0",
-      "duration": 737
+      "duration": 737,
+      "addition_lesson_uuids": [
+        "f8773e51-2051-4abf-af21-aa904b0fed09",
+        "b36680b9-10b9-4a7d-ac1a-f43890aec876",
+        "929a80f1-6d90-4761-9c1d-3e8f273eb8c5",
+        "12f8392e-8af2-4a2e-bcda-741a48df8177",
+        "a5836771-5578-4b0a-aed5-f2fbab9ad5c6"
+      ]
     },
     {
       "uuid": "d454b517-f4af-47f0-b9eb-7d43d8f2cf90",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 47. Подготавливаем технику, длительность нот, нестандартные размеры на 5",
       "description": "",
       "video_url": "https://www.youtube.com/embed/zpLk0QX_m7s",
-      "duration": 4732
+      "duration": 4732,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "d9781b0a-d817-49fd-a550-2fa446869879",
@@ -631,15 +942,23 @@
       "title": "Сплин - Выхода нет",
       "description": "",
       "video_url": "https://www.youtube.com/embed/YPFkQJZ6EvI",
-      "duration": 398
+      "duration": 398,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "da55f408-2ffe-48ed-9ed5-ccb3f1dcc7f1",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 44. Как играть соло и перебор с боем вместе, фингерстайл",
       "description": "",
       "video_url": "https://www.youtube.com/embed/3GDn5g2Sfx8",
-      "duration": 1202
+      "duration": 1202,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "daa7e901-aff1-4236-8c6d-9d4606a4f506",
@@ -647,15 +966,23 @@
       "title": "Маленькой елочке холодно зимой",
       "description": "",
       "video_url": "https://www.youtube.com/embed/vd9jvbka380",
-      "duration": 258
+      "duration": 258,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "db7effcc-b13d-4aa7-98a0-1fef303801fa",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 15. Играем совмещенный бой",
       "description": "",
       "video_url": "https://www.youtube.com/embed/cw9NBJC08lY",
-      "duration": 944
+      "duration": 944,
+      "addition_lesson_uuids": [
+        "13d448d2-a9f9-4469-aeae-480bff4e715b",
+        "a82aecd6-409c-4a25-881f-f1dac550fad3",
+        "6c6601ea-f2f6-4cda-b197-4c23a90bcbd4",
+        "44beda3f-f374-4dde-956b-caccc954606f",
+        "77e14e4f-bd51-48a1-9d82-b2c93d02239b"
+      ]
     },
     {
       "uuid": "dbb565d4-645c-40d8-a6d3-0e323404137b",
@@ -663,7 +990,8 @@
       "title": "Сплин - Бог устал нас любить",
       "description": "",
       "video_url": "https://www.youtube.com/embed/pkcT6MteKpw",
-      "duration": 222
+      "duration": 222,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "e6d2ca30-44ae-4243-81eb-c4072d696b05",
@@ -671,7 +999,8 @@
       "title": "Сектор Газа - Демобилизация",
       "description": "",
       "video_url": "https://www.youtube.com/embed/5HGviWwom-0",
-      "duration": 310
+      "duration": 310,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "ee232f88-b3b9-4130-9f48-9d8de9514102",
@@ -679,15 +1008,23 @@
       "title": "Урок № 2. Отрабатываем бой № 1 и учимся ставить аккорды",
       "description": "",
       "video_url": "https://www.youtube.com/embed/K0HnY22I8es",
-      "duration": 433
+      "duration": 433,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "f3a3f5b2-ee89-4a30-925d-69dca452702b",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 45. Фингерстайл - как играть соло и перебор с боем вместе",
       "description": "",
       "video_url": "https://www.youtube.com/embed/-TE52d_dZtU",
-      "duration": 1235
+      "duration": 1235,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     },
     {
       "uuid": "f8773e51-2051-4abf-af21-aa904b0fed09",
@@ -695,15 +1032,23 @@
       "title": "Сектор Газа - Казачья",
       "description": "",
       "video_url": "https://www.youtube.com/embed/9uGDEIuS43c",
-      "duration": 154
+      "duration": 154,
+      "addition_lesson_uuids": []
     },
     {
       "uuid": "ffcfae36-ada9-4ce7-8555-723d4977a8e9",
-      "updated_at": "2026-05-30T05:29:18.303356Z",
+      "updated_at": "2026-11-08T05:59:50.445302Z",
       "title": "Урок № 48. Интервалы, подберем их, а потом сыграем в темпе 230",
       "description": "",
       "video_url": "https://www.youtube.com/embed/Kpoyy0mWLKQ",
-      "duration": 1989
+      "duration": 1989,
+      "addition_lesson_uuids": [
+        "97fe185e-eacc-4ba5-8b42-c72b61416a4d",
+        "a1e1cf53-8069-490d-a9f1-ba85b21f8451",
+        "1b032207-7ba5-4d1d-aec9-512b7a231346",
+        "221e6967-9a71-42bc-96ce-38f73f6a6177",
+        "67bd79d5-9ec6-4981-897f-e776d62383ee"
+      ]
     }
   ],
   "songs": [
