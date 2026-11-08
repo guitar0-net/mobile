@@ -4,18 +4,20 @@
 
 import { useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import type { SymbolViewProps } from "expo-symbols";
 import { Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/text";
 import { useColors } from "@/lib/themes";
 
-import type { FavoriteLessonRow } from "../queries";
+import type { LessonLinkRow } from "../queries";
 
 type Props = {
-  lesson: FavoriteLessonRow;
+  lesson: LessonLinkRow;
+  icon: SymbolViewProps["name"];
 };
 
-export function FavoriteLessonCard({ lesson }: Props) {
+export function LessonLinkCard({ lesson, icon }: Props) {
   const router = useRouter();
   const colors = useColors();
 
@@ -28,11 +30,7 @@ export function FavoriteLessonCard({ lesson }: Props) {
       }
       className="flex-row items-center gap-3 rounded-xl border border-border bg-surface p-4"
     >
-      <SymbolView
-        name={{ ios: "bookmark.fill", android: "bookmark" }}
-        size={20}
-        tintColor={colors.primary}
-      />
+      <SymbolView name={icon} size={20} tintColor={colors.primary} />
       <View className="flex-1 gap-0.5">
         <Text
           variant="caption"

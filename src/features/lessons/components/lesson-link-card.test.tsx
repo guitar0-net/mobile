@@ -7,8 +7,8 @@ import type { ReactNode } from "react";
 
 import { ThemeProvider } from "@/lib/themes";
 
-import type { FavoriteLessonRow } from "../queries";
-import { FavoriteLessonCard } from "./favorite-lesson-card";
+import type { LessonLinkRow } from "../queries";
+import { LessonLinkCard } from "./lesson-link-card";
 
 const mockPush = jest.fn();
 
@@ -24,7 +24,7 @@ function wrapper({ children }: { children: ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>;
 }
 
-const lesson: FavoriteLessonRow = {
+const lesson: LessonLinkRow = {
   lessonUuid: "lesson-1",
   title: "Открытые аккорды",
   courseUuid: "course-1",
@@ -33,19 +33,21 @@ const lesson: FavoriteLessonRow = {
   totalInCourse: 10,
 };
 
-describe("FavoriteLessonCard", () => {
+const ICON = { ios: "bookmark.fill", android: "bookmark" } as const;
+
+describe("LessonLinkCard", () => {
   test("renders the lesson title", () => {
-    render(<FavoriteLessonCard lesson={lesson} />, { wrapper });
+    render(<LessonLinkCard lesson={lesson} icon={ICON} />, { wrapper });
     expect(screen.getByText("Открытые аккорды")).toBeTruthy();
   });
 
   test("renders the course title", () => {
-    render(<FavoriteLessonCard lesson={lesson} />, { wrapper });
+    render(<LessonLinkCard lesson={lesson} icon={ICON} />, { wrapper });
     expect(screen.getByText("Основы гитары")).toBeTruthy();
   });
 
   test("navigates to the lesson with its course, order, and total on press", () => {
-    render(<FavoriteLessonCard lesson={lesson} />, { wrapper });
+    render(<LessonLinkCard lesson={lesson} icon={ICON} />, { wrapper });
     fireEvent.press(screen.getByText("Открытые аккорды"));
     expect(mockPush).toHaveBeenCalledWith(
       "/lesson/lesson-1?courseId=course-1&order=3&total=10",

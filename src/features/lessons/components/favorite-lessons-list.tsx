@@ -2,13 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import type { SymbolViewProps } from "expo-symbols";
 import { FlatList, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
 
 import { useFavoriteLessons } from "../queries";
-import { FavoriteLessonCard } from "./favorite-lesson-card";
+import { LessonLinkCard } from "./lesson-link-card";
+
+const BOOKMARK_ICON: SymbolViewProps["name"] = {
+  ios: "bookmark.fill",
+  android: "bookmark",
+};
 
 export function FavoriteLessonsList() {
   const { lessons, isLoading } = useFavoriteLessons();
@@ -31,7 +37,7 @@ export function FavoriteLessonsList() {
         contentInsetAdjustmentBehavior="automatic"
         data={lessons}
         keyExtractor={(item) => item.lessonUuid}
-        renderItem={({ item }) => <FavoriteLessonCard lesson={item} />}
+        renderItem={({ item }) => <LessonLinkCard lesson={item} icon={BOOKMARK_ICON} />}
       />
     </SafeAreaView>
   );

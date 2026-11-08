@@ -17,7 +17,7 @@ import {
   fetchAllLessonSongCounts,
   fetchCourses,
   fetchCourseLessons,
-  fetchFavoriteLessons,
+  fetchLessonLinks,
   fetchLessonDetail,
   fetchSongIdsByLesson,
   invalidateContentQueries,
@@ -772,19 +772,19 @@ describe("useDownloadedVideos", () => {
 });
 
 // ---------------------------------------------------------------------------
-// fetchFavoriteLessons
+// fetchLessonLinks
 // ---------------------------------------------------------------------------
 
-describe("fetchFavoriteLessons", () => {
+describe("fetchLessonLinks", () => {
   test("returns an empty array without querying when given no uuids", async () => {
     await initDb();
-    expect(await fetchFavoriteLessons([])).toEqual([]);
+    expect(await fetchLessonLinks([])).toEqual([]);
   });
 
   test("returns lesson rows with course title and total lessons in course", async () => {
     await seedCourse();
 
-    const rows = await fetchFavoriteLessons(["lesson-1"]);
+    const rows = await fetchLessonLinks(["lesson-1"]);
     expect(rows).toEqual([
       {
         lessonUuid: "lesson-1",
@@ -800,7 +800,7 @@ describe("fetchFavoriteLessons", () => {
   test("omits a favorite uuid that no longer matches any lesson", async () => {
     await seedCourse();
 
-    const rows = await fetchFavoriteLessons(["lesson-1", "deleted-lesson"]);
+    const rows = await fetchLessonLinks(["lesson-1", "deleted-lesson"]);
     expect(rows.map((r) => r.lessonUuid)).toEqual(["lesson-1"]);
   });
 
@@ -819,7 +819,7 @@ describe("fetchFavoriteLessons", () => {
       order: 1,
     });
 
-    const rows = await fetchFavoriteLessons(["lesson-1"]);
+    const rows = await fetchLessonLinks(["lesson-1"]);
     expect(rows).toHaveLength(1);
   });
 });

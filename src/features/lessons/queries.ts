@@ -317,7 +317,7 @@ export function useDownloadedVideos() {
   });
 }
 
-export type FavoriteLessonRow = {
+export type LessonLinkRow = {
   lessonUuid: string;
   title: string;
   courseUuid: string;
@@ -327,13 +327,13 @@ export type FavoriteLessonRow = {
 };
 
 // A lesson can belong to more than one course (see fetchAllLessonSongCounts) —
-// pick the oldest course (createdAt, then uuid to break ties) so a favorited
+// pick the oldest course (createdAt, then uuid to break ties) so a linked
 // lesson always resolves to the same navigation target regardless of
 // query-plan or insertion order.
-export async function fetchFavoriteLessons(
-  favoriteUuids: string[],
-): Promise<FavoriteLessonRow[]> {
-  if (favoriteUuids.length === 0) return [];
+export async function fetchLessonLinks(
+  lessonUuids: string[],
+): Promise<LessonLinkRow[]> {
+  if (lessonUuids.length === 0) return [];
   const db = getDb();
 
   // Both selects run inside one transaction so a concurrent sync (which
@@ -351,7 +351,7 @@ export async function fetchFavoriteLessons(
       .from(lessons)
       .innerJoin(courseLessons, eq(courseLessons.lessonUuid, lessons.uuid))
       .innerJoin(courses, eq(courses.uuid, courseLessons.courseUuid))
-      .where(inArray(lessons.uuid, favoriteUuids))
+      .where(inArray(lessons.uuid, lessonUuids))
       .orderBy(asc(courses.createdAt), asc(courses.uuid));
 
     const byLesson = new Map<string, (typeof rows)[number]>();
@@ -388,7 +388,7 @@ export function useFavoriteLessons(limit?: number) {
 
   const query = useQuery({
     queryKey: ["favorite-lessons", favorites],
-    queryFn: () => fetchFavoriteLessons(favorites),
+    queryFn: () => fetchLessonLinks(favorites),
     enabled: favorites.length > 0,
   });
 
@@ -397,7 +397,7 @@ export function useFavoriteLessons(limit?: number) {
     const ordered = [...favorites]
       .reverse()
       .map((uuid) => byUuid.get(uuid))
-      .filter((row): row is FavoriteLessonRow => row != null);
+      .filter((row): row is LessonLinkRow => row != null);
     return limit != null ? ordered.slice(0, limit) : ordered;
   }, [query.data, favorites, limit]);
 
