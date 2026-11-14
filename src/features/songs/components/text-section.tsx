@@ -86,7 +86,6 @@ export function TextSection({ text, chordText }: TextSectionProps) {
     blockquote: { backgroundColor: colors.surface },
     link: { color: colors.primary },
   };
-  const chordStyle = { ...headingStyle, color: colors.primary };
 
   let content: ReactNode = <Markdown style={markdownStyles}>{text}</Markdown>;
   if (chordText) {
@@ -95,7 +94,7 @@ export function TextSection({ text, chordText }: TextSectionProps) {
         <ChordLine
           key={index}
           line={block.line}
-          chordStyle={chordStyle}
+          chordStyle={headingStyle}
           lyricStyle={markdownStyles.body}
         />
       ) : (

@@ -19,7 +19,9 @@ export function ChordLine({ line, chordStyle, lyricStyle }: ChordLineProps) {
         <View key={wordIndex} testID="chord-word" className="flex-row">
           {word.map((segment, segmentIndex) => (
             <View key={segmentIndex}>
-              <Text style={chordStyle}>{segment.chord ?? NBSP}</Text>
+              <Text className="pr-1" style={chordStyle}>
+                {segment.chord ?? NBSP}
+              </Text>
               <Text style={[lyricStyle, ANDROID_LYRIC_FONT]}>{segment.text}</Text>
             </View>
           ))}
