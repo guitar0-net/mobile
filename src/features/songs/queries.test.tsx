@@ -40,6 +40,7 @@ async function seedSong() {
     uuid: "song-1",
     title: "Smoke on the Water",
     text: "Da da da...",
+    chordText: "[Am]Da da da...",
     metronome: 112,
   });
   await db.insert(chords).values([
@@ -102,6 +103,7 @@ describe("fetchSongDetail", () => {
       uuid: "song-1",
       title: "Smoke on the Water",
       text: "Da da da...",
+      chordText: "[Am]Da da da...",
       metronome: 112,
     });
   });

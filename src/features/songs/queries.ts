@@ -40,6 +40,7 @@ export type SongDetailRow = {
   uuid: string;
   title: string;
   text: string;
+  chordText: string;
   metronome: number;
   lessonUuid: string | null;
   lessonTitle: string | null;
@@ -55,6 +56,7 @@ export async function fetchSongDetail(songUuid: string): Promise<SongDetailRow |
       uuid: songs.uuid,
       title: songs.title,
       text: songs.text,
+      chordText: songs.chordText,
       metronome: songs.metronome,
       lessonUuid: lessonSongs.lessonUuid,
       lessonTitle: lessons.title,
