@@ -55,6 +55,8 @@ export function TextSection({ text }: TextSectionProps) {
       fontSize: fontSizeValue,
       lineHeight: lineHeightValue,
     },
+    // Android can draw text wider than measured; a shrink-to-fit Text then clips its last word.
+    textgroup: { width: "100%" as const },
     heading1: headingStyle,
     heading2: headingStyle,
     heading3: headingStyle,
