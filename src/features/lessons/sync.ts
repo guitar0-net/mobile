@@ -208,6 +208,7 @@ function writeContent(db: AppDb, payload: SyncLessonsResponse): void {
         const songValues = {
           title: song.title,
           text: song.text,
+          chordText: song.chord_text,
           metronome: song.metronome,
         };
         tx.insert(songsTable)

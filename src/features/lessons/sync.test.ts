@@ -2,6 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { drizzle } from "drizzle-orm/expo-sqlite";
+import { migrate } from "drizzle-orm/expo-sqlite/migrator";
+import { openDatabaseSync } from "expo-sqlite";
+
 import {
   chords,
   courseLessons,
@@ -15,10 +19,13 @@ import {
   songSchemes,
   songs,
 } from "@/lib/db";
+import type { AppDb } from "@/lib/db";
+import * as schema from "@/lib/db/schema";
 import type { components } from "@/lib/network/api.types";
 
 import { resetDbForTesting } from "./__tests__/testing";
 import { applyContentSnapshot, getContentVersion, syncAll } from "./sync";
+import migrations from "../../../drizzle/migrations";
 
 const mockDeletedFiles: string[] = [];
 const mockDeleteFile = jest.fn((name: string) => mockDeletedFiles.push(name));
@@ -71,6 +78,7 @@ function makeSong(
     lesson_uuid: lessonUuid,
     title: "Звезда по имени Солнце",
     text: "Текст песни",
+    chord_text: "[Am]Текст песни",
     metronome: 120,
     chord_ids: [],
     scheme_ids: [],
@@ -246,6 +254,55 @@ test("lesson with 2 songs → 2 rows in songs table linked to the lesson", async
   const junctionRows = await db.select().from(lessonSongs);
   expect(junctionRows).toHaveLength(2);
   expect(junctionRows.every((r) => r.lessonUuid === "l1")).toBe(true);
+});
+
+describe("song chord text", () => {
+  function syncSong(db: AppDb, song: Partial<SongSync>, version: string) {
+    return syncAll(db, {
+      getSyncData: () =>
+        Promise.resolve(
+          makeSyncResponse({
+            version,
+            lesson_uuids: ["l1"],
+            lessons: [makeLesson("l1")],
+            songs: [makeSong("s1", "l1", song)],
+          }),
+        ),
+    });
+  }
+
+  async function storedSong(db: AppDb) {
+    const [row] = await db
+      .select({ text: songs.text, chordText: songs.chordText })
+      .from(songs);
+    return row;
+  }
+
+  test("stores chord_text next to the unchanged text", async () => {
+    const db = await initDb();
+
+    await syncSong(
+      db,
+      { text: "**Am**\nМы не знали", chord_text: "Мы не [Am]знали" },
+      "v1",
+    );
+
+    expect(await storedSong(db)).toEqual({
+      text: "**Am**\nМы не знали",
+      chordText: "Мы не [Am]знали",
+    });
+  });
+
+  test("a delta replaces chord_text, including with an empty string", async () => {
+    const db = await initDb();
+    await syncSong(db, { chord_text: "[Am]Было" }, "2026-01-01T00:00:00Z");
+
+    await syncSong(db, { chord_text: "[Em]Стало" }, "2026-02-01T00:00:00Z");
+    expect((await storedSong(db)).chordText).toBe("[Em]Стало");
+
+    await syncSong(db, { chord_text: "" }, "2026-03-01T00:00:00Z");
+    expect((await storedSong(db)).chordText).toBe("");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1141,6 +1198,45 @@ describe("applyContentSnapshot", () => {
     });
     const [savedScheme] = await db.select().from(schemes);
     expect(savedScheme.localImagePath).toBe("7.jpg");
+  });
+
+  test("stores chord_text from the snapshot", async () => {
+    const db = await initDb();
+
+    await applyContentSnapshot(
+      db,
+      snapshotWith({ songs: [makeSong("s1", "l1", { chord_text: "[Am]Из снимка" })] }),
+    );
+
+    const [song] = await db.select({ chordText: songs.chordText }).from(songs);
+    expect(song.chordText).toBe("[Am]Из снимка");
+  });
+
+  test("a device that synced songs before chord_text existed applies the snapshot again", async () => {
+    const sqlite = openDatabaseSync("upgraded.db");
+    const db = drizzle(sqlite, { schema });
+    await migrate(db, {
+      ...migrations,
+      journal: {
+        ...migrations.journal,
+        entries: migrations.journal.entries.slice(0, 5),
+      },
+    });
+    sqlite.execSync(`
+      INSERT INTO content_meta (id, version) VALUES (1, '${SNAPSHOT_VERSION}');
+      INSERT INTO songs (uuid, title, text) VALUES ('s1', 'Песня', '**Am**');
+    `);
+
+    await migrate(db, migrations);
+    const result = await applyContentSnapshot(
+      db,
+      snapshotWith({ songs: [makeSong("s1", "l1", { chord_text: "[Am]Из снимка" })] }),
+    );
+
+    expect(result).toMatchObject({ applied: true, previousVersion: null });
+    const [song] = await db.select({ chordText: songs.chordText }).from(songs);
+    expect(song.chordText).toBe("[Am]Из снимка");
+    expect(getContentVersion(db)).toBe(SNAPSHOT_VERSION);
   });
 
   test("a failing write changes neither the content nor the version", async () => {
