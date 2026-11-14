@@ -4,6 +4,92 @@
  */
 
 export interface paths {
+  "/api/v1/auth/google/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Verify the Google ID token and return JWT tokens for the user. */
+    post: operations["auth_google_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/token/refresh/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Rotate a refresh token for a new access/refresh pair. */
+    post: operations["auth_token_refresh_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/token/verify/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Verify that a JWT access token is valid. */
+    post: operations["auth_token_verify_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/me/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Return the requesting user's profile fields. */
+    get: operations["auth_me_retrieve"];
+    put?: never;
+    post?: never;
+    /** @description Delete the requesting user's account. */
+    delete: operations["auth_me_destroy"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/logout/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Blacklist the given refresh token. */
+    post: operations["auth_logout_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/chords/": {
     parameters: {
       query?: never;
@@ -66,6 +152,23 @@ export interface paths {
     get: operations["lessons_retrieve"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/songs/{uuid}/print/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Accept print settings and return the song as a PDF document. */
+    post: operations["songs_print_create"];
     delete?: never;
     options?: never;
     head?: never;
@@ -174,6 +277,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/donations/products/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description List active donation products clients can offer for purchase. */
+    get: operations["donations_products_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/donations/verify/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Validate the purchase payload and verify it against the store. */
+    post: operations["donations_verify_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/donations/claim/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Claim all unclaimed purchases for the given device_id. */
+    post: operations["donations_claim_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -242,6 +396,38 @@ export interface components {
       /** SVG вертикальный */
       svg_vertical?: string;
     };
+    /**
+     * @description Chord representation for nesting inside a song.
+     *
+     *     Omits `positions` — clients render chord diagrams from the pre-rendered
+     *     `svg_horizontal`/`svg_vertical` fields, never from raw string positions
+     *     (same choice already made by `ChordSyncSerializer` for offline sync).
+     *     Keeping it out here avoids prefetching `positions` for every chord in
+     *     every song of a lesson.
+     */
+    ChordEmbedded: {
+      readonly id: number;
+      /** Название */
+      title: string;
+      /** Музыкальное название */
+      musical_title: string;
+      /** Порядок отображения */
+      order_in_note?: number;
+      /** С какого лада начинается */
+      start_fret?: number;
+      /** Есть барре? */
+      has_barre?: boolean;
+      /** SVG горизонтальный */
+      svg_horizontal?: string;
+      /** SVG вертикальный */
+      svg_vertical?: string;
+    };
+    /**
+     * @description * `horizontal` - Горизонтальный
+     *     * `vertical` - Вертикальный
+     * @enum {string}
+     */
+    ChordOrientationEnum: "horizontal" | "vertical";
     /** @description Serializer for one string position. */
     ChordPosition: {
       /** Номер струны */
@@ -284,6 +470,14 @@ export interface components {
       svg_horizontal?: string;
       /** SVG вертикальный */
       svg_vertical?: string;
+    };
+    /** @description Validates the device_id whose anonymous purchases should be claimed. */
+    ClaimDeviceRequestRequest: {
+      device_id: string;
+    };
+    /** @description How many anonymous purchases were attached to the user. */
+    ClaimDeviceResponse: {
+      readonly claimed: number;
     };
     /** @description Shape of the /api/v1/sync/version/ response. */
     ContentVersionResponse: {
@@ -352,7 +546,27 @@ export interface components {
       description?: string;
       readonly lessons_count: number;
     };
-    /** @description Output  serializer for an image scheme. */
+    /**
+     * @description Expose only the product_id field.
+     *
+     *     Price and title are resolved by the client directly against the store's
+     *     own SDK using this id — they are deliberately not duplicated here.
+     */
+    DonationProductList: {
+      /** Идентификатор товара */
+      product_id: string;
+    };
+    /** @description Validates the incoming Google ID token. */
+    GoogleAuthRequestRequest: {
+      id_token: string;
+    };
+    /** @description The JWT access/refresh pair and the signed-in user's profile. */
+    GoogleAuthResponse: {
+      readonly access: string;
+      readonly refresh: string;
+      readonly user: components["schemas"]["UserProfile"];
+    };
+    /** @description Output serializer for an image scheme. */
     ImageScheme: {
       readonly id: number;
       /** Надпись */
@@ -397,7 +611,13 @@ export interface components {
         title: string;
       } | null;
     };
-    /** @description Lesson fields only — songs are in the top-level songs array. */
+    /**
+     * @description Lesson fields only — songs are in the top-level songs array.
+     *
+     *     Recommended lessons are referenced by UUID, limited to published ones. A
+     *     referenced lesson unpublished later does not bump this lesson's
+     *     `updated_at`, so the client resolves the UUIDs against `lesson_uuids`.
+     */
     LessonFlat: {
       /** Format: uuid */
       readonly uuid: string;
@@ -450,6 +670,10 @@ export interface components {
       duration?: number;
       readonly songs: components["schemas"]["SongList"][];
     };
+    /** @description Validates the incoming refresh token to blacklist. */
+    LogoutRequestRequest: {
+      refresh: string;
+    };
     PaginatedAnnouncementsListList: {
       /** @example 123 */
       count: number;
@@ -495,6 +719,21 @@ export interface components {
       previous?: string | null;
       results: components["schemas"]["CoursesList"][];
     };
+    PaginatedDonationProductListList: {
+      /** @example 123 */
+      count: number;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?offset=400&limit=100
+       */
+      next?: string | null;
+      /**
+       * Format: uri
+       * @example http://api.example.org/accounts/?offset=200&limit=100
+       */
+      previous?: string | null;
+      results: components["schemas"]["DonationProductList"][];
+    };
     PaginatedLessonsListList: {
       /** @example 123 */
       count: number;
@@ -509,6 +748,81 @@ export interface components {
        */
       previous?: string | null;
       results: components["schemas"]["LessonsList"][];
+    };
+    /**
+     * @description * `android` - Android
+     *     * `ios` - iOS
+     * @enum {string}
+     */
+    PlatformEnum: "android" | "ios";
+    /**
+     * @description * `1` - Очень маленький
+     *     * `2` - Маленький
+     *     * `3` - Средний
+     *     * `4` - Большой
+     *     * `5` - Очень большой
+     * @enum {integer}
+     */
+    PrintSizeEnum: 1 | 2 | 3 | 4 | 5;
+    /** @description Serialize a verified purchase back to the client. */
+    Purchase: {
+      /** Платформа */
+      readonly platform: components["schemas"]["PlatformEnum"];
+      readonly product_id: string;
+      /** Статус */
+      readonly status: components["schemas"]["StatusEnum"];
+      /**
+       * Подтверждено
+       * Format: date-time
+       */
+      readonly verified_at: string;
+    };
+    /**
+     * @description Validates a client's request to verify a store purchase.
+     *
+     *     `purchase_token` is required for Android (needed again to acknowledge)
+     *     and unused for iOS. `signed_transaction_info` is required for iOS (the
+     *     JWS StoreKit hands the client for its own transaction) and unused for
+     *     Android. `store_transaction_id` is required for iOS but optional for
+     *     Android: Google leaves `orderId` unset until a pending payment clears,
+     *     so an Android client reporting a purchase it saw as PENDING has no id to
+     *     send and would otherwise be refused here instead of being told to retry.
+     *     `device_id` is only used when the request is unauthenticated.
+     */
+    PurchaseVerifyRequestRequest: {
+      platform: components["schemas"]["PlatformEnum"];
+      product_id: string;
+      /** @default  */
+      store_transaction_id: string;
+      /** @default  */
+      purchase_token: string;
+      /** @default  */
+      signed_transaction_info: string;
+      /** @default  */
+      device_id: string;
+    };
+    /**
+     * @description Refuse refresh tokens whose user no longer exists.
+     *
+     *     simplejwt looks the user up without catching DoesNotExist, so a token that
+     *     outlives its user would surface as a 500. That happens when the user is
+     *     deleted in the admin, or when a refresh races `delete_account` and its
+     *     rotated token is stored after the blacklisting.
+     */
+    RefreshToken: {
+      refresh: string;
+      readonly access: string;
+    };
+    /**
+     * @description Refuse refresh tokens whose user no longer exists.
+     *
+     *     simplejwt looks the user up without catching DoesNotExist, so a token that
+     *     outlives its user would surface as a 500. That happens when the user is
+     *     deleted in the admin, or when a refresh races `delete_account` and its
+     *     rotated token is stored after the blacklisting.
+     */
+    RefreshTokenRequest: {
+      refresh: string;
     };
     /** @description Scheme for offline sync. */
     SchemeSync: {
@@ -532,14 +846,20 @@ export interface components {
       /** Название */
       title: string;
       /**
-       * Текст песни
-       * @description С аккордами и переносами строк
+       * Текст песни (устарело)
+       * @deprecated
+       * @description Deprecated: no longer maintained, use `chord_text`. Markdown with chords on separate bold lines aligned by spaces, so they drift from the lyrics when a line wraps. Kept for released app versions; may be empty for new songs.
        */
-      text: string;
+      text?: string;
+      /**
+       * Текст с аккордами
+       * @description Song text in markdown with every chord written inline in square brackets right before the syllable it belongs to: `Мы не [G (2)]знали друг друга`. A chord after the last word goes at the end of the line after a space. Text inside the brackets after the chord name (from a space or `(`) is a performance note such as a strum count. Chord-only lines (intros, instrumentals) stay bold lines without brackets. Brackets are markdown link syntax (`[Am](…)`), so cut the chords out before rendering markdown. Empty string when the song is not converted yet: fall back to `text`.
+       */
+      chord_text?: string;
       /** Метроном */
       metronome?: number;
       readonly schemes: components["schemas"]["ImageScheme"][];
-      readonly chords: components["schemas"]["ChordDetail"][];
+      readonly chords: components["schemas"]["ChordEmbedded"][];
     };
     /** @description Song with chord_ids/scheme_ids instead of nested objects. */
     SongFlat: {
@@ -548,7 +868,13 @@ export interface components {
       /** Format: uuid */
       lesson_uuid: string;
       title: string;
+      /**
+       * @deprecated
+       * @description Deprecated: no longer maintained, use `chord_text`. Markdown with chords on separate bold lines aligned by spaces, so they drift from the lyrics when a line wraps. Kept for released app versions; may be empty for new songs.
+       */
       text: string;
+      /** @description Song text in markdown with every chord written inline in square brackets right before the syllable it belongs to: `Мы не [G (2)]знали друг друга`. A chord after the last word goes at the end of the line after a space. Text inside the brackets after the chord name (from a space or `(`) is a performance note such as a strum count. Chord-only lines (intros, instrumentals) stay bold lines without brackets. Brackets are markdown link syntax (`[Am](…)`), so cut the chords out before rendering markdown. Empty string when the song is not converted yet: fall back to `text`. */
+      chord_text: string;
       metronome: number;
       chord_ids: number[];
       scheme_ids: number[];
@@ -560,6 +886,33 @@ export interface components {
       /** Название */
       title: string;
     };
+    /** @description Deserialize and validate PDF print settings from the request body. */
+    SongPrintSettingsRequest: {
+      /** @default true */
+      show_chords: boolean;
+      /** @default true */
+      show_schemes: boolean;
+      /** @default true */
+      show_text: boolean;
+      /** @default vertical */
+      chord_orientation: components["schemas"]["ChordOrientationEnum"];
+      /** @default 3 */
+      chord_size: components["schemas"]["PrintSizeEnum"];
+      /** @default 3 */
+      scheme_size: components["schemas"]["PrintSizeEnum"];
+      /** @default 3 */
+      text_size: components["schemas"]["PrintSizeEnum"];
+      /** @default 1 */
+      columns_count: number;
+    };
+    /**
+     * @description * `verified` - Подтверждено стором
+     *     * `completed` - Завершено
+     *     * `refunded` - Возвращено
+     *     * `revoked` - Отозвано
+     * @enum {string}
+     */
+    StatusEnum: "verified" | "completed" | "refunded" | "revoked";
     /** @description Shape of the /api/v1/sync/lessons/ response. */
     SyncLessonsResponse: {
       version: string | null;
@@ -572,6 +925,41 @@ export interface components {
       courses: components["schemas"]["CourseFlat"][];
       course_lessons: components["schemas"]["CourseLessonFlat"][];
     };
+    TokenVerifyRequest: {
+      token: string;
+    };
+    /** @description Public profile fields shared by the auth and profile endpoints. */
+    UserProfile: {
+      /** Format: email */
+      email: string;
+      /** @description The user's full name, falling back to their email prefix. */
+      readonly display_name: string;
+      /** Аватар */
+      avatar?: string;
+    };
+    /**
+     * @description Describes the error body PurchaseVerifyView returns.
+     *
+     *     Documentation-only: it exists so drf-spectacular publishes `code` and its
+     *     permitted values, without which a generated client has to hard-code the
+     *     strings it is meant to branch on. Never used to build or parse a payload.
+     */
+    VerifyError: {
+      readonly detail: string;
+      readonly code: components["schemas"]["VerifyErrorCode"];
+    };
+    /**
+     * @description * `unknown_product` - UNKNOWN_PRODUCT
+     *     * `purchase_pending` - PURCHASE_PENDING
+     *     * `purchase_rejected` - PURCHASE_REJECTED
+     *     * `store_unavailable` - STORE_UNAVAILABLE
+     * @enum {string}
+     */
+    VerifyErrorCode:
+      | "unknown_product"
+      | "purchase_pending"
+      | "purchase_rejected"
+      | "store_unavailable";
   };
   responses: never;
   parameters: never;
@@ -581,6 +969,155 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  auth_google_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GoogleAuthRequestRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["GoogleAuthRequestRequest"];
+        "multipart/form-data": components["schemas"]["GoogleAuthRequestRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GoogleAuthResponse"];
+        };
+      };
+      /** @description Missing `id_token`, or the token failed verification. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The Google account resolves to a staff or superuser. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  auth_token_refresh_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RefreshTokenRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["RefreshTokenRequest"];
+        "multipart/form-data": components["schemas"]["RefreshTokenRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RefreshToken"];
+        };
+      };
+    };
+  };
+  auth_token_verify_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TokenVerifyRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["TokenVerifyRequest"];
+        "multipart/form-data": components["schemas"]["TokenVerifyRequest"];
+      };
+    };
+    responses: {
+      /** @description No response body */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  auth_me_retrieve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UserProfile"];
+        };
+      };
+    };
+  };
+  auth_me_destroy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  auth_logout_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LogoutRequestRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["LogoutRequestRequest"];
+        "multipart/form-data": components["schemas"]["LogoutRequestRequest"];
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   chords_list: {
     parameters: {
       query?: {
@@ -671,6 +1208,55 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["LessonDetail"];
         };
+      };
+    };
+  };
+  songs_print_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        uuid: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["SongPrintSettingsRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["SongPrintSettingsRequest"];
+        "multipart/form-data": components["schemas"]["SongPrintSettingsRequest"];
+      };
+    };
+    responses: {
+      /** @description The song rendered as a PDF document. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/pdf": string;
+        };
+      };
+      /** @description Invalid print settings. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No such song. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Print rate limit exceeded. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -802,6 +1388,126 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["ContentVersionResponse"];
         };
+      };
+    };
+  };
+  donations_products_list: {
+    parameters: {
+      query?: {
+        /** @description Number of results to return per page. */
+        limit?: number;
+        /** @description The initial index from which to return the results. */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedDonationProductListList"];
+        };
+      };
+    };
+  };
+  donations_verify_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PurchaseVerifyRequestRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["PurchaseVerifyRequestRequest"];
+        "multipart/form-data": components["schemas"]["PurchaseVerifyRequestRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Purchase"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VerifyError"];
+        };
+      };
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VerifyError"];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VerifyError"];
+        };
+      };
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VerifyError"];
+        };
+      };
+    };
+  };
+  donations_claim_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClaimDeviceRequestRequest"];
+        "application/x-www-form-urlencoded": components["schemas"]["ClaimDeviceRequestRequest"];
+        "multipart/form-data": components["schemas"]["ClaimDeviceRequestRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClaimDeviceResponse"];
+        };
+      };
+      /** @description Missing or overlong `device_id`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No valid access token. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

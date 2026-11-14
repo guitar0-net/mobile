@@ -81,6 +81,7 @@ export const songs = sqliteTable("songs", {
   uuid: text("uuid").primaryKey(),
   title: text("title").notNull(),
   text: text("text").notNull(),
+  chordText: text("chord_text").notNull().default(""),
   metronome: integer("metronome").notNull().default(0),
 });
 
