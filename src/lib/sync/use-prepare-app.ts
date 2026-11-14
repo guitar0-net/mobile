@@ -13,7 +13,7 @@ import type { AppDb } from "@/lib/db";
 
 import { runContentSync as defaultRunContentSync } from "./content-sync";
 import type { SyncTrigger } from "./content-sync";
-import { migrateLegacySyncState } from "./legacy-sync-state";
+import { clearLegacySyncState } from "./legacy-sync-state";
 
 export type PrepareStatus = "preparing" | "ready" | "db_error";
 
@@ -48,7 +48,7 @@ async function prepare({
 
   let snapshotApplied = false;
   try {
-    migrateLegacySyncState(db);
+    clearLegacySyncState();
     const snapshot = await applyContentSnapshot(db);
     snapshotApplied = snapshot.applied;
     if (snapshot.applied) {

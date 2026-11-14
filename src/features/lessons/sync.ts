@@ -303,17 +303,6 @@ export function getContentVersion(db: AppDb): string | null {
   return row?.version ?? null;
 }
 
-/**
- * Stores `version` as the local content version unless one is already stored.
- * For content written before `content_meta` existed.
- */
-export function adoptContentVersion(db: AppDb, version: string): void {
-  db.insert(contentMetaTable)
-    .values({ id: CONTENT_META_ID, version })
-    .onConflictDoNothing()
-    .run();
-}
-
 export type SyncResult = { previousVersion: string | null; version: string | null };
 
 export async function syncAll(
