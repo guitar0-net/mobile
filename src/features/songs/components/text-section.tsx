@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import type { ReactNode } from "react";
 import { Platform, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useFontSize, type FontSize } from "@/features/settings";
 import { useColors } from "@/lib/themes";
 
+import { ChordLine } from "./chord-line";
 import { SectionHeader } from "./section-header";
 
 const FONT_SIZES: Record<FontSize, number> = {
@@ -29,9 +31,10 @@ const LINE_HEIGHTS: Record<FontSize, number> = {
 
 type TextSectionProps = {
   text: string;
+  chordText: string;
 };
 
-export function TextSection({ text }: TextSectionProps) {
+export function TextSection({ text, chordText }: TextSectionProps) {
   const colors = useColors();
   const { fontSize, setFontSize } = useFontSize();
   const fontSizeValue = FONT_SIZES[fontSize];
@@ -83,6 +86,25 @@ export function TextSection({ text }: TextSectionProps) {
     blockquote: { backgroundColor: colors.surface },
     link: { color: colors.primary },
   };
+  const chordStyle = { ...headingStyle, color: colors.primary };
+
+  let content: ReactNode = <Markdown style={markdownStyles}>{text}</Markdown>;
+  if (chordText) {
+    content = splitBlocks(chordText).map((block, index) =>
+      block.kind === "chords" ? (
+        <ChordLine
+          key={index}
+          line={block.line}
+          chordStyle={chordStyle}
+          lyricStyle={markdownStyles.body}
+        />
+      ) : (
+        <Markdown key={index} style={markdownStyles}>
+          {block.markdown}
+        </Markdown>
+      ),
+    );
+  }
 
   return (
     <View>
@@ -102,7 +124,30 @@ export function TextSection({ text }: TextSectionProps) {
           disabled={fontSize === 5}
         />
       </SectionHeader>
-      <Markdown style={markdownStyles}>{text}</Markdown>
+      {content}
     </View>
   );
+}
+
+type Block = { kind: "chords"; line: string } | { kind: "markdown"; markdown: string };
+
+function splitBlocks(chordText: string): Block[] {
+  const blocks: Block[] = [];
+  let markdownLines: string[] = [];
+  const flushMarkdown = () => {
+    if (markdownLines.some((line) => line.trim())) {
+      blocks.push({ kind: "markdown", markdown: markdownLines.join("\n") });
+    }
+    markdownLines = [];
+  };
+  for (const line of chordText.split(/\r?\n/)) {
+    if (line.includes("[")) {
+      flushMarkdown();
+      blocks.push({ kind: "chords", line });
+    } else {
+      markdownLines.push(line);
+    }
+  }
+  flushMarkdown();
+  return blocks;
 }

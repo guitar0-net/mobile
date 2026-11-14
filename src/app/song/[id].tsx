@@ -70,7 +70,7 @@ export default function SongScreen() {
               {songDetail.schemes.length > 0 && (
                 <SchemesSection schemes={songDetail.schemes} />
               )}
-              <TextSection text={songDetail.text} />
+              <TextSection text={songDetail.text} chordText={songDetail.chordText} />
             </View>
           )}
         </ScreenScrollView>
