@@ -5,6 +5,7 @@
 import BottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
+  BottomSheetModal,
   BottomSheetScrollView,
   type BottomSheetScrollViewMethods,
   BottomSheetView,
@@ -41,13 +42,23 @@ type Props = {
    *   `flex:1` breaks layout: Yoga doesn't see heights set by Reanimated's `useAnimatedStyle`.
    */
   size?: "auto" | "large";
+  /**
+   * Portals the sheet to the root `BottomSheetModalProvider`, so it can be
+   * rendered from inside a ScrollView. Keeps a text field above the keyboard.
+   */
+  modal?: boolean;
   children: React.ReactNode;
 };
 
-export function Sheet({ visible, onClose, size = "auto", children }: Props) {
+export function Sheet(props: Props) {
+  return props.modal ? <ModalSheet {...props} /> : <InlineSheet {...props} />;
+}
+
+function InlineSheet({ visible, onClose, size = "auto", children }: Props) {
   const ref = useRef<BottomSheet>(null);
   const colors = useColors();
-  const insets = useSafeAreaInsets();
+  const renderBackdrop = useBackdrop();
+  const isLarge = size === "large";
 
   useEffect(() => {
     if (visible) {
@@ -56,20 +67,6 @@ export function Sheet({ visible, onClose, size = "auto", children }: Props) {
       ref.current?.close();
     }
   }, [visible]);
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-      />
-    ),
-    [],
-  );
-
-  const isLarge = size === "large";
 
   return (
     <BottomSheet
@@ -83,13 +80,69 @@ export function Sheet({ visible, onClose, size = "auto", children }: Props) {
       enablePanDownToClose
       onClose={onClose}
     >
-      {isLarge ? (
-        children
-      ) : (
-        <BottomSheetView style={{ paddingBottom: insets.bottom }}>
-          {children}
-        </BottomSheetView>
-      )}
+      <SheetBody isLarge={isLarge}>{children}</SheetBody>
     </BottomSheet>
+  );
+}
+
+function ModalSheet({ visible, onClose, size = "auto", children }: Props) {
+  const ref = useRef<BottomSheetModal>(null);
+  const colors = useColors();
+  const renderBackdrop = useBackdrop();
+  const isLarge = size === "large";
+
+  useEffect(() => {
+    if (visible) {
+      ref.current?.present();
+    } else {
+      ref.current?.dismiss();
+    }
+  }, [visible]);
+
+  return (
+    <BottomSheetModal
+      ref={ref}
+      snapPoints={isLarge ? ["88%"] : undefined}
+      enableDynamicSizing={!isLarge}
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor: colors.surface }}
+      handleIndicatorStyle={{ backgroundColor: colors.border }}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
+      onDismiss={onClose}
+    >
+      <SheetBody isLarge={isLarge}>{children}</SheetBody>
+    </BottomSheetModal>
+  );
+}
+
+function SheetBody({
+  isLarge,
+  children,
+}: {
+  isLarge: boolean;
+  children: React.ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+  if (isLarge) return children;
+  return (
+    <BottomSheetView style={{ paddingBottom: insets.bottom }}>
+      {children}
+    </BottomSheetView>
+  );
+}
+
+function useBackdrop() {
+  return useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    [],
   );
 }
