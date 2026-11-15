@@ -71,4 +71,13 @@ export type AnalyticsEvents = {
     stage: "store" | "verify";
     reason: string;
   };
+
+  report_submitted: {
+    target_type: "song" | "lesson" | "app";
+    reason: string;
+    source: "song_footer" | "lesson_footer" | "video_error" | "settings";
+    queued: boolean;
+  };
+  report_dropped:
+    { reason: "rejected"; status: number } | { reason: "expired" | "queue_full" };
 };
