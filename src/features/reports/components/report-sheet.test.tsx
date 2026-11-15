@@ -86,6 +86,20 @@ test("sending a song report thanks the user and posts the chosen reason", async 
   );
 });
 
+test.each([
+  ["Ошибка в приложении", "Посмотрим и исправим"],
+  ["Предложить функцию", "Спасибо за идею, обязательно рассмотрим"],
+  ["Другое", "Обязательно прочитаем"],
+])("an app report for «%s» thanks the user with «%s»", (reasonTitle, thanks) => {
+  renderSheet({ target: { type: "app" }, source: "settings" });
+
+  fireEvent.press(screen.getByText(reasonTitle));
+  fireEvent.changeText(screen.getByPlaceholderText("Что именно не так"), "Текст");
+  fireEvent.press(screen.getByText("Отправить"));
+
+  expect(screen.getByText(thanks)).toBeTruthy();
+});
+
 function sendButton() {
   return screen.getByRole("button", { name: "Отправить" });
 }
