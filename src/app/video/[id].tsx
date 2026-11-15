@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
 import { fetchLessonVideoPath, videoStreamUrl } from "@/features/lessons";
+import { useVideoErrorReport } from "@/features/reports";
 import { useColors } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +22,8 @@ export default function VideoScreen() {
   const navigation = useNavigation();
   const { id, source } = useLocalSearchParams<{ id: string; source: string }>();
   const colors = useColors();
-  const [hasError, setHasError] = useState(false);
+  const [playerError, setPlayerError] = useState<string | null>(null);
+  const report = useVideoErrorReport(id, source === "offline" ? "offline" : "stream");
 
   const { data: localVideoPath } = useQuery({
     queryKey: ["lesson-video-path", id],
@@ -53,11 +55,15 @@ export default function VideoScreen() {
   }, []);
 
   useEffect(() => {
-    const sub = player.addListener("statusChange", ({ status }) => {
-      if (status === "error") setHasError(true);
+    const sub = player.addListener("statusChange", ({ status, error }) => {
+      if (status === "error") setPlayerError(error?.message ?? "unknown");
     });
     return () => sub.remove();
   }, [player]);
+
+  let errorText = "Не удалось загрузить видео";
+  if (report.isOffline) errorText = "Нет подключения к интернету";
+  else if (source === "offline") errorText = "Не удалось открыть скачанное видео";
 
   return (
     <>
@@ -72,7 +78,7 @@ export default function VideoScreen() {
           nativeControls
           contentFit="contain"
         />
-        {hasError && (
+        {playerError !== null && (
           <View
             style={StyleSheet.absoluteFill}
             className="items-center justify-center gap-4 bg-black/80"
@@ -83,27 +89,49 @@ export default function VideoScreen() {
               tintColor={colors.warning}
             />
             <Text variant="body" className="px-8 text-center text-white">
-              Не удалось загрузить видео
+              {errorText}
             </Text>
-            <Pressable onPress={() => router.back()}>
-              {({ pressed }) => (
-                // Same Android crash as in Button (rn-screens#4677).
-                <View
-                  collapsable={false}
-                  className={cn(
-                    "rounded-full border border-white/40 px-6 py-3",
-                    pressed && "opacity-70",
-                  )}
-                >
-                  <Text variant="body" className="text-white">
-                    Назад
-                  </Text>
-                </View>
-              )}
-            </Pressable>
+            {report.canReport && report.sent && (
+              <Text variant="body" className="py-3 text-white">
+                Спасибо, отправлено ✓
+              </Text>
+            )}
+            {report.canReport && !report.sent && (
+              <OverlayButton onPress={() => report.send(playerError)}>
+                Сообщить о проблеме
+              </OverlayButton>
+            )}
+            <OverlayButton onPress={() => router.back()}>Назад</OverlayButton>
           </View>
         )}
       </SafeAreaView>
     </>
+  );
+}
+
+function OverlayButton({
+  onPress,
+  children,
+}: {
+  onPress: () => void;
+  children: string;
+}) {
+  return (
+    <Pressable onPress={onPress}>
+      {({ pressed }) => (
+        // Same Android crash as in Button (rn-screens#4677).
+        <View
+          collapsable={false}
+          className={cn(
+            "rounded-full border border-white/40 px-6 py-3",
+            pressed && "opacity-70",
+          )}
+        >
+          <Text variant="body" className="text-white">
+            {children}
+          </Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
