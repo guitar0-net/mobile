@@ -9,9 +9,8 @@ import { View } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import { ChipBar } from "@/components/ui/chip-bar";
-import { Sheet } from "@/components/ui/sheet";
+import { Sheet, SheetTextInput } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
-import { TextInput } from "@/components/ui/text-input";
 
 import { submitReport } from "../queue";
 import type { ReportSource, ReportTarget } from "../queue";
@@ -102,7 +101,7 @@ function ReportForm({ target, source, onDone }: FormProps) {
             ? "Описание (обязательно)"
             : "Описание (необязательно)"}
         </Text>
-        <TextInput
+        <SheetTextInput
           multiline
           value={message}
           onChangeText={setMessage}
@@ -115,7 +114,7 @@ function ReportForm({ target, source, onDone }: FormProps) {
           <Text variant="caption">
             Email, если хотите получить ответ (необязательно)
           </Text>
-          <TextInput
+          <SheetTextInput
             value={email}
             onChangeText={setEmail}
             placeholder="you@example.com"

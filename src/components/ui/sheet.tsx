@@ -8,13 +8,18 @@ import BottomSheet, {
   BottomSheetModal,
   BottomSheetScrollView,
   type BottomSheetScrollViewMethods,
+  BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
+import { cssInterop } from "nativewind";
 import { forwardRef, useCallback, useEffect, useRef } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/lib/themes";
+import { cn } from "@/lib/utils";
+
+cssInterop(BottomSheetTextInput, { className: "style" });
 
 type SheetScrollViewProps = React.ComponentProps<typeof BottomSheetScrollView>;
 
@@ -31,6 +36,33 @@ export const SheetScrollView = forwardRef<
     </BottomSheetScrollView>
   );
 });
+
+type SheetTextInputProps = React.ComponentProps<typeof BottomSheetTextInput> & {
+  className?: string;
+};
+
+/** Text field that keeps the sheet above the keyboard. Only works inside a `Sheet`. */
+export function SheetTextInput({
+  className,
+  multiline,
+  ...props
+}: SheetTextInputProps) {
+  const colors = useColors();
+
+  return (
+    <BottomSheetTextInput
+      placeholderTextColor={colors.mutedFg}
+      multiline={multiline}
+      textAlignVertical={multiline ? "top" : "center"}
+      className={cn(
+        "rounded-xl bg-surface px-3 py-2.5 font-sans text-[15px] text-foreground",
+        multiline && "min-h-24",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
 
 type Props = {
   visible: boolean;
