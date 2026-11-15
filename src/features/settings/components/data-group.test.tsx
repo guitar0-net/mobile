@@ -64,16 +64,21 @@ function renderGroup({
   sync = syncWith(jest.fn().mockResolvedValue(unchanged)),
   wifiOnlyDownloads = false,
   setWifiOnlyDownloads = jest.fn(),
+  flushPendingReports = jest.fn().mockResolvedValue(undefined),
   data,
 }: {
   sync?: (trigger: SyncTrigger) => Promise<void>;
   wifiOnlyDownloads?: boolean;
   setWifiOnlyDownloads?: (value: boolean) => void;
+  flushPendingReports?: () => Promise<void>;
   data?: { lessonUuid: string; title: string; sizeBytes: number }[];
 } = {}) {
   mockUseWifiOnlyDownloads.mockReturnValue({ wifiOnlyDownloads, setWifiOnlyDownloads });
   mockUseDownloadedVideos.mockReturnValue({ data });
-  return render(<DataGroup runContentSync={sync} />, { wrapper });
+  return render(
+    <DataGroup runContentSync={sync} flushPendingReports={flushPendingReports} />,
+    { wrapper },
+  );
 }
 
 beforeEach(() => {
@@ -100,6 +105,15 @@ describe("DataGroup", () => {
   test("renders a Sync now action", () => {
     renderGroup();
     expect(screen.getByText("Синхронизировать")).toBeTruthy();
+  });
+
+  test("pressing the button also sends pending reports", () => {
+    const flushPendingReports = jest.fn().mockResolvedValue(undefined);
+    renderGroup({ flushPendingReports });
+
+    fireEvent.press(screen.getByText("Синхронизировать"));
+
+    expect(flushPendingReports).toHaveBeenCalled();
   });
 
   test("opening the screen does not start a sync", () => {

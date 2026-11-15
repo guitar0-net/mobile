@@ -13,6 +13,7 @@ import { SettingsRow } from "@/components/ui/settings-row";
 import { StatusMessage } from "@/components/ui/status-message";
 import { Text } from "@/components/ui/text";
 import { useDownloadedVideos } from "@/features/lessons";
+import { flushPendingReports as defaultFlushPendingReports } from "@/features/reports";
 import { useWifiOnlyDownloads } from "@/features/settings";
 import { runContentSync as defaultRunContentSync, useSyncStore } from "@/lib/sync";
 import type { SyncTrigger } from "@/lib/sync";
@@ -24,9 +25,14 @@ import { formatRelativeTimeRu } from "../format-relative-time-ru";
 type DataGroupProps = {
   /** Test-only injection point. */
   runContentSync?: (trigger: SyncTrigger) => Promise<void>;
+  /** Test-only injection point. */
+  flushPendingReports?: () => Promise<void>;
 };
 
-export function DataGroup({ runContentSync = defaultRunContentSync }: DataGroupProps) {
+export function DataGroup({
+  runContentSync = defaultRunContentSync,
+  flushPendingReports = defaultFlushPendingReports,
+}: DataGroupProps) {
   const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt);
   const syncStatus = useSyncStore((s) => s.syncStatus);
   const lastFailure = useSyncStore((s) => s.lastFailure);
@@ -43,6 +49,7 @@ export function DataGroup({ runContentSync = defaultRunContentSync }: DataGroupP
   const handleSyncNow = () => {
     setManuallyTriggered(true);
     void runContentSync("manual");
+    void flushPendingReports();
   };
 
   const totalBytes = (downloadedVideos ?? []).reduce((sum, v) => sum + v.sizeBytes, 0);
