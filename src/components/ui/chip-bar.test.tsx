@@ -48,4 +48,16 @@ describe("ChipBar", () => {
     expect(selected).toHaveLength(1);
     expect(selected[0]).toHaveTextContent("m7");
   });
+
+  test("with a null value no chip is selected", () => {
+    render(<ChipBar options={OPTIONS} value={null} onChange={jest.fn()} />, {
+      wrapper,
+    });
+
+    const selected = screen
+      .getAllByRole("button")
+      .filter((chip) => chip.props.accessibilityState?.selected === true);
+
+    expect(selected).toEqual([]);
+  });
 });
