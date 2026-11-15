@@ -7,6 +7,7 @@ import { useRef } from "react";
 import { ScrollView, View } from "react-native";
 
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
+import { ReportFooterLink } from "@/features/reports";
 import { CompleteButton, useSongDetail } from "@/features/songs";
 import { ChordsSection } from "@/features/songs/components/chords-section";
 import { SchemesSection } from "@/features/songs/components/schemes-section";
@@ -71,6 +72,7 @@ export default function SongScreen() {
                 <SchemesSection schemes={songDetail.schemes} />
               )}
               <TextSection text={songDetail.text} chordText={songDetail.chordText} />
+              <ReportFooterLink target={{ type: "song", id }} />
             </View>
           )}
         </ScreenScrollView>

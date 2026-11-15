@@ -19,6 +19,7 @@ import {
 } from "@/features/lessons";
 import type { CourseLessonRow } from "@/features/lessons";
 import { BookmarkButton } from "@/features/lessons/components/bookmark-button";
+import { ReportFooterLink } from "@/features/reports";
 import { useProgress } from "@/features/settings";
 
 function formatDuration(seconds: number): string {
@@ -131,6 +132,7 @@ export default function LessonScreen() {
             )}
 
             <AdditionLessonsList lessons={lessonDetail.additionLessons} />
+            <ReportFooterLink target={{ type: "lesson", id }} />
           </View>
         )}
       </ScreenScrollView>
