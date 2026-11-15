@@ -10,6 +10,7 @@ import { Alert, Linking, Pressable, View } from "react-native";
 import { SettingsGroup } from "@/components/ui/settings-group";
 import { SettingsRow } from "@/components/ui/settings-row";
 import { Text } from "@/components/ui/text";
+import { ReportSettingsRow } from "@/features/reports";
 import { useGuitarist } from "@/features/settings";
 import { useColors } from "@/lib/themes";
 
@@ -69,6 +70,8 @@ export function AboutGroup() {
           Linking.openURL(GITHUB_URL).catch(() => {});
         }}
       />
+      <View className="h-px bg-border" />
+      <ReportSettingsRow />
       <View className="h-px bg-border" />
       <SettingsRow
         type="external"
