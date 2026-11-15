@@ -17,6 +17,25 @@ const BottomSheet = React.forwardRef(function BottomSheet({ children }, ref) {
   return React.createElement(View, null, children);
 });
 
+// Like the real modal, renders nothing until present() is called.
+const BottomSheetModal = React.forwardRef(function BottomSheetModal(
+  { children, onDismiss },
+  ref,
+) {
+  const [presented, setPresented] = React.useState(false);
+  React.useImperativeHandle(ref, () => ({
+    present: () => setPresented(true),
+    dismiss: () => {
+      setPresented(false);
+      onDismiss?.();
+    },
+    close: jest.fn(),
+    expand: jest.fn(),
+    snapToIndex: jest.fn(),
+  }));
+  return presented ? React.createElement(View, null, children) : null;
+});
+
 function BottomSheetView({ children }) {
   return React.createElement(View, null, children);
 }
@@ -46,5 +65,6 @@ module.exports = {
   BottomSheetScrollView,
   BottomSheetBackdrop,
   BottomSheetTextInput,
+  BottomSheetModal,
   BottomSheetModalProvider,
 };
