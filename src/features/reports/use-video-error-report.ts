@@ -21,7 +21,7 @@ export function useVideoErrorReport(lessonId: string, source: VideoSource) {
       {
         target: { type: "lesson", id: lessonId },
         reason: "broken_media",
-        message: `source: ${source}; network: ${network.type}; error: ${playerError}`,
+        message: `source: ${source}; network: ${network.type ?? "unknown"}; error: ${playerError}`,
         screen: "/video/[id]",
         source: "video_error",
       },
