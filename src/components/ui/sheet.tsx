@@ -122,14 +122,22 @@ function ModalSheet({ visible, onClose, size = "auto", children }: Props) {
   const colors = useColors();
   const renderBackdrop = useBackdrop();
   const isLarge = size === "large";
+  const isPresented = useRef(false);
 
   useEffect(() => {
     if (visible) {
       ref.current?.present();
-    } else {
+      isPresented.current = true;
+    } else if (isPresented.current) {
+      // dismiss() on a modal that isn't shown leaves it stuck, so later present() never renders.
       ref.current?.dismiss();
     }
   }, [visible]);
+
+  const handleDismiss = useCallback(() => {
+    isPresented.current = false;
+    onClose();
+  }, [onClose]);
 
   return (
     <BottomSheetModal
@@ -141,8 +149,7 @@ function ModalSheet({ visible, onClose, size = "auto", children }: Props) {
       handleIndicatorStyle={{ backgroundColor: colors.border }}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
-      onDismiss={onClose}
+      onDismiss={handleDismiss}
     >
       <SheetBody isLarge={isLarge}>{children}</SheetBody>
     </BottomSheetModal>
