@@ -12,7 +12,7 @@ import { useVideoErrorReport } from "./use-video-error-report";
 
 const mockNetworkState = {
   isInternetReachable: true as boolean | undefined,
-  type: "WIFI",
+  type: "WIFI" as string | undefined,
 };
 jest.mock("expo-network", () => ({
   useNetworkState: () => mockNetworkState,
@@ -32,6 +32,7 @@ beforeEach(async () => {
   _resetDbForTesting();
   await initDb();
   mockNetworkState.isInternetReachable = true;
+  mockNetworkState.type = "WIFI";
   process.env.EXPO_PUBLIC_API_URL = "https://test.example.com";
   jest
     .spyOn(globalThis, "fetch")
@@ -83,6 +84,21 @@ test("sending reports the lesson's media as broken with the playback details", a
         reason: "broken_media",
         message: "source: stream; network: WIFI; error: Source error: 403",
         screen: "/video/[id]",
+      }),
+    ]),
+  );
+});
+
+test("a report sent before the network state arrives names the network unknown", async () => {
+  mockNetworkState.type = undefined;
+  const { result } = renderHook(() => useVideoErrorReport(LESSON_ID, "offline"));
+
+  act(() => result.current.send("Decoder error"));
+
+  await waitFor(() =>
+    expect(sentBodies()).toEqual([
+      expect.objectContaining({
+        message: "source: offline; network: unknown; error: Decoder error",
       }),
     ]),
   );
