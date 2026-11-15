@@ -6,8 +6,8 @@ import type { BeatAccent } from "expo-precision-metronome";
 import { View } from "react-native";
 
 import { Button } from "@/components/ui/button";
+import { SheetTextInput } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
-import { TextInput } from "@/components/ui/text-input";
 import { useColors } from "@/lib/themes";
 import { pluralRu } from "@/lib/utils";
 
@@ -59,7 +59,7 @@ export function InlineNameForm({
         Название
       </Text>
       <View style={{ position: "relative", marginBottom: 10 }}>
-        <TextInput
+        <SheetTextInput
           value={name}
           onChangeText={(t) => onChangeName(t.slice(0, MAX_NAME_LENGTH))}
           placeholder="Например: Вальс"
