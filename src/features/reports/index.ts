@@ -4,3 +4,4 @@
 
 export { flushPendingReports } from "./queue";
 export { ReportFooterLink } from "./components/report-footer-link";
+export { useVideoErrorReport } from "./use-video-error-report";
