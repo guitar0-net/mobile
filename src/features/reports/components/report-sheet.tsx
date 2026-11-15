@@ -54,7 +54,9 @@ function ReportForm({ target, source, onDone }: FormProps) {
   const [reasonCode, setReasonCode] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState(readContactEmail);
-  const [sent, setSent] = useState<{ queued: boolean } | null>(null);
+  const [sent, setSent] = useState<{ queued: boolean; reasonCode: string } | null>(
+    null,
+  );
 
   const reasons = REASONS_BY_TARGET[target.type];
   const reason = reasons.find((candidate) => candidate.code === reasonCode);
@@ -66,7 +68,15 @@ function ReportForm({ target, source, onDone }: FormProps) {
     (!reason.requiresMessage || message.trim() !== "") &&
     emailIsValid;
 
-  if (sent) return <ReportSuccess queued={sent.queued} onDone={onDone} />;
+  if (sent) {
+    return (
+      <ReportSuccess
+        queued={sent.queued}
+        reasonCode={sent.reasonCode}
+        onDone={onDone}
+      />
+    );
+  }
 
   function handleSend() {
     if (!reason) return;
@@ -83,7 +93,7 @@ function ReportForm({ target, source, onDone }: FormProps) {
       { offline: queued },
     );
     if (asksEmail) saveContactEmail(trimmedEmail);
-    setSent({ queued });
+    setSent({ queued, reasonCode: reason.code });
   }
 
   return (
