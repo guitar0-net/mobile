@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { applyContentSnapshot as defaultApplyContentSnapshot } from "@/features/lessons";
 import type { SnapshotResult } from "@/features/lessons";
 import { importLegacyProgress as defaultImportLegacyProgress } from "@/features/migration";
+import { flushPendingReports as defaultFlushPendingReports } from "@/features/reports";
 import { capture, captureException } from "@/lib/analytics";
 import { initDb as defaultInitDb } from "@/lib/db";
 import type { AppDb } from "@/lib/db";
@@ -28,6 +29,7 @@ export type PrepareAppDeps = {
   applyContentSnapshot: (db: AppDb) => Promise<SnapshotResult>;
   importLegacyProgress: () => Promise<unknown>;
   runContentSync: (trigger: SyncTrigger) => Promise<void>;
+  flushPendingReports: () => Promise<void>;
 };
 
 type Prepared = { status: "ready" | "db_error"; snapshotApplied: boolean };
@@ -37,6 +39,7 @@ async function prepare({
   applyContentSnapshot = defaultApplyContentSnapshot,
   importLegacyProgress = defaultImportLegacyProgress,
   runContentSync = defaultRunContentSync,
+  flushPendingReports = defaultFlushPendingReports,
 }: Partial<PrepareAppDeps>): Promise<Prepared> {
   let db: AppDb;
   try {
@@ -70,6 +73,7 @@ async function prepare({
   }
 
   void runContentSync("launch");
+  void flushPendingReports();
   return { status: "ready", snapshotApplied };
 }
 

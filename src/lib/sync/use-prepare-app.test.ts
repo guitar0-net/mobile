@@ -35,6 +35,7 @@ function makeDeps(overrides: Partial<PrepareAppDeps> = {}) {
     applyContentSnapshot: jest.fn().mockResolvedValue(appliedSnapshot),
     importLegacyProgress: jest.fn().mockResolvedValue(undefined),
     runContentSync: jest.fn().mockResolvedValue(undefined),
+    flushPendingReports: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   } satisfies PrepareAppDeps;
 }
@@ -44,7 +45,7 @@ beforeEach(() => {
   mockCaptureException.mockClear();
 });
 
-test("becomes ready after writing the snapshot and starts the network sync", async () => {
+test("becomes ready after writing the snapshot and starts the network work", async () => {
   const deps = makeDeps();
 
   const { result } = renderHook(() => usePrepareApp(deps));
@@ -55,6 +56,7 @@ test("becomes ready after writing the snapshot and starts the network sync", asy
   expect(deps.applyContentSnapshot).toHaveBeenCalledWith(db);
   expect(deps.importLegacyProgress).toHaveBeenCalled();
   expect(deps.runContentSync).toHaveBeenCalledWith("launch");
+  expect(deps.flushPendingReports).toHaveBeenCalled();
   expect(mockCapture).toHaveBeenCalledWith("content_snapshot_applied", {
     snapshot_version: "v2",
     previous_version: null,
