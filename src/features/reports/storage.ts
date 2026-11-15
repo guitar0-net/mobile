@@ -5,3 +5,14 @@
 import { createMMKV } from "react-native-mmkv";
 
 export const storage = createMMKV({ id: "reports" });
+
+const CONTACT_EMAIL_KEY = "contactEmail";
+
+export function readContactEmail(): string {
+  return storage.getString(CONTACT_EMAIL_KEY) ?? "";
+}
+
+export function saveContactEmail(email: string): void {
+  if (email) storage.set(CONTACT_EMAIL_KEY, email);
+  else storage.remove(CONTACT_EMAIL_KEY);
+}
