@@ -3,41 +3,56 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { _resetDbForTesting, initDb } from "@/lib/db";
 import { ThemeProvider } from "@/lib/themes";
 
 import { flushPendingReports } from "../queue";
+import type { ReportRouteParams } from "../report-route";
 import { storage } from "../storage";
-import { ReportSheet } from "./report-sheet";
+import { ReportScreen } from "./report-screen";
 
 const mockNetworkState = { isInternetReachable: true as boolean | undefined };
 jest.mock("expo-network", () => ({
   useNetworkState: () => mockNetworkState,
 }));
 
-jest.mock("expo-router", () => ({ useSegments: () => ["song", "[id]"] }));
+type ScreenOptions = { gestureEnabled?: boolean; headerLeft?: () => ReactElement };
+
+let mockParams: ReportRouteParams = {};
+let mockScreenOptions: ScreenOptions = {};
+const mockBack = jest.fn();
+jest.mock("expo-router", () => ({
+  useLocalSearchParams: () => mockParams,
+  useRouter: () => ({ back: mockBack }),
+  Stack: {
+    Screen: ({ options }: { options: ScreenOptions }) => {
+      mockScreenOptions = options;
+      return null;
+    },
+  },
+}));
+jest.mock("expo-router/react-navigation", () => ({ useHeaderHeight: () => 0 }));
 
 jest.mock("@/lib/analytics", () => ({ capture: jest.fn() }));
 
 const SONG_ID = "0b6a2f0e-8f3e-4a4e-9d4b-6c1d2f3a4b5c";
+const SONG_PARAMS = {
+  type: "song",
+  id: SONG_ID,
+  source: "song_footer",
+  from: "/song/[id]",
+};
+const APP_PARAMS = { type: "app", source: "settings", from: "/settings" };
 
 function wrapper({ children }: { children: ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>;
 }
 
-function renderSheet(props: Partial<ComponentProps<typeof ReportSheet>> = {}) {
-  return render(
-    <ReportSheet
-      visible
-      onClose={jest.fn()}
-      target={{ type: "song", id: SONG_ID }}
-      source="song_footer"
-      {...props}
-    />,
-    { wrapper },
-  );
+function renderScreen(params: ReportRouteParams = SONG_PARAMS) {
+  mockParams = params;
+  return render(<ReportScreen />, { wrapper });
 }
 
 function sentBodies(): Record<string, unknown>[] {
@@ -51,6 +66,8 @@ beforeEach(async () => {
   _resetDbForTesting();
   await initDb();
   mockNetworkState.isInternetReachable = true;
+  mockScreenOptions = {};
+  mockBack.mockClear();
   process.env.EXPO_PUBLIC_API_URL = "https://test.example.com";
   jest
     .spyOn(globalThis, "fetch")
@@ -64,7 +81,7 @@ afterEach(async () => {
 });
 
 test("sending a song report thanks the user and posts the chosen reason", async () => {
-  renderSheet();
+  renderScreen();
 
   expect(screen.getByText("Что не так с песней?")).toBeTruthy();
   fireEvent.press(screen.getByText("Неверные аккорды"));
@@ -91,7 +108,7 @@ test.each([
   ["Предложить функцию", "Спасибо за идею, обязательно рассмотрим"],
   ["Другое", "Обязательно прочитаем"],
 ])("an app report for «%s» thanks the user with «%s»", (reasonTitle, thanks) => {
-  renderSheet({ target: { type: "app" }, source: "settings" });
+  renderScreen(APP_PARAMS);
 
   fireEvent.press(screen.getByText(reasonTitle));
   fireEvent.changeText(screen.getByPlaceholderText("Что именно не так"), "Текст");
@@ -105,7 +122,7 @@ function sendButton() {
 }
 
 test("a reason that needs a description cannot be sent without one", () => {
-  renderSheet();
+  renderScreen();
 
   expect(sendButton()).toBeDisabled();
   fireEvent.press(screen.getByText("Другое"));
@@ -121,7 +138,7 @@ test("a reason that needs a description cannot be sent without one", () => {
 
 test("without internet the user is told the report will go out later", () => {
   mockNetworkState.isInternetReachable = false;
-  renderSheet();
+  renderScreen();
 
   fireEvent.press(screen.getByText("Неверные аккорды"));
   fireEvent.press(sendButton());
@@ -129,30 +146,29 @@ test("without internet the user is told the report will go out later", () => {
   expect(screen.getByText("Отправим, когда появится интернет")).toBeTruthy();
 });
 
-test("the thank-you screen closes the sheet on its own", () => {
+test("the thank-you screen closes the form on its own", () => {
   jest.useFakeTimers();
-  const onClose = jest.fn();
-  renderSheet({ onClose });
+  renderScreen();
 
   fireEvent.press(screen.getByText("Неверные аккорды"));
   fireEvent.press(sendButton());
   jest.advanceTimersByTime(2000);
 
-  expect(onClose).toHaveBeenCalled();
+  expect(mockBack).toHaveBeenCalled();
   jest.useRealTimers();
 });
 
 test("only an app report asks for an email", () => {
-  renderSheet();
+  renderScreen();
   expect(screen.queryByPlaceholderText("you@example.com")).toBeNull();
 
   screen.unmount();
-  renderSheet({ target: { type: "app" }, source: "settings" });
+  renderScreen(APP_PARAMS);
   expect(screen.getByPlaceholderText("you@example.com")).toBeTruthy();
 });
 
 test("a malformed email blocks sending", () => {
-  renderSheet({ target: { type: "app" }, source: "settings" });
+  renderScreen(APP_PARAMS);
 
   fireEvent.press(screen.getByText("Ошибка в приложении"));
   fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@");
@@ -166,7 +182,7 @@ test("a malformed email blocks sending", () => {
 });
 
 test("the last sent email is offered again next time", async () => {
-  renderSheet({ target: { type: "app" }, source: "settings" });
+  renderScreen(APP_PARAMS);
   fireEvent.press(screen.getByText("Ошибка в приложении"));
   fireEvent.changeText(
     screen.getByPlaceholderText("you@example.com"),
@@ -180,25 +196,38 @@ test("the last sent email is offered again next time", async () => {
   );
 
   screen.unmount();
-  renderSheet({ target: { type: "app" }, source: "settings" });
+  renderScreen(APP_PARAMS);
   expect(screen.getByPlaceholderText("you@example.com")).toHaveDisplayValue(
     "user@example.com",
   );
 });
 
-test("reopening after a sent report starts a fresh form", () => {
-  const props = {
-    onClose: jest.fn(),
-    target: { type: "song", id: SONG_ID },
-    source: "song_footer",
-  } as const;
-  renderSheet(props);
+test("invalid route params close the screen without showing a form", () => {
+  renderScreen({ type: "song", source: "song_footer", from: "/song/[id]" });
+
+  expect(screen.queryByText("Отправить")).toBeNull();
+  expect(mockBack).toHaveBeenCalled();
+});
+
+test("swipe to close is blocked while the description holds text", () => {
+  renderScreen();
+  expect(mockScreenOptions.gestureEnabled).toBe(true);
+
+  fireEvent.changeText(screen.getByPlaceholderText("Что именно не так"), "Am вместо C");
+  expect(mockScreenOptions.gestureEnabled).toBe(false);
+
   fireEvent.press(screen.getByText("Неверные аккорды"));
   fireEvent.press(sendButton());
+  expect(mockScreenOptions.gestureEnabled).toBe(true);
+});
 
-  screen.rerender(<ReportSheet visible={false} {...props} />);
-  screen.rerender(<ReportSheet visible {...props} />);
+test("the header close button closes the screen", () => {
+  renderScreen();
+  const headerLeft = mockScreenOptions.headerLeft;
+  if (!headerLeft) throw new Error("no header button");
+  render(headerLeft(), { wrapper });
 
-  expect(screen.getByText("Что не так с песней?")).toBeTruthy();
-  expect(sendButton()).toBeDisabled();
+  fireEvent.press(screen.getByLabelText("Закрыть"));
+
+  expect(mockBack).toHaveBeenCalled();
 });

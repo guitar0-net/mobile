@@ -9,22 +9,23 @@ import { ThemeProvider } from "@/lib/themes";
 
 import { ReportSettingsRow } from "./report-settings-row";
 
-jest.mock("expo-network", () => ({
-  useNetworkState: () => ({ isInternetReachable: true }),
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+  useSegments: () => ["settings"],
 }));
-jest.mock("expo-router", () => ({ useSegments: () => ["settings"] }));
 
 function wrapper({ children }: { children: ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>;
 }
 
-test("the settings row opens the app report form with an email field", () => {
+test("the settings row opens an app report from the settings screen", () => {
   render(<ReportSettingsRow />, { wrapper });
-  expect(screen.queryByText("Ошибка или идея?")).toBeNull();
 
   fireEvent.press(screen.getByText("Сообщить об ошибке или идее"));
 
-  expect(screen.getByText("Ошибка или идея?")).toBeTruthy();
-  expect(screen.getByText("Предложить функцию")).toBeTruthy();
-  expect(screen.getByPlaceholderText("you@example.com")).toBeTruthy();
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: "/report",
+    params: { type: "app", source: "settings", from: "/settings" },
+  });
 });
