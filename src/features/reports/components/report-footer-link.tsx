@@ -2,13 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useState } from "react";
 import { View } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 
-import { ReportSheet } from "./report-sheet";
+import { useOpenReport } from "../report-route";
 
 type ContentTarget = { type: "song" | "lesson"; id: string };
 
@@ -22,20 +21,20 @@ type Props = {
 };
 
 export function ReportFooterLink({ target }: Props) {
-  const [open, setOpen] = useState(false);
+  const openReport = useOpenReport();
 
   return (
     <View className="mt-8 flex-row items-center justify-center gap-1">
       <Text variant="caption">{PROMPTS[target.type]}</Text>
-      <Button variant="link" size="sm" onPress={() => setOpen(true)}>
+      <Button
+        variant="link"
+        size="sm"
+        onPress={() =>
+          openReport(target, target.type === "song" ? "song_footer" : "lesson_footer")
+        }
+      >
         Сообщить
       </Button>
-      <ReportSheet
-        visible={open}
-        onClose={() => setOpen(false)}
-        target={target}
-        source={target.type === "song" ? "song_footer" : "lesson_footer"}
-      />
     </View>
   );
 }

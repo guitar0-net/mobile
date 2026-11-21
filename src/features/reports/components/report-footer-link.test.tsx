@@ -9,10 +9,12 @@ import { ThemeProvider } from "@/lib/themes";
 
 import { ReportFooterLink } from "./report-footer-link";
 
-jest.mock("expo-network", () => ({
-  useNetworkState: () => ({ isInternetReachable: true }),
+const mockPush = jest.fn();
+let mockSegments = ["song", "[id]"];
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+  useSegments: () => mockSegments,
 }));
-jest.mock("expo-router", () => ({ useSegments: () => ["lesson", "[id]"] }));
 
 function wrapper({ children }: { children: ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>;
@@ -20,22 +22,30 @@ function wrapper({ children }: { children: ReactNode }) {
 
 const ID = "0b6a2f0e-8f3e-4a4e-9d4b-6c1d2f3a4b5c";
 
-test("the song link opens the song report form", () => {
+beforeEach(() => mockPush.mockClear());
+
+test("the song link opens the song report from the song screen", () => {
+  mockSegments = ["song", "[id]"];
   render(<ReportFooterLink target={{ type: "song", id: ID }} />, { wrapper });
 
   expect(screen.getByText("Нашли ошибку в песне?")).toBeTruthy();
-  expect(screen.queryByText("Что не так с песней?")).toBeNull();
-
   fireEvent.press(screen.getByText("Сообщить"));
 
-  expect(screen.getByText("Что не так с песней?")).toBeTruthy();
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: "/report",
+    params: { type: "song", id: ID, source: "song_footer", from: "/song/[id]" },
+  });
 });
 
-test("the lesson link opens the lesson report form", () => {
+test("the lesson link opens the lesson report from the lesson screen", () => {
+  mockSegments = ["lesson", "[id]"];
   render(<ReportFooterLink target={{ type: "lesson", id: ID }} />, { wrapper });
 
+  expect(screen.getByText("Нашли ошибку в уроке?")).toBeTruthy();
   fireEvent.press(screen.getByText("Сообщить"));
 
-  expect(screen.getByText("Нашли ошибку в уроке?")).toBeTruthy();
-  expect(screen.getByText("Что не так с уроком?")).toBeTruthy();
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: "/report",
+    params: { type: "lesson", id: ID, source: "lesson_footer", from: "/lesson/[id]" },
+  });
 });

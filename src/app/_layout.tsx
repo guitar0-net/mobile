@@ -82,6 +82,7 @@ function ThemedStack() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="lesson/[id]" options={{ headerBackTitle: "Назад" }} />
         <Stack.Screen name="video/[id]" options={videoScreenOptions} />
+        <Stack.Screen name="report" options={{ presentation: "modal" }} />
       </Stack>
     </NavThemeProvider>
   );

@@ -2,29 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { useState } from "react";
-
 import { SettingsRow } from "@/components/ui/settings-row";
 
-import { ReportSheet } from "./report-sheet";
+import { useOpenReport } from "../report-route";
 
 export function ReportSettingsRow() {
-  const [open, setOpen] = useState(false);
+  const openReport = useOpenReport();
 
   return (
-    <>
-      <SettingsRow
-        type="nav"
-        icon={{ ios: "exclamationmark.bubble", android: "feedback" }}
-        label="Сообщить об ошибке или идее"
-        onPress={() => setOpen(true)}
-      />
-      <ReportSheet
-        visible={open}
-        onClose={() => setOpen(false)}
-        target={{ type: "app" }}
-        source="settings"
-      />
-    </>
+    <SettingsRow
+      type="nav"
+      icon={{ ios: "exclamationmark.bubble", android: "feedback" }}
+      label="Сообщить об ошибке или идее"
+      onPress={() => openReport({ type: "app" }, "settings")}
+    />
   );
 }
