@@ -42,6 +42,16 @@ describe("SupportGroup", () => {
       "https://apps.apple.com/app/id6818752464?action=write-review",
     );
   });
+
+  test("opens the TestFlight invite when the beta row is pressed on iOS", () => {
+    render(<SupportGroup />, { wrapper });
+
+    fireEvent.press(screen.getByText("Стать бета-тестером"));
+
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      "https://testflight.apple.com/join/6METeVQp",
+    );
+  });
 });
 
 describe("SupportGroup on a platform without a store", () => {
@@ -53,6 +63,12 @@ describe("SupportGroup on a platform without a store", () => {
     render(<SupportGroup />, { wrapper });
 
     expect(screen.queryByText("Оценить приложение")).toBeNull();
+  });
+
+  test("hides the beta testing row", () => {
+    render(<SupportGroup />, { wrapper });
+
+    expect(screen.queryByText("Стать бета-тестером")).toBeNull();
   });
 });
 
@@ -68,6 +84,16 @@ describe("SupportGroup on Android", () => {
 
     expect(Linking.openURL).toHaveBeenCalledWith(
       "https://play.google.com/store/apps/details?id=com.andreykotlyar.guitar0",
+    );
+  });
+
+  test("opens the Play testing opt-in page when the beta row is pressed", () => {
+    render(<SupportGroup />, { wrapper });
+
+    fireEvent.press(screen.getByText("Стать бета-тестером"));
+
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      "https://play.google.com/apps/testing/com.andreykotlyar.guitar0",
     );
   });
 });

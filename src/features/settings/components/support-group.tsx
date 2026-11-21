@@ -13,9 +13,15 @@ const STORE_REVIEW_URLS: Partial<Record<typeof Platform.OS, string>> = {
   ios: "https://apps.apple.com/app/id6818752464?action=write-review",
 };
 
+const BETA_TESTING_URLS: Partial<Record<typeof Platform.OS, string>> = {
+  android: "https://play.google.com/apps/testing/com.andreykotlyar.guitar0",
+  ios: "https://testflight.apple.com/join/6METeVQp",
+};
+
 export function SupportGroup() {
   const router = useRouter();
   const storeReviewUrl = STORE_REVIEW_URLS[Platform.OS];
+  const betaTestingUrl = BETA_TESTING_URLS[Platform.OS];
 
   return (
     <SettingsGroup title="Поддержка">
@@ -34,6 +40,19 @@ export function SupportGroup() {
             label="Оценить приложение"
             onPress={() => {
               Linking.openURL(storeReviewUrl).catch(() => {});
+            }}
+          />
+        </>
+      )}
+      {betaTestingUrl !== undefined && (
+        <>
+          <View className="h-px bg-border" />
+          <SettingsRow
+            type="external"
+            icon={{ ios: "testtube.2", android: "science" }}
+            label="Стать бета-тестером"
+            onPress={() => {
+              Linking.openURL(betaTestingUrl).catch(() => {});
             }}
           />
         </>
