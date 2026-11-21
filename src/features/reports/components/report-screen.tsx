@@ -5,15 +5,20 @@
 import { useNetworkState } from "expo-network";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useHeaderHeight } from "expo-router/react-navigation";
-import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  type TextInput as RNTextInput,
+  View,
+} from "react-native";
 
 import { Button } from "@/components/ui/button";
 import { ChipBar } from "@/components/ui/chip-bar";
 import { HeaderButton } from "@/components/ui/header-button";
 import { ScreenScrollView } from "@/components/ui/screen-scroll-view";
 import { Text } from "@/components/ui/text";
-import { TextInput } from "@/components/ui/text-input";
+import { FieldError, TextInput } from "@/components/ui/text-input";
 
 import { submitReport } from "../queue";
 import type { ReportTarget } from "../queue";
@@ -59,6 +64,10 @@ function ReportForm({ request: { target, source, from }, onDone }: FormProps) {
   const [reasonCode, setReasonCode] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState(readContactEmail);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [emailBlurred, setEmailBlurred] = useState(false);
+  const messageRef = useRef<RNTextInput>(null);
+  const emailRef = useRef<RNTextInput>(null);
   const [sent, setSent] = useState<{ queued: boolean; reasonCode: string } | null>(
     null,
   );
@@ -68,14 +77,26 @@ function ReportForm({ request: { target, source, from }, onDone }: FormProps) {
   const asksEmail = target.type === "app";
   const trimmedEmail = asksEmail ? email.trim() : "";
   const emailIsValid = trimmedEmail === "" || EMAIL_PATTERN.test(trimmedEmail);
-  const canSend =
-    reason !== undefined &&
-    (!reason.requiresMessage || message.trim() !== "") &&
-    emailIsValid;
+  const messageMissing = reason?.requiresMessage === true && message.trim() === "";
   const hasDraft = !sent && message.trim() !== "";
 
+  const reasonError = submitAttempted && !reason ? "Выберите причину" : undefined;
+  const messageError =
+    submitAttempted && messageMissing ? "Опишите, что не так" : undefined;
+  const emailError =
+    (submitAttempted || emailBlurred) && !emailIsValid ? "Проверьте адрес" : undefined;
+
   function handleSend() {
+    setSubmitAttempted(true);
     if (!reason) return;
+    if (messageMissing) {
+      messageRef.current?.focus();
+      return;
+    }
+    if (!emailIsValid) {
+      emailRef.current?.focus();
+      return;
+    }
     const queued = network.isInternetReachable === false;
     submitReport(
       {
@@ -127,27 +148,30 @@ function ReportForm({ request: { target, source, from }, onDone }: FormProps) {
           ) : (
             <>
               <Text variant="heading">{TITLES[target.type]}</Text>
-              <ChipBar
-                wrap
-                options={reasons.map(({ code, title }) => ({
-                  value: code,
-                  label: title,
-                }))}
-                value={reasonCode}
-                onChange={setReasonCode}
-              />
+              <View className="gap-1.5">
+                <ChipBar
+                  wrap
+                  options={reasons.map(({ code, title }) => ({
+                    value: code,
+                    label: title,
+                  }))}
+                  value={reasonCode}
+                  onChange={setReasonCode}
+                />
+                {reasonError && <FieldError>{reasonError}</FieldError>}
+              </View>
               <View className="gap-1.5">
                 <Text variant="caption">
-                  {reason?.requiresMessage
-                    ? "Описание (обязательно)"
-                    : "Описание (необязательно)"}
+                  {reason?.requiresMessage ? "Описание" : "Описание (необязательно)"}
                 </Text>
                 <TextInput
+                  ref={messageRef}
                   multiline
                   value={message}
                   onChangeText={setMessage}
                   maxLength={MAX_MESSAGE_LENGTH}
                   placeholder="Что именно не так"
+                  error={messageError}
                 />
               </View>
               {asksEmail && (
@@ -156,20 +180,20 @@ function ReportForm({ request: { target, source, from }, onDone }: FormProps) {
                     Email, если хотите получить ответ (необязательно)
                   </Text>
                   <TextInput
+                    ref={emailRef}
                     value={email}
                     onChangeText={setEmail}
+                    onBlur={() => setEmailBlurred(true)}
                     placeholder="you@example.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="email"
+                    error={emailError}
                   />
-                  {!emailIsValid && <Text variant="caption">Проверьте адрес</Text>}
                 </View>
               )}
-              <Button onPress={handleSend} disabled={!canSend}>
-                Отправить
-              </Button>
+              <Button onPress={handleSend}>Отправить</Button>
             </>
           )}
         </ScreenScrollView>
