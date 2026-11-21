@@ -22,7 +22,7 @@ import { FieldError, TextInput } from "@/components/ui/text-input";
 
 import { submitReport } from "../queue";
 import type { ReportTarget } from "../queue";
-import { REASONS_BY_TARGET } from "../reasons";
+import { DEFAULT_MESSAGE_PLACEHOLDER, REASONS_BY_TARGET } from "../reasons";
 import {
   parseReportParams,
   type ReportRequest,
@@ -82,7 +82,7 @@ function ReportForm({ request: { target, source, from }, onDone }: FormProps) {
 
   const reasonError = submitAttempted && !reason ? "Выберите причину" : undefined;
   const messageError =
-    submitAttempted && messageMissing ? "Опишите, что не так" : undefined;
+    submitAttempted && messageMissing ? reason.missingMessageError : undefined;
   const emailError =
     (submitAttempted || emailBlurred) && !emailIsValid ? "Проверьте адрес" : undefined;
 
@@ -170,7 +170,9 @@ function ReportForm({ request: { target, source, from }, onDone }: FormProps) {
                   value={message}
                   onChangeText={setMessage}
                   maxLength={MAX_MESSAGE_LENGTH}
-                  placeholder="Что именно не так"
+                  placeholder={
+                    reason?.messagePlaceholder ?? DEFAULT_MESSAGE_PLACEHOLDER
+                  }
                   error={messageError}
                 />
               </View>
