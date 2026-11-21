@@ -104,18 +104,25 @@ test("sending a song report thanks the user and posts the chosen reason", async 
 });
 
 test.each([
-  ["Ошибка в приложении", "Посмотрим и исправим"],
-  ["Предложить функцию", "Спасибо за идею, обязательно рассмотрим"],
-  ["Другое", "Обязательно прочитаем"],
-])("an app report for «%s» thanks the user with «%s»", (reasonTitle, thanks) => {
-  renderScreen(APP_PARAMS);
+  ["Ошибка в приложении", "Что именно не так", "Посмотрим и исправим"],
+  [
+    "Предложить функцию",
+    "Что бы вы хотели добавить или изменить?",
+    "Спасибо за идею, обязательно рассмотрим",
+  ],
+  ["Другое", "Что именно не так", "Обязательно прочитаем"],
+])(
+  "an app report for «%s» asks «%s» and thanks with «%s»",
+  (reasonTitle, placeholder, thanks) => {
+    renderScreen(APP_PARAMS);
 
-  fireEvent.press(screen.getByText(reasonTitle));
-  fireEvent.changeText(screen.getByPlaceholderText("Что именно не так"), "Текст");
-  fireEvent.press(screen.getByText("Отправить"));
+    fireEvent.press(screen.getByText(reasonTitle));
+    fireEvent.changeText(screen.getByPlaceholderText(placeholder), "Текст");
+    fireEvent.press(screen.getByText("Отправить"));
 
-  expect(screen.getByText(thanks)).toBeTruthy();
-});
+    expect(screen.getByText(thanks)).toBeTruthy();
+  },
+);
 
 function sendButton() {
   return screen.getByRole("button", { name: "Отправить" });
@@ -151,17 +158,18 @@ test("a reason that needs a description is not sent without one", () => {
   expect(screen.getByText("Спасибо!")).toBeTruthy();
 });
 
-test.each(["Ошибка в приложении", "Предложить функцию", "Другое"])(
-  "an app report for «%s» needs a description",
-  (reasonTitle) => {
-    renderScreen(APP_PARAMS);
+test.each([
+  ["Ошибка в приложении", "Опишите, что не так"],
+  ["Предложить функцию", "Опишите идею"],
+  ["Другое", "Опишите, что не так"],
+])("an app report for «%s» needs a description: «%s»", (reasonTitle, error) => {
+  renderScreen(APP_PARAMS);
 
-    fireEvent.press(screen.getByText(reasonTitle));
-    fireEvent.press(sendButton());
+  fireEvent.press(screen.getByText(reasonTitle));
+  fireEvent.press(sendButton());
 
-    expect(screen.getByText("Опишите, что не так")).toBeTruthy();
-  },
-);
+  expect(screen.getByText(error)).toBeTruthy();
+});
 
 test("without internet the user is told the report will go out later", () => {
   mockNetworkState.isInternetReachable = false;

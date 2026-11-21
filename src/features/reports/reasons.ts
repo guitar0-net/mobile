@@ -8,20 +8,30 @@ export type ReportReason = {
   code: string;
   title: string;
   requiresMessage: boolean;
+  messagePlaceholder: string;
+  missingMessageError: string;
 };
+
+export const DEFAULT_MESSAGE_PLACEHOLDER = "Что именно не так";
 
 const reason = (
   code: string,
   title: string,
-  requiresMessage = false,
+  {
+    requiresMessage = false,
+    messagePlaceholder = DEFAULT_MESSAGE_PLACEHOLDER,
+    missingMessageError = "Опишите, что не так",
+  }: Partial<Omit<ReportReason, "code" | "title">> = {},
 ): ReportReason => ({
   code,
   title,
   requiresMessage,
+  messagePlaceholder,
+  missingMessageError,
 });
 
 const DISPLAY_ISSUE = reason("display_issue", "Неправильно отображается");
-const OTHER = reason("other", "Другое", true);
+const OTHER = reason("other", "Другое", { requiresMessage: true });
 
 // Must match REASONS_BY_TARGET_TYPE and REASONS_REQUIRING_MESSAGE in the server's
 // apps/reports/constants.py: the server rejects a required-message reason sent without one.
@@ -42,8 +52,12 @@ export const REASONS_BY_TARGET: Record<ReportTarget["type"], readonly ReportReas
       OTHER,
     ],
     app: [
-      reason("bug", "Ошибка в приложении", true),
-      reason("feature_request", "Предложить функцию", true),
+      reason("bug", "Ошибка в приложении", { requiresMessage: true }),
+      reason("feature_request", "Предложить функцию", {
+        requiresMessage: true,
+        messagePlaceholder: "Что бы вы хотели добавить или изменить?",
+        missingMessageError: "Опишите идею",
+      }),
       OTHER,
     ],
   };
