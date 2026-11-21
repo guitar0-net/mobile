@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { BeatAccent } from "expo-precision-metronome";
 import { View } from "react-native";
 
 import { Button } from "@/components/ui/button";
-import { SheetTextInput } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
 import { useColors } from "@/lib/themes";
 import { pluralRu } from "@/lib/utils";
@@ -59,14 +59,24 @@ export function InlineNameForm({
         Название
       </Text>
       <View style={{ position: "relative", marginBottom: 10 }}>
-        <SheetTextInput
+        <BottomSheetTextInput
           value={name}
           onChangeText={(t) => onChangeName(t.slice(0, MAX_NAME_LENGTH))}
           placeholder="Например: Вальс"
+          placeholderTextColor={colors.mutedFg}
           returnKeyType="done"
           autoFocus
           onSubmitEditing={onConfirm}
-          className="pr-12"
+          style={{
+            fontFamily: "Geist-Regular",
+            color: colors.foreground,
+            backgroundColor: colors.surface,
+            borderRadius: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            paddingRight: 48,
+            fontSize: 15,
+          }}
         />
         <Text
           style={{
