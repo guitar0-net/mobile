@@ -12,6 +12,7 @@ module.exports = {
         foreground: "var(--color-foreground)",
         "muted-fg": "var(--color-muted-fg)",
         border: "var(--color-border)",
+        destructive: "var(--color-destructive)",
 
         brand: {
           purple: "#7B2FBE",
