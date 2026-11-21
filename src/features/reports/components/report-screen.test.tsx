@@ -121,20 +121,47 @@ function sendButton() {
   return screen.getByRole("button", { name: "Отправить" });
 }
 
-test("a reason that needs a description cannot be sent without one", () => {
+test("sending without a reason asks to choose one", () => {
+  renderScreen();
+  expect(screen.queryByText("Выберите причину")).toBeNull();
+
+  fireEvent.press(sendButton());
+  expect(screen.getByText("Выберите причину")).toBeTruthy();
+  expect(screen.queryByText("Спасибо!")).toBeNull();
+
+  fireEvent.press(screen.getByText("Неверные аккорды"));
+  expect(screen.queryByText("Выберите причину")).toBeNull();
+});
+
+test("a reason that needs a description is not sent without one", () => {
   renderScreen();
 
-  expect(sendButton()).toBeDisabled();
+  expect(screen.getByText("Описание (необязательно)")).toBeTruthy();
   fireEvent.press(screen.getByText("Другое"));
-  expect(screen.getByText("Описание (обязательно)")).toBeTruthy();
-  expect(sendButton()).toBeDisabled();
+  expect(screen.getByText("Описание")).toBeTruthy();
 
   fireEvent.changeText(screen.getByPlaceholderText("Что именно не так"), "  ");
-  expect(sendButton()).toBeDisabled();
+  fireEvent.press(sendButton());
+  expect(screen.getByText("Опишите, что не так")).toBeTruthy();
+  expect(screen.queryByText("Спасибо!")).toBeNull();
 
   fireEvent.changeText(screen.getByPlaceholderText("Что именно не так"), "Нет припева");
-  expect(sendButton()).toBeEnabled();
+  expect(screen.queryByText("Опишите, что не так")).toBeNull();
+  fireEvent.press(sendButton());
+  expect(screen.getByText("Спасибо!")).toBeTruthy();
 });
+
+test.each(["Ошибка в приложении", "Предложить функцию", "Другое"])(
+  "an app report for «%s» needs a description",
+  (reasonTitle) => {
+    renderScreen(APP_PARAMS);
+
+    fireEvent.press(screen.getByText(reasonTitle));
+    fireEvent.press(sendButton());
+
+    expect(screen.getByText("Опишите, что не так")).toBeTruthy();
+  },
+);
 
 test("without internet the user is told the report will go out later", () => {
   mockNetworkState.isInternetReachable = false;
@@ -167,23 +194,39 @@ test("only an app report asks for an email", () => {
   expect(screen.getByPlaceholderText("you@example.com")).toBeTruthy();
 });
 
+function fillAppReport() {
+  fireEvent.press(screen.getByText("Ошибка в приложении"));
+  fireEvent.changeText(screen.getByPlaceholderText("Что именно не так"), "Вылетает");
+}
+
+test("a malformed email is flagged once the user leaves the field", () => {
+  renderScreen(APP_PARAMS);
+  const emailInput = screen.getByPlaceholderText("you@example.com");
+
+  fireEvent.changeText(emailInput, "user@");
+  expect(screen.queryByText("Проверьте адрес")).toBeNull();
+
+  fireEvent(emailInput, "blur");
+  expect(screen.getByText("Проверьте адрес")).toBeTruthy();
+
+  fireEvent.changeText(emailInput, "user@example.com");
+  expect(screen.queryByText("Проверьте адрес")).toBeNull();
+});
+
 test("a malformed email blocks sending", () => {
   renderScreen(APP_PARAMS);
+  fillAppReport();
 
-  fireEvent.press(screen.getByText("Ошибка в приложении"));
   fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@");
-  expect(sendButton()).toBeDisabled();
+  fireEvent.press(sendButton());
 
-  fireEvent.changeText(
-    screen.getByPlaceholderText("you@example.com"),
-    "user@example.com",
-  );
-  expect(sendButton()).toBeEnabled();
+  expect(screen.getByText("Проверьте адрес")).toBeTruthy();
+  expect(screen.queryByText("Посмотрим и исправим")).toBeNull();
 });
 
 test("the last sent email is offered again next time", async () => {
   renderScreen(APP_PARAMS);
-  fireEvent.press(screen.getByText("Ошибка в приложении"));
+  fillAppReport();
   fireEvent.changeText(
     screen.getByPlaceholderText("you@example.com"),
     "user@example.com",

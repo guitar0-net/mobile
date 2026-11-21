@@ -42,7 +42,7 @@ export const REASONS_BY_TARGET: Record<ReportTarget["type"], readonly ReportReas
       OTHER,
     ],
     app: [
-      reason("bug", "Ошибка в приложении"),
+      reason("bug", "Ошибка в приложении", true),
       reason("feature_request", "Предложить функцию", true),
       OTHER,
     ],
