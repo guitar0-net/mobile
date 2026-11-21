@@ -130,5 +130,14 @@
       "typescript": "$typescript"
     }
   },
+  "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          "expo-sqlite"
+        ]
+      }
+    }
+  },
   "private": true
 }
