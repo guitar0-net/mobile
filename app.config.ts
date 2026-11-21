@@ -25,11 +25,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: "./assets/images/icon.png",
   scheme: "mobile",
   userInterfaceStyle: "automatic",
+  locales: {
+    ru: "./assets/locales/ru.json",
+  },
   ios: {
     icon: "./assets/guitar0.icon",
     bundleIdentifier: "com.andreykotlyar.guitar0",
     config: {
       usesNonExemptEncryption: false,
+    },
+    infoPlist: {
+      CFBundleDevelopmentRegion: "ru",
+      CFBundleLocalizations: ["ru"],
     },
   },
   android: {
